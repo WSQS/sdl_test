@@ -23,7 +23,7 @@ static Vertex vertices[]
     {0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f} // bottom right vertex
 };
 
-float node[3]{};
+float node[3]{0.0f, 0.5f, 0.0f};
 
 std::string vertex_source =
         R"WSQ(#version 460
@@ -186,10 +186,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 
     SDL_memcpy(data, (void *) vertices, sizeof(vertices));
 
-    // data[0] = vertices[0];
-    // data[1] = vertices[1];
-    // data[2] = vertices[2];
-
     SDL_UnmapGPUTransferBuffer(device, transferBuffer);
 
     // start a copy pass
@@ -257,7 +253,45 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     {
         ImGui::Begin("Editor");
-        ImGui::InputFloat3("node1",node);
+        ImGui::DragFloat3("node1",node,0.01f,-1.f,1.f);
+        vertices[0].x = node[0];
+        vertices[0].y = node[1];
+        vertices[0].z = node[2];
+
+        // create a transfer buffer to upload to the vertex buffer
+        SDL_GPUTransferBufferCreateInfo transferInfo{};
+        transferInfo.size = sizeof(vertices);
+        transferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+        transferBuffer = SDL_CreateGPUTransferBuffer(device, &transferInfo);
+
+        // fill the transfer buffer
+        Vertex *data = (Vertex *) SDL_MapGPUTransferBuffer(device, transferBuffer, false);
+
+        SDL_memcpy(data, (void *) vertices, sizeof(vertices));
+
+        SDL_UnmapGPUTransferBuffer(device, transferBuffer);
+
+        // start a copy pass
+        SDL_GPUCommandBuffer *commandBuffer = SDL_AcquireGPUCommandBuffer(device);
+        SDL_GPUCopyPass *copyPass = SDL_BeginGPUCopyPass(commandBuffer);
+
+        // where is the data
+        SDL_GPUTransferBufferLocation location{};
+        location.transfer_buffer = transferBuffer;
+        location.offset = 0;
+
+        // where to upload the data
+        SDL_GPUBufferRegion region{};
+        region.buffer = vertexBuffer;
+        region.size = sizeof(vertices);
+        region.offset = 0;
+
+        // upload the data
+        SDL_UploadToGPUBuffer(copyPass, &location, &region, true);
+
+        // end the copy pass
+        SDL_EndGPUCopyPass(copyPass);
+        SDL_SubmitGPUCommandBuffer(commandBuffer);
         ImGui::End();
     }
 
