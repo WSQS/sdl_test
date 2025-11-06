@@ -15,10 +15,9 @@ FetchContent_Declare(
         GIT_PROGRESS TRUE
 )
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
-set(SDL_STATIC ON  CACHE BOOL "" FORCE)
+set(SDL_STATIC ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(SDL3)
 
-# SPIRV-Headers
 FetchContent_Declare(
         SPIRVHeaders
         GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Headers.git
@@ -28,19 +27,16 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(SPIRVHeaders)
 
-# SPIRV-Tools（会用到上面的 Headers）
 FetchContent_Declare(
         SPIRVTools
         GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Tools.git
         GIT_TAG vulkan-sdk-1.4.328.1
         GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE
-        CMAKE_ARGS -DSPIRV-Headers_SOURCE_DIR:PATH=${SPIRVHeaders_SOURCE_DIR}
 )
 set(SPIRV_SKIP_TESTS ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(SPIRVTools)
 
-# glslang
 FetchContent_Declare(
         glslang
         GIT_REPOSITORY https://github.com/KhronosGroup/glslang.git
