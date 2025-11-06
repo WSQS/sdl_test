@@ -14,6 +14,8 @@ FetchContent_Declare(
         GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE
 )
+set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+set(SDL_STATIC ON  CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(SDL3)
 
 add_executable(SDL_TEST main.cpp)
