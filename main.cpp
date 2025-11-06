@@ -1,6 +1,10 @@
 #include "shaderc/shaderc.hpp"
 #include <iostream>
 
+#include "imgui.h"
+#include "imgui_impl_sdl3.h"
+#include "imgui_impl_sdlgpu3.h"
+
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -208,10 +212,49 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     SDL_EndGPUCopyPass(copyPass);
     SDL_SubmitGPUCommandBuffer(commandBuffer);
 
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO();
+    (void) io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsLight();
+
+
+    float main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+    // Setup scaling
+    ImGuiStyle &style = ImGui::GetStyle();
+    style.ScaleAllSizes(main_scale);
+    // Bake a fixed style scale. (until we have a solution for dynamic style scaling, changing this requires resetting Style + calling this again)
+    style.FontScaleDpi = main_scale;
+    // Set initial font scale. (using io.ConfigDpiScaleFonts=true makes this unnecessary. We leave both here for documentation purpose)
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplSDL3_InitForSDLGPU(window);
+    ImGui_ImplSDLGPU3_InitInfo init_info = {};
+    init_info.Device = device;
+    init_info.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(device, window);
+    init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1; // Only used in multi-viewports mode.
+    init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR; // Only used in multi-viewports mode.
+    init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
+    ImGui_ImplSDLGPU3_Init(&init_info);
+
     return SDL_APP_CONTINUE;
 }
 
 SDL_AppResult SDL_AppIterate(void *appstate) {
+    ImGui_ImplSDLGPU3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::ShowDemoWindow();
+    ImGui::Render();
+    ImDrawData *draw_data = ImGui::GetDrawData();
+
     // acquire the command buffer
     SDL_GPUCommandBuffer *commandBuffer = SDL_AcquireGPUCommandBuffer(device);
 
@@ -227,6 +270,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         return SDL_APP_CONTINUE;
     }
 
+    ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, commandBuffer);
+
     // create the color target
     SDL_GPUColorTargetInfo colorTargetInfo{};
     colorTargetInfo.clear_color = {240 / 255.0f, 240 / 255.0f, 240 / 255.0f, 255 / 255.0f};
@@ -236,6 +281,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     // begin a render pass
     SDL_GPURenderPass *renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, NULL);
+
 
     // draw calls go here
     SDL_BindGPUGraphicsPipeline(renderPass, graphicsPipeline);
@@ -249,6 +295,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
 
+    ImGui_ImplSDLGPU3_RenderDrawData(draw_data, commandBuffer, renderPass);
     // end the render pass
     SDL_EndGPURenderPass(renderPass);
 
@@ -259,6 +306,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 }
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
+    ImGui_ImplSDL3_ProcessEvent(event);
     // close the window on request
     if (event->type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
         return SDL_APP_SUCCESS;

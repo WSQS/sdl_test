@@ -63,5 +63,28 @@ set(SHADERC_SKIP_INSTALL ON CACHE BOOL "" FORCE)
 set(SHADERC_SKIP_EXECUTABLES ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(shaderc)
 
+FetchContent_Declare(
+        imgui
+        GIT_REPOSITORY https://github.com/ocornut/imgui.git
+        GIT_TAG v1.92.4
+        GIT_SHALLOW TRUE
+        GIT_PROGRESS TRUE
+)
+FetchContent_MakeAvailable(imgui)
+set(IMGUI_DIR ${imgui_SOURCE_DIR})
+add_library(imgui STATIC
+        ${IMGUI_DIR}/imgui.cpp
+        ${IMGUI_DIR}/imgui_draw.cpp
+        ${IMGUI_DIR}/imgui_tables.cpp
+        ${IMGUI_DIR}/imgui_widgets.cpp
+        ${IMGUI_DIR}/imgui_demo.cpp
+        ${IMGUI_DIR}/backends/imgui_impl_sdl3.cpp
+        ${IMGUI_DIR}/backends/imgui_impl_sdlgpu3.cpp
+)
+target_include_directories(imgui PUBLIC
+        ${IMGUI_DIR}
+        ${IMGUI_DIR}/backends
+)
+
 add_executable(SDL_TEST main.cpp)
-target_link_libraries(SDL_TEST PRIVATE SDL3::SDL3 shaderc)
+target_link_libraries(SDL_TEST PRIVATE SDL3::SDL3 shaderc imgui)
