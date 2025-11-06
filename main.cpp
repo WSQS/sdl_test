@@ -23,6 +23,8 @@ static Vertex vertices[]
     {0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f} // bottom right vertex
 };
 
+float node[3]{};
+
 std::string vertex_source =
         R"WSQ(#version 460
 
@@ -252,6 +254,13 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     ImGui::NewFrame();
 
     ImGui::ShowDemoWindow();
+
+    {
+        ImGui::Begin("Editor");
+        ImGui::InputFloat3("node1",node);
+        ImGui::End();
+    }
+
     ImGui::Render();
     ImDrawData *draw_data = ImGui::GetDrawData();
 
