@@ -90,3 +90,8 @@ target_link_libraries(imgui PUBLIC SDL3::SDL3)
 
 add_executable(SDL_TEST main.cpp)
 target_link_libraries(SDL_TEST PRIVATE shaderc imgui)
+
+include(GNUInstallDirs)
+install(TARGETS SDL_TEST
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
