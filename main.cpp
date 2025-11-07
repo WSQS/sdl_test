@@ -258,12 +258,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         vertices[0].y = node[1];
         vertices[0].z = node[2];
 
-        // create a transfer buffer to upload to the vertex buffer
-        SDL_GPUTransferBufferCreateInfo transferInfo{};
-        transferInfo.size = sizeof(vertices);
-        transferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-        transferBuffer = SDL_CreateGPUTransferBuffer(device, &transferInfo);
-
         // fill the transfer buffer
         Vertex *data = (Vertex *) SDL_MapGPUTransferBuffer(device, transferBuffer, false);
 
