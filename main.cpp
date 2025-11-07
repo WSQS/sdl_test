@@ -353,6 +353,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 }
 
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
+    ImGui_ImplSDL3_Shutdown();
+    ImGui_ImplSDLGPU3_Shutdown();
+    ImGui::DestroyContext();
     // release buffers
     SDL_ReleaseGPUBuffer(device, vertexBuffer);
     SDL_ReleaseGPUTransferBuffer(device, transferBuffer);
