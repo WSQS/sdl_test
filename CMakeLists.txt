@@ -85,6 +85,7 @@ target_include_directories(imgui PUBLIC
         ${IMGUI_DIR}
         ${IMGUI_DIR}/backends
 )
+target_link_libraries(imgui PUBLIC SDL3::SDL3)
 
 add_executable(SDL_TEST main.cpp)
-target_link_libraries(SDL_TEST PRIVATE SDL3::SDL3 shaderc imgui)
+target_link_libraries(SDL_TEST PRIVATE shaderc imgui)
