@@ -80,6 +80,7 @@ add_library(imgui STATIC
         ${IMGUI_DIR}/imgui_demo.cpp
         ${IMGUI_DIR}/backends/imgui_impl_sdl3.cpp
         ${IMGUI_DIR}/backends/imgui_impl_sdlgpu3.cpp
+        ${IMGUI_DIR}/misc/cpp/imgui_stdlib.cpp
 )
 target_include_directories(imgui PUBLIC
         ${IMGUI_DIR}
