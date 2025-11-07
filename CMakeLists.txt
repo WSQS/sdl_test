@@ -36,6 +36,7 @@ FetchContent_Declare(
 )
 set(SPIRV_SKIP_TESTS ON CACHE BOOL "" FORCE)
 set(SPIRV_SKIP_EXECUTABLES ON CACHE BOOL "" FORCE)
+set(ENABLE_SPIRV_TOOLS_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(SPIRVTools)
 
 FetchContent_Declare(
