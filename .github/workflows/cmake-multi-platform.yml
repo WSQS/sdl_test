@@ -57,6 +57,19 @@ jobs:
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
         echo "install-dir=${{ github.workspace }}/install/${{ matrix.os }}-${{ matrix.c_compiler }}-${{ matrix.build_type }}" >> "$GITHUB_OUTPUT"
 
+        
+    - name: Install SDL windowing deps (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential pkg-config cmake ninja-build \
+          libasound2-dev libpulse-dev libaudio-dev libjack-dev \
+          libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev \
+          libxkbcommon-dev libwayland-dev wayland-protocols \
+          libdrm-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
+          libdbus-1-dev libudev-dev
+
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
