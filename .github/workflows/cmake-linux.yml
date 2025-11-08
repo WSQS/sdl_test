@@ -10,7 +10,10 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --user root
 
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
@@ -23,15 +26,12 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [ubuntu-latest]
         build_type: [Debug, Release]
         c_compiler: [gcc, clang]
         include:
-          - os: ubuntu-latest
-            c_compiler: gcc
+          - c_compiler: gcc
             cpp_compiler: g++
-          - os: ubuntu-latest
-            c_compiler: clang
+          - c_compiler: clang
             cpp_compiler: clang++
 
     steps:
@@ -43,19 +43,18 @@ jobs:
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-        echo "install-dir=${{ github.workspace }}/install/${{ matrix.os }}-${{ matrix.c_compiler }}-${{ matrix.build_type }}" >> "$GITHUB_OUTPUT"
+        echo "install-dir=${{ github.workspace }}/install/archlinux-latest-${{ matrix.c_compiler }}-${{ matrix.build_type }}" >> "$GITHUB_OUTPUT"
 
         
     - name: Install SDL windowing deps (Linux)
       run: |
-        sudo apt-get update
-        sudo apt-get install -y --no-install-recommends \
-          build-essential pkg-config cmake ninja-build \
-          libasound2-dev libpulse-dev libaudio-dev libjack-dev \
-          libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev \
-          libxkbcommon-dev libwayland-dev wayland-protocols \
-          libdrm-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
-          libdbus-1-dev libudev-dev
+        pacman -Syu --noconfirm
+        pacman -S --noconfirm --needed \
+            base-devel cmake ninja pkgconf gcc clang \
+            alsa-lib jack libpulse \
+            xorgproto libx11 libxext libxrandr libxcursor libxfixes libxi libxss libxtst \
+            libxkbcommon wayland wayland-protocols \
+            libdrm mesa mesa-utils
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -87,5 +86,5 @@ jobs:
     - name: Upload install folder
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.os }}-${{ matrix.c_compiler }}-${{ matrix.build_type }}-install-${{ github.sha }}
+        name: archlinux-latest-${{ matrix.c_compiler }}-${{ matrix.build_type }}-install-${{ github.sha }}
         path: ${{ steps.strings.outputs.install-dir }}/
