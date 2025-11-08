@@ -50,7 +50,7 @@ jobs:
       run: |
         pacman -Syu --noconfirm
         pacman -S --noconfirm --needed \
-            base-devel cmake ninja pkgconf gcc clang git\
+            base-devel cmake ninja pkgconf gcc clang git python3\
             alsa-lib jack libpulse \
             xorgproto libx11 libxext libxrandr libxcursor libxfixes libxi libxss libxtst \
             libxkbcommon wayland wayland-protocols \
