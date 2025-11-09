@@ -19,16 +19,6 @@ struct Vertex {
     }
 };
 
-// a list of vertices
-static Vertex vertices[]
-{
-    {0.0f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f}, // top vertex
-    {-0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f}, // bottom left vertex
-    {0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f} // bottom right vertex
-};
-
-float node[3]{0.0f, 0.5f, 0.0f};
-
 std::string vertex_source =
         R"WSQ(#version 460
 
@@ -58,6 +48,14 @@ class UserApp : public sopho::App {
     SDL_Window *window{};
     SDL_GPUDevice *device{};
     SDL_GPUGraphicsPipeline *graphicsPipeline{};
+
+    // a list of vertices
+    Vertex vertices[3]
+    {
+        {0.0f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f}, // top vertex
+        {-0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f}, // bottom left vertex
+        {0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f} // bottom right vertex
+    };
 
     virtual SDL_AppResult init(int argc, char **argv) override {
         // create a window
@@ -225,12 +223,13 @@ class UserApp : public sopho::App {
 
         {
             ImGui::Begin("Editor");
-            ImGui::DragFloat3("node1", node, 0.01f, -1.f, 1.f);
-            vertices[0].x = node[0];
-            vertices[0].y = node[1];
-            vertices[0].z = node[2];
+            auto change = ImGui::DragFloat3("node1", vertices[0].position(), 0.01f, -1.f, 1.f);
+            change = ImGui::DragFloat3("node2", vertices[1].position(), 0.01f, -1.f, 1.f) || change;
+            change = ImGui::DragFloat3("node3", vertices[2].position(), 0.01f, -1.f, 1.f) || change;
+            if (change) {
+                vertexBuffer->upload(vertices, sizeof(vertices), 0);
+            }
 
-            vertexBuffer->upload(vertices, sizeof(vertices), 0);
 
             ImGui::End();
         }
