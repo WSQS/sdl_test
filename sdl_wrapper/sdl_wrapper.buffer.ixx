@@ -8,6 +8,5 @@ export module sdl_wrapper:buffer;
 namespace sopho {
     export class BufferWrapper {
         SDL_GPUBuffer *vertexBuffer{};
-
     };
 }

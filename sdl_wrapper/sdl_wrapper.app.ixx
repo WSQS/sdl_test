@@ -7,9 +7,13 @@ export module sdl_wrapper:app;
 
 export class App {
 public:
-    virtual ~App()=default;
+    virtual ~App() = default;
+
     virtual SDL_AppResult init(int argc, char **argv) = 0;
+
     virtual SDL_AppResult iterate() = 0;
+
     virtual SDL_AppResult event(SDL_Event *event) = 0;
+
     virtual void quit(SDL_AppResult result) = 0;
 };
