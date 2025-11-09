@@ -62,7 +62,7 @@ namespace sopho {
             m_vertex_buffer = nullptr;
             if (m_transfer_buffer) {
                 SDL_ReleaseGPUTransferBuffer(m_gpu, m_transfer_buffer);
-                m_vertex_buffer = nullptr;
+                m_transfer_buffer = nullptr;
                 m_transfer_buffer_size = 0;
             }
         }
