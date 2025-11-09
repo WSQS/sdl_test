@@ -1,0 +1,4 @@
+review:
+  style: concise
+  severity_threshold: medium
+  enable_tests: true
