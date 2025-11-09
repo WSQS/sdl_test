@@ -54,7 +54,6 @@ class UserApp : public sopho::App {
 
     SDL_Window *window{};
     SDL_GPUDevice *device{};
-    SDL_GPUTransferBuffer *transferBuffer{};
     SDL_GPUGraphicsPipeline *graphicsPipeline{};
 
     virtual SDL_AppResult init(int argc, char **argv) override {
@@ -301,7 +300,7 @@ class UserApp : public sopho::App {
         ImGui_ImplSDLGPU3_Shutdown();
         ImGui::DestroyContext();
         // release buffers
-        SDL_ReleaseGPUTransferBuffer(device, transferBuffer);
+        vertexBuffer = std::nullopt;
 
         // release the pipeline
         SDL_ReleaseGPUGraphicsPipeline(device, graphicsPipeline);
