@@ -48,15 +48,16 @@ void main()
     FragColor = v_color;
 })WSQ";
 
-sopho::BufferWrapper BufferWrapper{};
-
-SDL_Window *window;
-SDL_GPUDevice *device;
-SDL_GPUBuffer *vertexBuffer;
-SDL_GPUTransferBuffer *transferBuffer;
-SDL_GPUGraphicsPipeline *graphicsPipeline;
-
 class UserApp : public App {
+
+    sopho::BufferWrapper BufferWrapper{};
+
+    SDL_Window *window;
+    SDL_GPUDevice *device;
+    SDL_GPUBuffer *vertexBuffer;
+    SDL_GPUTransferBuffer *transferBuffer;
+    SDL_GPUGraphicsPipeline *graphicsPipeline;
+
     virtual SDL_AppResult init(int argc, char **argv) override {
         // create a window
         window = SDL_CreateWindow("Hello, Triangle!", 960, 540, SDL_WINDOW_RESIZABLE);
