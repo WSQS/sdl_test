@@ -1,5 +1,6 @@
 #include "shaderc/shaderc.hpp"
 #include <iostream>
+#include <optional>
 
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
@@ -49,13 +50,10 @@ void main()
 })WSQ";
 
 class UserApp : public sopho::App {
-
-    sopho::BufferWrapper BufferWrapper{};
+    std::optional<sopho::BufferWrapper> vertexBuffer;
 
     SDL_Window *window{};
     SDL_GPUDevice *device{};
-    SDL_GPUBuffer *vertexBuffer{};
-    SDL_GPUTransferBuffer *transferBuffer{};
     SDL_GPUGraphicsPipeline *graphicsPipeline{};
 
     virtual SDL_AppResult init(int argc, char **argv) override {
@@ -177,42 +175,9 @@ class UserApp : public sopho::App {
         SDL_GPUBufferCreateInfo bufferInfo{};
         bufferInfo.size = sizeof(vertices);
         bufferInfo.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
-        vertexBuffer = SDL_CreateGPUBuffer(device, &bufferInfo);
+        vertexBuffer.emplace(device, &bufferInfo);
 
-        // create a transfer buffer to upload to the vertex buffer
-        SDL_GPUTransferBufferCreateInfo transferInfo{};
-        transferInfo.size = sizeof(vertices);
-        transferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-        transferBuffer = SDL_CreateGPUTransferBuffer(device, &transferInfo);
-
-        // fill the transfer buffer
-        Vertex *data = (Vertex *) SDL_MapGPUTransferBuffer(device, transferBuffer, false);
-
-        SDL_memcpy(data, (void *) vertices, sizeof(vertices));
-
-        SDL_UnmapGPUTransferBuffer(device, transferBuffer);
-
-        // start a copy pass
-        SDL_GPUCommandBuffer *commandBuffer = SDL_AcquireGPUCommandBuffer(device);
-        SDL_GPUCopyPass *copyPass = SDL_BeginGPUCopyPass(commandBuffer);
-
-        // where is the data
-        SDL_GPUTransferBufferLocation location{};
-        location.transfer_buffer = transferBuffer;
-        location.offset = 0;
-
-        // where to upload the data
-        SDL_GPUBufferRegion region{};
-        region.buffer = vertexBuffer;
-        region.size = sizeof(vertices);
-        region.offset = 0;
-
-        // upload the data
-        SDL_UploadToGPUBuffer(copyPass, &location, &region, true);
-
-        // end the copy pass
-        SDL_EndGPUCopyPass(copyPass);
-        SDL_SubmitGPUCommandBuffer(commandBuffer);
+        vertexBuffer->upload(vertices, sizeof(vertices), 0);
 
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
@@ -262,34 +227,8 @@ class UserApp : public sopho::App {
             vertices[0].y = node[1];
             vertices[0].z = node[2];
 
-            // fill the transfer buffer
-            Vertex *data = (Vertex *) SDL_MapGPUTransferBuffer(device, transferBuffer, false);
+            vertexBuffer->upload(vertices, sizeof(vertices), 0);
 
-            SDL_memcpy(data, (void *) vertices, sizeof(vertices));
-
-            SDL_UnmapGPUTransferBuffer(device, transferBuffer);
-
-            // start a copy pass
-            SDL_GPUCommandBuffer *commandBuffer = SDL_AcquireGPUCommandBuffer(device);
-            SDL_GPUCopyPass *copyPass = SDL_BeginGPUCopyPass(commandBuffer);
-
-            // where is the data
-            SDL_GPUTransferBufferLocation location{};
-            location.transfer_buffer = transferBuffer;
-            location.offset = 0;
-
-            // where to upload the data
-            SDL_GPUBufferRegion region{};
-            region.buffer = vertexBuffer;
-            region.size = sizeof(vertices);
-            region.offset = 0;
-
-            // upload the data
-            SDL_UploadToGPUBuffer(copyPass, &location, &region, true);
-
-            // end the copy pass
-            SDL_EndGPUCopyPass(copyPass);
-            SDL_SubmitGPUCommandBuffer(commandBuffer);
             ImGui::End();
         }
 
@@ -329,7 +268,7 @@ class UserApp : public sopho::App {
 
         // bind the vertex buffer
         SDL_GPUBufferBinding bufferBindings[1];
-        bufferBindings[0].buffer = vertexBuffer; // index 0 is slot 0 in this example
+        bufferBindings[0].buffer = vertexBuffer->data(); // index 0 is slot 0 in this example
         bufferBindings[0].offset = 0; // start from the first byte
 
         SDL_BindGPUVertexBuffers(renderPass, 0, bufferBindings, 1); // bind one buffer starting from slot 0
@@ -361,8 +300,7 @@ class UserApp : public sopho::App {
         ImGui_ImplSDLGPU3_Shutdown();
         ImGui::DestroyContext();
         // release buffers
-        SDL_ReleaseGPUBuffer(device, vertexBuffer);
-        SDL_ReleaseGPUTransferBuffer(device, transferBuffer);
+        vertexBuffer = std::nullopt;
 
         // release the pipeline
         SDL_ReleaseGPUGraphicsPipeline(device, graphicsPipeline);
