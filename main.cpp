@@ -178,40 +178,7 @@ class UserApp : public sopho::App {
         bufferInfo.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
         vertexBuffer.emplace(device, &bufferInfo);
 
-        // create a transfer buffer to upload to the vertex buffer
-        SDL_GPUTransferBufferCreateInfo transferInfo{};
-        transferInfo.size = sizeof(vertices);
-        transferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-        transferBuffer = SDL_CreateGPUTransferBuffer(device, &transferInfo);
-
-        // fill the transfer buffer
-        Vertex *data = (Vertex *) SDL_MapGPUTransferBuffer(device, transferBuffer, false);
-
-        SDL_memcpy(data, (void *) vertices, sizeof(vertices));
-
-        SDL_UnmapGPUTransferBuffer(device, transferBuffer);
-
-        // start a copy pass
-        SDL_GPUCommandBuffer *commandBuffer = SDL_AcquireGPUCommandBuffer(device);
-        SDL_GPUCopyPass *copyPass = SDL_BeginGPUCopyPass(commandBuffer);
-
-        // where is the data
-        SDL_GPUTransferBufferLocation location{};
-        location.transfer_buffer = transferBuffer;
-        location.offset = 0;
-
-        // where to upload the data
-        SDL_GPUBufferRegion region{};
-        region.buffer = vertexBuffer->data();
-        region.size = sizeof(vertices);
-        region.offset = 0;
-
-        // upload the data
-        SDL_UploadToGPUBuffer(copyPass, &location, &region, true);
-
-        // end the copy pass
-        SDL_EndGPUCopyPass(copyPass);
-        SDL_SubmitGPUCommandBuffer(commandBuffer);
+        vertexBuffer->upload(vertices, sizeof(vertices), 0);
 
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
