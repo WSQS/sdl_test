@@ -375,6 +375,6 @@ class UserApp : public sopho::App {
     }
 };
 
-App *create_app() {
+sopho::App *create_app() {
     return new UserApp();
 }
