@@ -1,5 +1,6 @@
 #include "shaderc/shaderc.hpp"
 #include <iostream>
+#include <optional>
 
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
@@ -49,7 +50,6 @@ void main()
 })WSQ";
 
 class UserApp : public sopho::App {
-
     std::optional<sopho::BufferWrapper> vertexBuffer;
 
     SDL_Window *window{};
@@ -261,7 +261,7 @@ class UserApp : public sopho::App {
             vertices[0].y = node[1];
             vertices[0].z = node[2];
 
-            vertexBuffer->upload(vertices,sizeof(vertices),0);
+            vertexBuffer->upload(vertices, sizeof(vertices), 0);
 
             ImGui::End();
         }
