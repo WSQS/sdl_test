@@ -4,3 +4,4 @@
 
 export module sdl_wrapper;
 export import :buffer;
+export import :app;

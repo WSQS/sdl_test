@@ -9,6 +9,9 @@ target_sources(sdl_wrapper
         FILE_SET cxx_modules TYPE CXX_MODULES FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/sdl_wrapper.ixx
         ${CMAKE_CURRENT_SOURCE_DIR}/sdl_wrapper.buffer.ixx
+        ${CMAKE_CURRENT_SOURCE_DIR}/sdl_wrapper.app.ixx
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/sdl_callback_implement.cpp
 )
 
 target_link_libraries(sdl_wrapper PUBLIC SDL3::SDL3)
