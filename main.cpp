@@ -52,11 +52,11 @@ class UserApp : public App {
 
     sopho::BufferWrapper BufferWrapper{};
 
-    SDL_Window *window;
-    SDL_GPUDevice *device;
-    SDL_GPUBuffer *vertexBuffer;
-    SDL_GPUTransferBuffer *transferBuffer;
-    SDL_GPUGraphicsPipeline *graphicsPipeline;
+    SDL_Window *window{};
+    SDL_GPUDevice *device{};
+    SDL_GPUBuffer *vertexBuffer{};
+    SDL_GPUTransferBuffer *transferBuffer{};
+    SDL_GPUGraphicsPipeline *graphicsPipeline{};
 
     virtual SDL_AppResult init(int argc, char **argv) override {
         // create a window
