@@ -48,7 +48,7 @@ void main()
     FragColor = v_color;
 })WSQ";
 
-class UserApp : public App {
+class UserApp : public sopho::App {
 
     sopho::BufferWrapper BufferWrapper{};
 
