@@ -1,6 +1,7 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.30)
 project(SDL_TEST LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(FetchContent)
 
 set(FETCHCONTENT_QUIET OFF CACHE BOOL "" FORCE)
@@ -91,8 +92,11 @@ target_include_directories(imgui PUBLIC
 )
 target_link_libraries(imgui PUBLIC SDL3::SDL3)
 
+add_subdirectory(sdl_wrapper)
+
 add_executable(SDL_TEST main.cpp)
-target_link_libraries(SDL_TEST PRIVATE shaderc imgui)
+target_link_libraries(SDL_TEST PRIVATE shaderc imgui sdl_wrapper)
+
 
 include(GNUInstallDirs)
 install(TARGETS SDL_TEST

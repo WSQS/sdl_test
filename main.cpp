@@ -9,6 +9,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
+import sdl_wrapper;
+
 // the vertex input layout
 struct Vertex {
     float x, y, z; //vec3 position
@@ -47,6 +49,8 @@ void main()
 {
     FragColor = v_color;
 })WSQ";
+
+sopho::BufferWrapper  BufferWrapper{};
 
 SDL_Window *window;
 SDL_GPUDevice *device;
