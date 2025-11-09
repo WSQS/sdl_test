@@ -14,6 +14,9 @@ import sdl_wrapper;
 struct Vertex {
     float x, y, z; //vec3 position
     float r, g, b, a; //vec4 color
+    auto position() {
+        return &x;
+    }
 };
 
 // a list of vertices
