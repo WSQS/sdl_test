@@ -28,4 +28,5 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     auto app = static_cast<sopho::App *>(appstate);
     app->quit(result);
+    delete app;
 }
