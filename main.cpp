@@ -5,6 +5,7 @@
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlgpu3.h"
+#include "misc/cpp/imgui_stdlib.h"
 
 #include <SDL3/SDL.h>
 
@@ -56,6 +57,17 @@ void main()
     FragColor = v_color;
 })WSQ";
 
+    shaderc::Compiler compiler{};
+    shaderc::CompileOptions options{};
+
+    SDL_GPUGraphicsPipelineCreateInfo pipelineInfo{};
+    SDL_GPUShader* vertexShader{};
+    SDL_GPUShader* fragmentShader{};
+
+    SDL_GPUColorTargetDescription colorTargetDescriptions[1];
+    SDL_GPUVertexAttribute vertexAttributes[2];
+    SDL_GPUVertexBufferDescription vertexBufferDesctiptions[1];
+
     virtual SDL_AppResult init(int argc, char** argv) override
     {
         // create a window
@@ -65,8 +77,6 @@ void main()
         device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, NULL);
         SDL_ClaimWindowForGPUDevice(device, window);
 
-        shaderc::Compiler compiler{};
-        shaderc::CompileOptions options{};
         options.SetTargetEnvironment(shaderc_target_env_vulkan, 0);
         auto result = compiler.CompileGlslToSpv(vertex_source, shaderc_glsl_vertex_shader, "test.glsl", options);
 
@@ -90,7 +100,7 @@ void main()
         vertexInfo.num_storage_textures = 0;
         vertexInfo.num_uniform_buffers = 0;
 
-        SDL_GPUShader* vertexShader = SDL_CreateGPUShader(device, &vertexInfo);
+        vertexShader = SDL_CreateGPUShader(device, &vertexInfo);
 
         result = compiler.CompileGlslToSpv(fragment_source, shaderc_glsl_fragment_shader, "test.frag", options);
 
@@ -114,16 +124,14 @@ void main()
         fragmentInfo.num_storage_textures = 0;
         fragmentInfo.num_uniform_buffers = 0;
 
-        SDL_GPUShader* fragmentShader = SDL_CreateGPUShader(device, &fragmentInfo);
+        fragmentShader = SDL_CreateGPUShader(device, &fragmentInfo);
 
         // create the graphics pipeline
-        SDL_GPUGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.vertex_shader = vertexShader;
         pipelineInfo.fragment_shader = fragmentShader;
         pipelineInfo.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
 
         // describe the vertex buffers
-        SDL_GPUVertexBufferDescription vertexBufferDesctiptions[1];
         vertexBufferDesctiptions[0].slot = 0;
         vertexBufferDesctiptions[0].input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
         vertexBufferDesctiptions[0].instance_step_rate = 0;
@@ -133,8 +141,6 @@ void main()
         pipelineInfo.vertex_input_state.vertex_buffer_descriptions = vertexBufferDesctiptions;
 
         // describe the vertex attribute
-        SDL_GPUVertexAttribute vertexAttributes[2];
-
         // a_position
         vertexAttributes[0].buffer_slot = 0;
         vertexAttributes[0].location = 0;
@@ -151,7 +157,6 @@ void main()
         pipelineInfo.vertex_input_state.vertex_attributes = vertexAttributes;
 
         // describe the color target
-        SDL_GPUColorTargetDescription colorTargetDescriptions[1];
         colorTargetDescriptions[0] = {};
         colorTargetDescriptions[0].blend_state.enable_blend = true;
         colorTargetDescriptions[0].blend_state.color_blend_op = SDL_GPU_BLENDOP_ADD;
@@ -167,10 +172,6 @@ void main()
 
         // create the pipeline
         graphicsPipeline = SDL_CreateGPUGraphicsPipeline(device, &pipelineInfo);
-
-        // we don't need to store the shaders after creating the pipeline
-        SDL_ReleaseGPUShader(device, vertexShader);
-        SDL_ReleaseGPUShader(device, fragmentShader);
 
         // create the vertex buffer
         SDL_GPUBufferCreateInfo bufferInfo{};
@@ -231,6 +232,44 @@ void main()
             if (change)
             {
                 vertexBuffer->upload(vertices, sizeof(vertices), 0);
+            }
+
+            if (ImGui::InputTextMultiline("code editor", &vertex_source, ImVec2(0, 0),
+                                          ImGuiInputTextFlags_AllowTabInput))
+            {
+                auto result =
+                    compiler.CompileGlslToSpv(vertex_source, shaderc_glsl_vertex_shader, "test.glsl", options);
+
+                if (result.GetCompilationStatus() != shaderc_compilation_status_success)
+                {
+                    std::cerr << "[shaderc] compile error in " << "test.glsl" << ":\n"
+                              << result.GetErrorMessage() << std::endl;
+                }
+                else
+                {
+                    // load the vertex shader code
+                    std::vector<uint32_t> vertexCode{result.cbegin(), result.cend()};
+
+                    // create the vertex shader
+                    SDL_GPUShaderCreateInfo vertexInfo{};
+                    vertexInfo.code = (Uint8*)vertexCode.data();
+                    vertexInfo.code_size = vertexCode.size() * 4;
+                    vertexInfo.entrypoint = "main";
+                    vertexInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
+                    vertexInfo.stage = SDL_GPU_SHADERSTAGE_VERTEX;
+                    vertexInfo.num_samplers = 0;
+                    vertexInfo.num_storage_buffers = 0;
+                    vertexInfo.num_storage_textures = 0;
+                    vertexInfo.num_uniform_buffers = 0;
+
+
+                    SDL_ReleaseGPUShader(device, vertexShader);
+                    vertexShader = SDL_CreateGPUShader(device, &vertexInfo);
+
+                    pipelineInfo.vertex_shader = vertexShader;
+                    SDL_ReleaseGPUGraphicsPipeline(device, graphicsPipeline);
+                    graphicsPipeline = SDL_CreateGPUGraphicsPipeline(device, &pipelineInfo);
+                }
             }
 
             ImGui::End();
@@ -309,6 +348,10 @@ void main()
         ImGui::DestroyContext();
         // release buffers
         vertexBuffer = std::nullopt;
+
+        // Release the shader
+        SDL_ReleaseGPUShader(device, vertexShader);
+        SDL_ReleaseGPUShader(device, fragmentShader);
 
         // release the pipeline
         SDL_ReleaseGPUGraphicsPipeline(device, graphicsPipeline);
