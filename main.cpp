@@ -17,29 +17,6 @@ struct Vertex {
   auto position() { return &x; }
 };
 
-std::string vertex_source =
-    R"WSQ(#version 460
-
-layout (location = 0) in vec3 a_position;
-layout (location = 1) in vec4 a_color;
-layout (location = 0) out vec4 v_color;
-
-void main()
-{
-  gl_Position = vec4(a_position, 1.0f);
-  v_color = a_color;
-})WSQ";
-std::string fragment_source =
-    R"WSQ(#version 460
-
-layout (location = 0) in vec4 v_color;
-layout (location = 0) out vec4 FragColor;
-
-void main()
-{
-    FragColor = v_color;
-})WSQ";
-
 class UserApp : public sopho::App {
   std::optional<sopho::BufferWrapper> vertexBuffer;
 
@@ -53,6 +30,29 @@ class UserApp : public sopho::App {
       {-0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f}, // bottom left vertex
       {0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f}   // bottom right vertex
   };
+
+    std::string vertex_source =
+    R"WSQ(#version 460
+
+layout (location = 0) in vec3 a_position;
+layout (location = 1) in vec4 a_color;
+layout (location = 0) out vec4 v_color;
+
+void main()
+{
+  gl_Position = vec4(a_position, 1.0f);
+  v_color = a_color;
+})WSQ";
+    std::string fragment_source =
+        R"WSQ(#version 460
+
+layout (location = 0) in vec4 v_color;
+layout (location = 0) out vec4 FragColor;
+
+void main()
+{
+    FragColor = v_color;
+})WSQ";
 
   virtual SDL_AppResult init(int argc, char **argv) override {
     // create a window
