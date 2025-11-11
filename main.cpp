@@ -237,9 +237,10 @@ void main()
         }
         {
             ImGui::Begin("SourceEditor");
+            auto line_count = std::count(vertex_source.begin(), vertex_source.end(), '\n');
             ImVec2 size =
                 ImVec2(ImGui::GetContentRegionAvail().x,
-                       ImGui::GetTextLineHeight() * (std::count(vertex_source.begin(), vertex_source.end(), '\n') + 3));
+                       std::min(ImGui::GetTextLineHeight() * (line_count + 3), ImGui::GetContentRegionAvail().y));
             if (ImGui::InputTextMultiline("code editor", &vertex_source, size, ImGuiInputTextFlags_AllowTabInput))
             {
                 auto result =
@@ -319,8 +320,7 @@ void main()
         bufferBindings[0].buffer = vertexBuffer->data(); // index 0 is slot 0 in this example
         bufferBindings[0].offset = 0; // start from the first byte
 
-        SDL_BindGPUVertexBuffers(renderPass, 0, bufferBindings,
-                                 1); // bind one buffer starting from slot 0
+        SDL_BindGPUVertexBuffers(renderPass, 0, bufferBindings, 1); // bind one buffer starting from slot 0
 
         SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
 
