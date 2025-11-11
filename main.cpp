@@ -180,7 +180,7 @@ void main()
         bufferInfo.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
         vertexBuffer.emplace(device, &bufferInfo);
 
-        vertexBuffer->upload(vertices, sizeof(vertices), 0);
+        vertexBuffer->upload(&vertices, sizeof(vertices), 0);
 
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
@@ -232,7 +232,7 @@ void main()
             change = ImGui::DragFloat3("node3", vertices[2].position(), 0.01f, -1.f, 1.f) || change;
             if (change)
             {
-                vertexBuffer->upload(vertices, sizeof(vertices), 0);
+                vertexBuffer->upload(&vertices, sizeof(vertices), 0);
             }
             ImGui::End();
         }
