@@ -1,3 +1,4 @@
+#include <array>
 #include <iostream>
 #include <optional>
 #include "shaderc/shaderc.hpp"
@@ -28,10 +29,10 @@ class UserApp : public sopho::App
     SDL_GPUGraphicsPipeline* graphicsPipeline{};
 
     // a list of vertices
-    Vertex vertices[3]{
-        {0.0F, 0.5F, 0.0F, 1.0F, 0.0F, 0.0F, 1.0F}, // top vertex
-        {-0.5F, -0.5F, 0.0F, 1.0F, 1.0F, 0.0F, 1.0F}, // bottom left vertex
-        {0.5F, -0.5F, 0.0F, 1.0F, 0.0F, 1.0F, 1.0F} // bottom right vertex
+    std::array<Vertex, 3> vertices{
+        Vertex{0.0F, 0.5F, 0.0F, 1.0F, 0.0F, 0.0F, 1.0F}, // top vertex
+        Vertex{-0.5F, -0.5F, 0.0F, 1.0F, 1.0F, 0.0F, 1.0F}, // bottom left vertex
+        Vertex{0.5F, -0.5F, 0.0F, 1.0F, 0.0F, 1.0F, 1.0F} // bottom right vertex
     };
 
     std::string vertex_source =
