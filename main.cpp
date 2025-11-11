@@ -29,9 +29,9 @@ class UserApp : public sopho::App
 
     // a list of vertices
     Vertex vertices[3]{
-        {0.0f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f}, // top vertex
-        {-0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f}, // bottom left vertex
-        {0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f} // bottom right vertex
+        {0.0F, 0.5F, 0.0F, 1.0F, 0.0F, 0.0F, 1.0F}, // top vertex
+        {-0.5F, -0.5F, 0.0F, 1.0F, 1.0F, 0.0F, 1.0F}, // bottom left vertex
+        {0.5F, -0.5F, 0.0F, 1.0F, 0.0F, 1.0F, 1.0F} // bottom right vertex
     };
 
     std::string vertex_source =
@@ -304,7 +304,7 @@ void main()
 
         // create the color target
         SDL_GPUColorTargetInfo colorTargetInfo{};
-        colorTargetInfo.clear_color = {240 / 255.0f, 240 / 255.0f, 240 / 255.0f, 255 / 255.0f};
+        colorTargetInfo.clear_color = {240 / 255.0F, 240 / 255.0F, 240 / 255.0F, 255 / 255.0F};
         colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
         colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
         colorTargetInfo.texture = swapchainTexture;
