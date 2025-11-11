@@ -10,6 +10,7 @@ target_sources(sdl_wrapper
         sdl_wrapper.ixx
         sdl_wrapper.buffer.ixx
         sdl_wrapper.app.ixx
+        sdl_wrapper.pipeline.ixx
         PRIVATE
         sdl_callback_implement.cpp
 )
