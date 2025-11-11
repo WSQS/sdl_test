@@ -64,9 +64,9 @@ void main()
     SDL_GPUShader* vertexShader{};
     SDL_GPUShader* fragmentShader{};
 
-    SDL_GPUColorTargetDescription colorTargetDescriptions[1];
-    SDL_GPUVertexAttribute vertexAttributes[2];
-    SDL_GPUVertexBufferDescription vertexBufferDesctiptions[1];
+    SDL_GPUColorTargetDescription colorTargetDescriptions[1]{};
+    SDL_GPUVertexAttribute vertexAttributes[2]{};
+    SDL_GPUVertexBufferDescription vertexBufferDesctiptions[1]{};
 
     virtual SDL_AppResult init(int argc, char** argv) override
     {
