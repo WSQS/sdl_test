@@ -225,7 +225,7 @@ void main()
         ImGui::ShowDemoWindow();
 
         {
-            ImGui::Begin("Editor");
+            ImGui::Begin("NodeEditor");
             auto change = ImGui::DragFloat3("node1", vertices[0].position(), 0.01f, -1.f, 1.f);
             change = ImGui::DragFloat3("node2", vertices[1].position(), 0.01f, -1.f, 1.f) || change;
             change = ImGui::DragFloat3("node3", vertices[2].position(), 0.01f, -1.f, 1.f) || change;
@@ -233,9 +233,14 @@ void main()
             {
                 vertexBuffer->upload(vertices, sizeof(vertices), 0);
             }
-
-            if (ImGui::InputTextMultiline("code editor", &vertex_source, ImVec2(0, 0),
-                                          ImGuiInputTextFlags_AllowTabInput))
+            ImGui::End();
+        }
+        {
+            ImGui::Begin("SourceEditor");
+            ImVec2 size =
+                ImVec2(ImGui::GetContentRegionAvail().x,
+                       ImGui::GetTextLineHeight() * (std::count(vertex_source.begin(), vertex_source.end(), '\n') + 3));
+            if (ImGui::InputTextMultiline("code editor", &vertex_source, size, ImGuiInputTextFlags_AllowTabInput))
             {
                 auto result =
                     compiler.CompileGlslToSpv(vertex_source, shaderc_glsl_vertex_shader, "test.glsl", options);
