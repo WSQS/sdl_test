@@ -24,9 +24,9 @@ class UserApp : public sopho::App
 {
     std::optional<sopho::BufferWrapper> vertexBuffer;
     std::optional<sopho::PipelineWrapper> pipeline_wrapper;
+    std::shared_ptr<sopho::GpuWrapper> gpu_wrapper{std::make_shared<sopho::GpuWrapper>()};
 
     SDL_Window* window{};
-    SDL_GPUDevice* device{};
     SDL_GPUGraphicsPipeline* graphicsPipeline{};
 
     // a list of vertices
@@ -75,9 +75,7 @@ void main()
         // create a window
         window = SDL_CreateWindow("Hello, Triangle!", 960, 540, SDL_WINDOW_RESIZABLE);
 
-        // create the device
-        device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, NULL);
-        SDL_ClaimWindowForGPUDevice(device, window);
+        SDL_ClaimWindowForGPUDevice(gpu_wrapper->data(), window);
 
         options.SetTargetEnvironment(shaderc_target_env_vulkan, 0);
         auto result = compiler.CompileGlslToSpv(vertex_source, shaderc_glsl_vertex_shader, "test.glsl", options);
@@ -102,7 +100,7 @@ void main()
         vertexInfo.num_storage_textures = 0;
         vertexInfo.num_uniform_buffers = 0;
 
-        vertexShader = SDL_CreateGPUShader(device, &vertexInfo);
+        vertexShader = SDL_CreateGPUShader(gpu_wrapper->data(), &vertexInfo);
 
         result = compiler.CompileGlslToSpv(fragment_source, shaderc_glsl_fragment_shader, "test.frag", options);
 
@@ -126,7 +124,7 @@ void main()
         fragmentInfo.num_storage_textures = 0;
         fragmentInfo.num_uniform_buffers = 0;
 
-        fragmentShader = SDL_CreateGPUShader(device, &fragmentInfo);
+        fragmentShader = SDL_CreateGPUShader(gpu_wrapper->data(), &fragmentInfo);
 
         // create the graphics pipeline
         pipelineInfo.vertex_shader = vertexShader;
@@ -167,19 +165,19 @@ void main()
         colorTargetDescriptions[0].blend_state.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
         colorTargetDescriptions[0].blend_state.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
         colorTargetDescriptions[0].blend_state.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-        colorTargetDescriptions[0].format = SDL_GetGPUSwapchainTextureFormat(device, window);
+        colorTargetDescriptions[0].format = SDL_GetGPUSwapchainTextureFormat(gpu_wrapper->data(), window);
 
         pipelineInfo.target_info.num_color_targets = 1;
         pipelineInfo.target_info.color_target_descriptions = colorTargetDescriptions;
 
         // create the pipeline
-        graphicsPipeline = SDL_CreateGPUGraphicsPipeline(device, &pipelineInfo);
+        graphicsPipeline = SDL_CreateGPUGraphicsPipeline(gpu_wrapper->data(), &pipelineInfo);
 
         // create the vertex buffer
         SDL_GPUBufferCreateInfo bufferInfo{};
         bufferInfo.size = sizeof(vertices);
         bufferInfo.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
-        vertexBuffer.emplace(device, &bufferInfo);
+        vertexBuffer.emplace(gpu_wrapper->data(), &bufferInfo);
 
         vertexBuffer->upload(&vertices, sizeof(vertices), 0);
 
@@ -208,8 +206,8 @@ void main()
         // Setup Platform/Renderer backends
         ImGui_ImplSDL3_InitForSDLGPU(window);
         ImGui_ImplSDLGPU3_InitInfo init_info = {};
-        init_info.Device = device;
-        init_info.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(device, window);
+        init_info.Device = gpu_wrapper->data();
+        init_info.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(gpu_wrapper->data(), window);
         init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1; // Only used in multi-viewports mode.
         init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR; // Only used in multi-viewports mode.
         init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
@@ -271,12 +269,12 @@ void main()
                     vertexInfo.num_uniform_buffers = 0;
 
 
-                    SDL_ReleaseGPUShader(device, vertexShader);
-                    vertexShader = SDL_CreateGPUShader(device, &vertexInfo);
+                    SDL_ReleaseGPUShader(gpu_wrapper->data(), vertexShader);
+                    vertexShader = SDL_CreateGPUShader(gpu_wrapper->data(), &vertexInfo);
 
                     pipelineInfo.vertex_shader = vertexShader;
-                    SDL_ReleaseGPUGraphicsPipeline(device, graphicsPipeline);
-                    graphicsPipeline = SDL_CreateGPUGraphicsPipeline(device, &pipelineInfo);
+                    SDL_ReleaseGPUGraphicsPipeline(gpu_wrapper->data(), graphicsPipeline);
+                    graphicsPipeline = SDL_CreateGPUGraphicsPipeline(gpu_wrapper->data(), &pipelineInfo);
                 }
             }
 
@@ -287,7 +285,7 @@ void main()
         ImDrawData* draw_data = ImGui::GetDrawData();
 
         // acquire the command buffer
-        SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(device);
+        SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(gpu_wrapper->data());
 
         // get the swapchain texture
         SDL_GPUTexture* swapchainTexture;
@@ -357,14 +355,11 @@ void main()
         vertexBuffer = std::nullopt;
 
         // Release the shader
-        SDL_ReleaseGPUShader(device, vertexShader);
-        SDL_ReleaseGPUShader(device, fragmentShader);
+        SDL_ReleaseGPUShader(gpu_wrapper->data(), vertexShader);
+        SDL_ReleaseGPUShader(gpu_wrapper->data(), fragmentShader);
 
         // release the pipeline
-        SDL_ReleaseGPUGraphicsPipeline(device, graphicsPipeline);
-
-        // destroy the GPU device
-        SDL_DestroyGPUDevice(device);
+        SDL_ReleaseGPUGraphicsPipeline(gpu_wrapper->data(), graphicsPipeline);
 
         // destroy the window
         SDL_DestroyWindow(window);

@@ -6,3 +6,4 @@ export module sdl_wrapper;
 export import :buffer;
 export import :app;
 export import :pipeline;
+export import :gpu;
