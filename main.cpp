@@ -23,7 +23,7 @@ struct Vertex
 class UserApp : public sopho::App
 {
     std::optional<sopho::BufferWrapper> vertexBuffer;
-    std::optional<sopho::PipeLineWrapper> pipe_line_wrapper;
+    std::optional<sopho::PipelineWrapper> pipeline_wrapper;
 
     SDL_Window* window{};
     SDL_GPUDevice* device{};

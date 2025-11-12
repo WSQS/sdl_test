@@ -7,7 +7,7 @@ export module sdl_wrapper:pipeline;
 
 namespace sopho
 {
-    export class PipeLineWrapper
+    export class PipelineWrapper
     {
         SDL_GPUGraphicsPipeline* m_graphics_pipeline{};
         SDL_GPUDevice* m_device{};
@@ -15,8 +15,8 @@ namespace sopho
         bool modified = false;
 
     public:
-        PipeLineWrapper() = default;
-        ~PipeLineWrapper()
+        PipelineWrapper() = default;
+        ~PipelineWrapper()
         {
             if (m_graphics_pipeline)
             {
