@@ -61,7 +61,20 @@ jobs:
 
       - name: Build
         # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} 1> build.log 2>&1
+        shell: pwsh
+
+      - name: Print log tail on failure
+        if: failure()
+        run: Get-Content build.log -Tail 200
+        shell: pwsh
+
+      - name: Upload full build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ matrix.os }}-${{ matrix.c_compiler }}-${{ matrix.build_type }}
+          path: build.log
 
       - name: Test
         working-directory: ${{ steps.strings.outputs.build-output-dir }}
