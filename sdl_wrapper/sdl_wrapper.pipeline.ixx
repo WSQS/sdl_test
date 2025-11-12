@@ -32,7 +32,10 @@ namespace sopho
             if (modified)
             {
                 modified = false;
-                SDL_ReleaseGPUGraphicsPipeline(m_device, m_graphics_pipeline);
+                if (m_graphics_pipeline)
+                {
+                    SDL_ReleaseGPUGraphicsPipeline(m_device, m_graphics_pipeline);
+                }
                 m_graphics_pipeline = SDL_CreateGPUGraphicsPipeline(m_device, &m_pipeline_info);
             }
         }
