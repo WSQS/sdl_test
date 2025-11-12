@@ -18,8 +18,8 @@ namespace sopho {
     public:
         BufferWrapper() = default;
 
-        BufferWrapper(std::shared_ptr<GpuWrapper> p_gpu, const SDL_GPUBufferCreateInfo* p_create_info) :
-        m_gpu(p_gpu), m_vertex_buffer(SDL_CreateGPUBuffer(m_gpu->data(), p_create_info))
+        BufferWrapper(std::shared_ptr<GpuWrapper> p_gpu, const SDL_GPUBufferCreateInfo& p_create_info) :
+        m_gpu(p_gpu), m_vertex_buffer(SDL_CreateGPUBuffer(m_gpu->data(), &p_create_info))
         {
         }
 
