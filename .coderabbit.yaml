@@ -22,7 +22,7 @@ reviews:
   related_prs: true
   suggested_labels: true
   labeling_instructions: []
-  auto_apply_labels: false
+  auto_apply_labels: true
   suggested_reviewers: true
   auto_assign_reviewers: false
   in_progress_fortune: true
