@@ -70,6 +70,14 @@ void main()
     SDL_GPUVertexAttribute vertexAttributes[2]{};
     SDL_GPUVertexBufferDescription vertexBufferDesctiptions[1]{};
 
+    /**
+     * @brief Initialize the application: create window, compile shaders, create GPU pipeline and resources, and
+     * initialize ImGui.
+     *
+     * @param argc Number of command-line arguments provided to the application.
+     * @param argv Command-line argument vector provided to the application.
+     * @return SDL_AppResult SDL_APP_CONTINUE to proceed with the main loop, SDL_APP_SUCCESS to request termination.
+     */
     virtual SDL_AppResult init(int argc, char** argv) override
     {
         // create a window
@@ -216,6 +224,17 @@ void main()
         return SDL_APP_CONTINUE;
     }
 
+    /**
+     * @brief Advance the application by one frame: update ImGui, handle UI for vertex editing and live shader
+     * recompilation, record GPU commands to render the triangle and ImGui, and submit the GPU command buffer.
+     *
+     * Performs per-frame UI updates (including draggable vertex positions and a multiline shader editor), uploads
+     * vertex data when modified, recompiles and replaces the vertex shader and graphics pipeline on shader edits,
+     * acquires a GPU command buffer and the swapchain texture, executes a render pass that draws the triangle and ImGui
+     * draw lists, and submits the command buffer.
+     *
+     * @return SDL_AppResult SDL_APP_CONTINUE to continue the main loop.
+     */
     virtual SDL_AppResult iterate() override
     {
         ImGui_ImplSDLGPU3_NewFrame();
@@ -346,6 +365,14 @@ void main()
         return SDL_APP_CONTINUE;
     }
 
+    /**
+     * @brief Cleanly shuts down the application and releases GPU and UI resources.
+     *
+     * Performs final cleanup: shuts down ImGui SDL/SDLGPU backends, destroys the ImGui context,
+     * releases the vertex buffer, shaders, and graphics pipeline, and destroys the SDL window.
+     *
+     * @param result The application's exit result code provided by the SDL app framework.
+     */
     virtual void quit(SDL_AppResult result) override
     {
         ImGui_ImplSDL3_Shutdown();
