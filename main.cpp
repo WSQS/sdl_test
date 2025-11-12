@@ -115,7 +115,7 @@ void main()
 
         if (result.GetCompilationStatus() != shaderc_compilation_status_success)
         {
-            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "[shaderc] compile error in est.frag: %s",
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "[shaderc] compile error in test.frag: %s",
                          result.GetErrorMessage().data());
         }
 
