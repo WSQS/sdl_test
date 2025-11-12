@@ -5,15 +5,36 @@ module;
 #include "SDL3/SDL_gpu.h"
 export module sdl_wrapper:pipeline;
 
-namespace sopho {
-    class PileLineWrapper {
-        SDL_GPUGraphicsPipeline *m_graphics_pipeline{};
+namespace sopho
+{
+    export class PipeLineWrapper
+    {
+        SDL_GPUGraphicsPipeline* m_graphics_pipeline{};
+        SDL_GPUDevice* m_device{};
+        SDL_GPUGraphicsPipelineCreateInfo m_pipeline_info{};
+        bool modified = false;
 
     public:
-        PileLineWrapper() = default;
+        PipeLineWrapper() = default;
+        ~PipeLineWrapper()
+        {
+            if (m_graphics_pipeline)
+            {
+                SDL_ReleaseGPUGraphicsPipeline(m_device, m_graphics_pipeline);
+                m_graphics_pipeline = nullptr;
+            }
+        }
 
-        auto data() {
-            return m_graphics_pipeline;
+        auto data() { return m_graphics_pipeline; }
+
+        auto submit()
+        {
+            if (modified)
+            {
+                modified = false;
+                SDL_ReleaseGPUGraphicsPipeline(m_device, m_graphics_pipeline);
+                m_graphics_pipeline = SDL_CreateGPUGraphicsPipeline(m_device, &m_pipeline_info);
+            }
         }
     };
-}
+} // namespace sopho
