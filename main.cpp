@@ -90,7 +90,8 @@ void main()
 
         if (result.GetCompilationStatus() != shaderc_compilation_status_success)
         {
-            std::cerr << "[shaderc] compile error in " << "test.glsl" << ":\n" << result.GetErrorMessage() << std::endl;
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "[shaderc] compile error in test.glsl: %s",
+                         result.GetErrorMessage().data());
         }
 
         // load the vertex shader code
@@ -114,7 +115,8 @@ void main()
 
         if (result.GetCompilationStatus() != shaderc_compilation_status_success)
         {
-            std::cerr << "[shaderc] compile error in " << "test.frag" << ":\n" << result.GetErrorMessage() << std::endl;
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "[shaderc] compile error in est.frag: %s",
+                         result.GetErrorMessage().data());
         }
 
         // load the fragment shader code
