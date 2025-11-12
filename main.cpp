@@ -22,7 +22,7 @@ struct Vertex
 
 class UserApp : public sopho::App
 {
-    std::optional<sopho::BufferWrapper> vertexBuffer;
+    std::optional<sopho::BufferWrapper> vertex_buffer;
     std::optional<sopho::PipelineWrapper> pipeline_wrapper;
     std::shared_ptr<sopho::GpuWrapper> gpu_wrapper{std::make_shared<sopho::GpuWrapper>()};
 
@@ -187,9 +187,9 @@ void main()
         SDL_GPUBufferCreateInfo bufferInfo{};
         bufferInfo.size = sizeof(vertices);
         bufferInfo.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
-        vertexBuffer.emplace(gpu_wrapper, &bufferInfo);
+        vertex_buffer.emplace(gpu_wrapper, &bufferInfo);
 
-        vertexBuffer->upload(&vertices, sizeof(vertices), 0);
+        vertex_buffer->upload(&vertices, sizeof(vertices), 0);
 
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
@@ -252,7 +252,7 @@ void main()
             change = ImGui::DragFloat3("node3", vertices[2].position(), 0.01f, -1.f, 1.f) || change;
             if (change)
             {
-                vertexBuffer->upload(&vertices, sizeof(vertices), 0);
+                vertex_buffer->upload(&vertices, sizeof(vertices), 0);
             }
             ImGui::End();
         }
@@ -338,7 +338,7 @@ void main()
 
         // bind the vertex buffer
         SDL_GPUBufferBinding bufferBindings[1];
-        bufferBindings[0].buffer = vertexBuffer->data(); // index 0 is slot 0 in this example
+        bufferBindings[0].buffer = vertex_buffer->data(); // index 0 is slot 0 in this example
         bufferBindings[0].offset = 0; // start from the first byte
 
         SDL_BindGPUVertexBuffers(renderPass, 0, bufferBindings, 1); // bind one buffer starting from slot 0
