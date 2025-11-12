@@ -30,7 +30,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
  * @brief Invoke the application's per-frame iterate handler.
  *
  * @param appstate Pointer to the sopho::App instance previously stored in SDL_AppInit.
- * @return SDL_AppResult The result of the application's iterate call indicating the application's requested next action.
+ * @return SDL_AppResult The result of the application's iterate call indicating the application's requested next
+ * action.
  */
 SDL_AppResult SDL_AppIterate(void* appstate)
 {

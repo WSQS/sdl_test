@@ -71,11 +71,12 @@ void main()
     SDL_GPUVertexBufferDescription vertexBufferDesctiptions[1]{};
 
     /**
-     * @brief Initialize the application: create window, compile shaders, create GPU pipeline and resources, and initialize ImGui.
+     * @brief Initialize the application: create window, compile shaders, create GPU pipeline and resources, and
+     * initialize ImGui.
      *
      * @param argc Number of command-line arguments provided to the application.
      * @param argv Command-line argument vector provided to the application.
-     * @return SDL_AppResult SDL_APP_CONTINUE to proceed with the main loop, SDL_APP_SUCCESS to request termination. 
+     * @return SDL_AppResult SDL_APP_CONTINUE to proceed with the main loop, SDL_APP_SUCCESS to request termination.
      */
     virtual SDL_AppResult init(int argc, char** argv) override
     {
@@ -224,9 +225,13 @@ void main()
     }
 
     /**
-     * @brief Advance the application by one frame: update ImGui, handle UI for vertex editing and live shader recompilation, record GPU commands to render the triangle and ImGui, and submit the GPU command buffer.
+     * @brief Advance the application by one frame: update ImGui, handle UI for vertex editing and live shader
+     * recompilation, record GPU commands to render the triangle and ImGui, and submit the GPU command buffer.
      *
-     * Performs per-frame UI updates (including draggable vertex positions and a multiline shader editor), uploads vertex data when modified, recompiles and replaces the vertex shader and graphics pipeline on shader edits, acquires a GPU command buffer and the swapchain texture, executes a render pass that draws the triangle and ImGui draw lists, and submits the command buffer.
+     * Performs per-frame UI updates (including draggable vertex positions and a multiline shader editor), uploads
+     * vertex data when modified, recompiles and replaces the vertex shader and graphics pipeline on shader edits,
+     * acquires a GPU command buffer and the swapchain texture, executes a render pass that draws the triangle and ImGui
+     * draw lists, and submits the command buffer.
      *
      * @return SDL_AppResult SDL_APP_CONTINUE to continue the main loop.
      */
