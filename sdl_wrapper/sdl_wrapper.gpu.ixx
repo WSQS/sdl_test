@@ -18,7 +18,11 @@ namespace sopho {
         }
 
         ~GpuWrapper() {
-            SDL_DestroyGPUDevice(m_device);
+            if (m_device)
+            {
+                SDL_DestroyGPUDevice(m_device);
+            }
+            m_device = nullptr;
         }
 
         auto data() {
