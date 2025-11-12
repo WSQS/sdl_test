@@ -187,7 +187,7 @@ void main()
         SDL_GPUBufferCreateInfo bufferInfo{};
         bufferInfo.size = sizeof(vertices);
         bufferInfo.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
-        vertexBuffer.emplace(gpu_wrapper->data(), &bufferInfo);
+        vertexBuffer.emplace(gpu_wrapper, &bufferInfo);
 
         vertexBuffer->upload(&vertices, sizeof(vertices), 0);
 
@@ -380,8 +380,6 @@ void main()
         ImGui_ImplSDL3_Shutdown();
         ImGui_ImplSDLGPU3_Shutdown();
         ImGui::DestroyContext();
-        // release buffers
-        vertexBuffer = std::nullopt;
 
         // Release the shader
         SDL_ReleaseGPUShader(gpu_wrapper->data(), vertexShader);
