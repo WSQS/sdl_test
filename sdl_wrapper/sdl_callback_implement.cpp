@@ -8,6 +8,14 @@ import sdl_wrapper;
 
 extern sopho::App* create_app();
 
+/**
+ * @brief Initializes the SDL video subsystem, constructs the application, and invokes its initialization.
+ *
+ * @param appstate Pointer to storage that will receive the created sopho::App* on success.
+ * @param argc Program argument count forwarded to the application's init.
+ * @param argv Program argument vector forwarded to the application's init.
+ * @return SDL_AppResult Result returned by the application's init, or SDL_APP_FAILURE if application creation failed.
+ */
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
 {
     SDL_Init(SDL_INIT_VIDEO);
@@ -18,18 +26,40 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
     return app->init(argc, argv);
 }
 
+/**
+ * @brief Invoke the application's per-frame iterate handler.
+ *
+ * @param appstate Pointer to the sopho::App instance previously stored in SDL_AppInit.
+ * @return SDL_AppResult The result of the application's iterate call indicating the application's requested next action.
+ */
 SDL_AppResult SDL_AppIterate(void* appstate)
 {
     auto* app = static_cast<sopho::App*>(appstate);
     return app->iterate();
 }
 
+/**
+ * @brief Dispatches an SDL event to the stored application instance.
+ *
+ * @param appstate Opaque pointer previously set by SDL_AppInit; must point to a `sopho::App` instance.
+ * @param event Pointer to the SDL event to deliver to the application.
+ * @return SDL_AppResult Result returned by the application's event handler.
+ */
 SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event)
 {
     auto* app = static_cast<sopho::App*>(appstate);
     return app->event(event);
 }
 
+/**
+ * @brief Shuts down the application and releases its instance.
+ *
+ * Invokes the application's quit handler with the provided result and destroys
+ * the stored application instance.
+ *
+ * @param appstate Pointer to the sopho::App instance previously stored by SDL_AppInit.
+ * @param result  Result code describing why the application is quitting.
+ */
 void SDL_AppQuit(void* appstate, SDL_AppResult result)
 {
     auto* app = static_cast<sopho::App*>(appstate);
