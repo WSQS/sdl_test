@@ -2,8 +2,8 @@
 // Created by sophomore on 11/12/25.
 //
 module;
-#include "SDL3/SDL_gpu.h"
 #include <memory>
+#include "SDL3/SDL_gpu.h"
 module sdl_wrapper;
 import :buffer;
 import :gpu;
