@@ -13,6 +13,7 @@ target_sources(sdl_wrapper
         sdl_wrapper.pipeline.ixx
         sdl_wrapper.gpu.ixx
         PRIVATE
+        sdl_wrapper.buffer.cpp
         sdl_callback_implement.cpp
 )
 
