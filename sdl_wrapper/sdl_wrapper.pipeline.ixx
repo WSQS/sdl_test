@@ -6,9 +6,9 @@ module;
 #include "SDL3/SDL_log.h"
 export module sdl_wrapper:pipeline;
 
-namespace sopho
+export namespace sopho
 {
-    export class PipelineWrapper
+     class PipelineWrapper
     {
         SDL_GPUGraphicsPipeline* m_graphics_pipeline{};
         SDL_GPUDevice* m_device{};

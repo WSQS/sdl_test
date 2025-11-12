@@ -5,11 +5,11 @@ module;
 #include <memory>
 #include "SDL3/SDL_gpu.h"
 export module sdl_wrapper:buffer;
+import :decl;
 
-namespace sopho
+export namespace sopho
 {
-    class GpuWrapper;
-    export class BufferWrapper
+     class BufferWrapper
     {
         std::shared_ptr<GpuWrapper> m_gpu{};
         SDL_GPUBuffer* m_vertex_buffer{};
