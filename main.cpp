@@ -71,12 +71,11 @@ void main()
     SDL_GPUVertexBufferDescription vertexBufferDesctiptions[1]{};
 
     /**
-     * @brief Initialize the application: create window, compile shaders, create GPU pipeline and resources, and
-     * initialize ImGui.
+     * @brief Initialize the application by creating the window, compiling shaders, creating the GPU pipeline and resources, and initializing ImGui.
      *
-     * @param argc Number of command-line arguments provided to the application.
-     * @param argv Command-line argument vector provided to the application.
-     * @return SDL_AppResult SDL_APP_CONTINUE to proceed with the main loop, SDL_APP_SUCCESS to request termination.
+     * Performs window creation and GPU device claim, compiles vertex and fragment GLSL to SPIR-V and creates GPU shader objects, configures and creates the graphics pipeline (vertex input, attributes, and color target/blend state), uploads initial vertex data to the vertex buffer, and initializes Dear ImGui (context, style, scaling, and SDL3/SDLGPU backends).
+     *
+     * @return SDL_AppResult `SDL_APP_CONTINUE` to enter the main loop, `SDL_APP_SUCCESS` to request immediate termination.
      */
     virtual SDL_AppResult init(int argc, char** argv) override
     {
@@ -221,13 +220,9 @@ void main()
     }
 
     /**
-     * @brief Advance the application by one frame: update ImGui, handle UI for vertex editing and live shader
-     * recompilation, record GPU commands to render the triangle and ImGui, and submit the GPU command buffer.
+     * @brief Advance the application by one frame: update UI state, handle vertex edits and live shader recompilation, and render.
      *
-     * Performs per-frame UI updates (including draggable vertex positions and a multiline shader editor), uploads
-     * vertex data when modified, recompiles and replaces the vertex shader and graphics pipeline on shader edits,
-     * acquires a GPU command buffer and the swapchain texture, executes a render pass that draws the triangle and ImGui
-     * draw lists, and submits the command buffer.
+     * Processes ImGui frames, applies interactive vertex edits (uploading vertex data when changed), recompiles and replaces the vertex shader and graphics pipeline on edits, acquires a GPU command buffer and swapchain texture, records a render pass that draws the triangle and ImGui draw lists, and submits the command buffer.
      *
      * @return SDL_AppResult SDL_APP_CONTINUE to continue the main loop.
      */
@@ -349,6 +344,12 @@ void main()
         return SDL_APP_CONTINUE;
     }
 
+    /**
+     * @brief Handle an SDL event by forwarding it to ImGui and handling window-close requests.
+     *
+     * @param event Pointer to the SDL event to process.
+     * @return SDL_AppResult `SDL_APP_SUCCESS` when a window close was requested, `SDL_APP_CONTINUE` otherwise.
+     */
     virtual SDL_AppResult event(SDL_Event* event) override
     {
         ImGui_ImplSDL3_ProcessEvent(event);
@@ -362,12 +363,13 @@ void main()
     }
 
     /**
-     * @brief Cleanly shuts down the application and releases GPU and UI resources.
+     * @brief Shut down the application and release GPU and UI resources.
      *
-     * Performs final cleanup: shuts down ImGui SDL/SDLGPU backends, destroys the ImGui context,
-     * releases the vertex buffer, shaders, and graphics pipeline, and destroys the SDL window.
+     * Shuts down the ImGui SDL3 and SDLGPU backends, destroys the ImGui context,
+     * releases the vertex and fragment GPU shaders and the graphics pipeline, and
+     * destroys the SDL window.
      *
-     * @param result The application's exit result code provided by the SDL app framework.
+     * @param result Application exit result code provided by the SDL app framework.
      */
     virtual void quit(SDL_AppResult result) override
     {
