@@ -6,6 +6,9 @@ on:
 jobs:
   clang-tidy-review:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
       - name: Checkout
@@ -21,14 +24,14 @@ jobs:
               libxkbcommon-dev wayland-protocols libwayland-dev \
               libdrm-dev mesa-common-dev mesa-utils
 
-      - name: Configure (CMake)
-        run: |
-          cmake -S ${{ github.workspace }} \
-              -B build \
-              -G Ninja \
-              -DCMAKE_CXX_COMPILER=clang++ \
-              -DCMAKE_C_COMPILER=clang \
-              -DCMAKE_BUILD_TYPE=Release \
+      - name: Configure CMake
+        run: >
+          cmake -S ${{ github.workspace }} 
+              -B build 
+              -G Ninja 
+              -DCMAKE_CXX_COMPILER=clang++ 
+              -DCMAKE_C_COMPILER=clang 
+              -DCMAKE_BUILD_TYPE=Release 
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
       - name: Run clang-tidy-review
