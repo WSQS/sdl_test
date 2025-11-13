@@ -16,7 +16,6 @@ namespace sopho
     }
     BufferWrapper::~BufferWrapper()
     {
-        // TODO: It's too late to release gpu buffer, gpu was released
         SDL_ReleaseGPUBuffer(m_gpu->data(), m_vertex_buffer);
         m_vertex_buffer = nullptr;
         if (m_transfer_buffer)
