@@ -4,7 +4,6 @@
 module;
 #include <memory>
 #include "SDL3/SDL_gpu.h"
-#include "SDL3/SDL_log.h"
 export module sdl_wrapper:pipeline;
 import :decl;
 export namespace sopho
