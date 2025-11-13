@@ -34,12 +34,10 @@ namespace sopho
     }
 
     /**
-     * @brief Uploads a block of data into the wrapped GPU vertex buffer at the specified offset.
+     * @brief Uploads a block of data into the wrapped GPU vertex buffer at the specified byte offset.
      *
-     * If the internal transfer (staging) buffer is smaller than `p_size`, it will be reallocated
-     * to accommodate the upload. The function copies `p_size` bytes from `p_data` into the transfer
-     * buffer and enqueues a GPU copy pass that transfers those bytes into the vertex buffer at
-     * `p_offset`.
+     * If the internal staging transfer buffer is smaller than p_size it is reallocated to fit.
+     * Copies p_size bytes from p_data into the transfer buffer and enqueues a GPU copy pass to transfer them into the vertex buffer at p_offset.
      *
      * @param p_data Pointer to the source data to upload.
      * @param p_size Size in bytes of the data to upload.

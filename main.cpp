@@ -226,14 +226,11 @@ void main()
     }
 
     /**
-     * @brief Advance the application by one frame: update UI state, handle vertex edits and live shader recompilation,
-     * and render.
+     * @brief Advance the application by one frame: update UI, apply vertex edits and live shader recompilation, render, and submit GPU work.
      *
-     * Processes ImGui frames, applies interactive vertex edits (uploading vertex data when changed), recompiles and
-     * replaces the vertex shader and graphics pipeline on edits, acquires a GPU command buffer and swapchain texture,
-     * records a render pass that draws the triangle and ImGui draw lists, and submits the command buffer.
+     * Processes ImGui frames, uploads vertex data when edited, recompiles and replaces the vertex shader and graphics pipeline on shader edits, records a render pass that draws the triangle and ImGui draw lists, and submits the GPU command buffer for presentation.
      *
-     * @return SDL_AppResult SDL_APP_CONTINUE to continue the main loop.
+     * @return `SDL_APP_CONTINUE` to continue the main loop.
      */
     virtual SDL_AppResult iterate() override
     {
