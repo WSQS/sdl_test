@@ -11,20 +11,6 @@ import :gpu;
 namespace sopho
 {
     /**
-     * @brief Construct a BufferWrapper that allocates and manages a GPU vertex buffer.
-     *
-     * Initializes the wrapper with the given GPU context and creates a GPU vertex buffer
-     * using the provided creation parameters, storing the associated GPU wrapper.
-     *
-     * @param p_gpu Shared pointer to the associated GpuWrapper; must be non-null and remain valid
-     *              for the lifetime of this BufferWrapper.
-     * @param p_create_info Parameters that describe the GPU buffer to create.
-     */
-    BufferWrapper::BufferWrapper(std::shared_ptr<GpuWrapper> p_gpu, const SDL_GPUBufferCreateInfo& p_create_info) :
-        m_gpu(p_gpu), m_vertex_buffer(SDL_CreateGPUBuffer(m_gpu->data(), &p_create_info))
-    {
-    }
-    /**
      * @brief Releases GPU resources owned by this BufferWrapper.
      *
      * Releases the GPU vertex buffer and, if present, the transfer (staging) buffer,
@@ -33,9 +19,9 @@ namespace sopho
      * @note If the associated GPU has already been destroyed, releasing these resources
      *       may have no effect or may be too late to perform a proper cleanup.
      */
+
     BufferWrapper::~BufferWrapper()
     {
-        // TODO: It's too late to release gpu buffer, gpu was released
         SDL_ReleaseGPUBuffer(m_gpu->data(), m_vertex_buffer);
         m_vertex_buffer = nullptr;
         if (m_transfer_buffer)
