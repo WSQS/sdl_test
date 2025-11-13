@@ -8,6 +8,10 @@ set(FETCHCONTENT_QUIET OFF CACHE BOOL "" FORCE)
 set(CMAKE_DOWNLOAD_NO_PROGRESS OFF CACHE BOOL "" FORCE)
 set(CMAKE_MESSAGE_LOG_LEVEL STATUS CACHE STRING "" FORCE)
 
+# In headless or minimal CI environments we may not have X11/Wayland dev packages.
+# Tell SDL this is acceptable so its own CMake logic does not hard-error.
+set(SDL_UNIX_CONSOLE_BUILD ON CACHE BOOL "Allow SDL to build without X11/Wayland" FORCE)
+
 FetchContent_Declare(
         SDL3
         GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
@@ -96,7 +100,6 @@ add_subdirectory(sdl_wrapper)
 
 add_executable(SDL_TEST main.cpp)
 target_link_libraries(SDL_TEST PRIVATE shaderc imgui sdl_wrapper)
-
 
 include(GNUInstallDirs)
 install(TARGETS SDL_TEST
