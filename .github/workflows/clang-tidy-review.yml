@@ -25,13 +25,13 @@ jobs:
               libdrm-dev mesa-common-dev mesa-utils
 
       - name: Configure CMake
-        run: >
-          cmake -S ${{ github.workspace }} 
-              -B build 
-              -G Ninja 
-              -DCMAKE_CXX_COMPILER=clang++ 
-              -DCMAKE_C_COMPILER=clang 
-              -DCMAKE_BUILD_TYPE=Release 
+        run: |
+          cmake -S ${{ github.workspace }} \
+              -B build \
+              -G Ninja \
+              -DCMAKE_CXX_COMPILER=clang++ \
+              -DCMAKE_C_COMPILER=clang \
+              -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
       - name: Run clang-tidy-review
