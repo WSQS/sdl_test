@@ -25,7 +25,7 @@ class UserApp : public sopho::App
 {
     std::shared_ptr<sopho::GpuWrapper> gpu_wrapper{std::make_shared<sopho::GpuWrapper>()};
     sopho::BufferWrapper vertex_buffer{gpu_wrapper->create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, sizeof(vertices))};
-    std::optional<sopho::PipelineWrapper> pipeline_wrapper{gpu_wrapper->create_pipeline()};
+    sopho::PipelineWrapper pipeline_wrapper{gpu_wrapper->create_pipeline()};
 
     SDL_Window* window{};
     SDL_GPUGraphicsPipeline* graphicsPipeline{};
