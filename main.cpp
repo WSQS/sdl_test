@@ -9,6 +9,8 @@
 #include "misc/cpp/imgui_stdlib.h"
 
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_log.h>
+#include <SDL3/SDL_gpu.h>
 
 import sdl_wrapper;
 
@@ -71,6 +73,29 @@ void main()
     SDL_GPUVertexBufferDescription vertexBufferDesctiptions[1]{};
 
     /**
+     * @brief Get the SDL_GPUDevice from gpu_wrapper with validation.
+     *
+     * Logs an error and returns nullptr if the device is not available.
+     */
+    SDL_GPUDevice* get_device_or_log() const noexcept
+    {
+        if (!gpu_wrapper)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                         "GpuWrapper is null: GPU device is not available");
+            return nullptr;
+        }
+
+        SDL_GPUDevice* device = gpu_wrapper->data();
+        if (device == nullptr)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                         "GPU device creation failed (gpu_wrapper->data() returned null)");
+        }
+        return device;
+    }
+
+    /**
      * @brief Initialize the application by creating the window, compiling shaders, creating the GPU pipeline and
      * resources, and initializing ImGui.
      *
@@ -84,18 +109,41 @@ void main()
      */
     virtual SDL_AppResult init(int argc, char** argv) override
     {
+        (void)argc;
+        (void)argv;
+
         // create a window
         window = SDL_CreateWindow("Hello, Triangle!", 960, 540, SDL_WINDOW_RESIZABLE);
+        if (!window)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                         "Failed to create SDL window: %s", SDL_GetError());
+            return SDL_APP_FAILURE;
+        }
 
-        SDL_ClaimWindowForGPUDevice(gpu_wrapper->data(), window);
+        SDL_GPUDevice* device = get_device_or_log();
+        if (device == nullptr)
+        {
+            // GPU device creation failed; cannot proceed.
+            return SDL_APP_FAILURE;
+        }
+
+        if (SDL_ClaimWindowForGPUDevice(device, window) == SDL_FALSE)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                         "Failed to claim window for GPU device: %s", SDL_GetError());
+            return SDL_APP_FAILURE;
+        }
 
         options.SetTargetEnvironment(shaderc_target_env_vulkan, 0);
         auto result = compiler.CompileGlslToSpv(vertex_source, shaderc_glsl_vertex_shader, "test.glsl", options);
 
         if (result.GetCompilationStatus() != shaderc_compilation_status_success)
         {
-            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "[shaderc] compile error in test.glsl: %s",
-                         result.GetErrorMessage().data());
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER,
+                         "[shaderc] compile error in test.glsl: %s",
+                         result.GetErrorMessage().c_str());
+            return SDL_APP_FAILURE;
         }
 
         // load the vertex shader code
@@ -103,8 +151,8 @@ void main()
 
         // create the vertex shader
         SDL_GPUShaderCreateInfo vertexInfo{};
-        vertexInfo.code = (Uint8*)vertexCode.data();
-        vertexInfo.code_size = vertexCode.size() * 4;
+        vertexInfo.code = reinterpret_cast<Uint8*>(vertexCode.data());
+        vertexInfo.code_size = vertexCode.size() * sizeof(uint32_t);
         vertexInfo.entrypoint = "main";
         vertexInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
         vertexInfo.stage = SDL_GPU_SHADERSTAGE_VERTEX;
@@ -113,14 +161,22 @@ void main()
         vertexInfo.num_storage_textures = 0;
         vertexInfo.num_uniform_buffers = 0;
 
-        vertexShader = SDL_CreateGPUShader(gpu_wrapper->data(), &vertexInfo);
+        vertexShader = SDL_CreateGPUShader(device, &vertexInfo);
+        if (!vertexShader)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER,
+                         "Failed to create vertex shader: %s", SDL_GetError());
+            return SDL_APP_FAILURE;
+        }
 
         result = compiler.CompileGlslToSpv(fragment_source, shaderc_glsl_fragment_shader, "test.frag", options);
 
         if (result.GetCompilationStatus() != shaderc_compilation_status_success)
         {
-            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "[shaderc] compile error in test.frag: %s",
-                         result.GetErrorMessage().data());
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER,
+                         "[shaderc] compile error in test.frag: %s",
+                         result.GetErrorMessage().c_str());
+            return SDL_APP_FAILURE;
         }
 
         // load the fragment shader code
@@ -128,8 +184,8 @@ void main()
 
         // create the fragment shader
         SDL_GPUShaderCreateInfo fragmentInfo{};
-        fragmentInfo.code = (Uint8*)fragmentCode.data();
-        fragmentInfo.code_size = fragmentCode.size() * 4;
+        fragmentInfo.code = reinterpret_cast<Uint8*>(fragmentCode.data());
+        fragmentInfo.code_size = fragmentCode.size() * sizeof(uint32_t);
         fragmentInfo.entrypoint = "main";
         fragmentInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
         fragmentInfo.stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
@@ -138,7 +194,13 @@ void main()
         fragmentInfo.num_storage_textures = 0;
         fragmentInfo.num_uniform_buffers = 0;
 
-        fragmentShader = SDL_CreateGPUShader(gpu_wrapper->data(), &fragmentInfo);
+        fragmentShader = SDL_CreateGPUShader(device, &fragmentInfo);
+        if (!fragmentShader)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER,
+                         "Failed to create fragment shader: %s", SDL_GetError());
+            return SDL_APP_FAILURE;
+        }
 
         // create the graphics pipeline
         pipelineInfo.vertex_shader = vertexShader;
@@ -179,14 +241,21 @@ void main()
         colorTargetDescriptions[0].blend_state.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
         colorTargetDescriptions[0].blend_state.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
         colorTargetDescriptions[0].blend_state.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-        colorTargetDescriptions[0].format = SDL_GetGPUSwapchainTextureFormat(gpu_wrapper->data(), window);
+        colorTargetDescriptions[0].format = SDL_GetGPUSwapchainTextureFormat(device, window);
 
         pipelineInfo.target_info.num_color_targets = 1;
         pipelineInfo.target_info.color_target_descriptions = colorTargetDescriptions;
 
         // create the pipeline
-        graphicsPipeline = SDL_CreateGPUGraphicsPipeline(gpu_wrapper->data(), &pipelineInfo);
+        graphicsPipeline = SDL_CreateGPUGraphicsPipeline(device, &pipelineInfo);
+        if (!graphicsPipeline)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER,
+                         "Failed to create graphics pipeline: %s", SDL_GetError());
+            return SDL_APP_FAILURE;
+        }
 
+        // upload initial vertex data
         vertex_buffer.upload(&vertices, sizeof(vertices), 0);
 
         // Setup Dear ImGui context
@@ -199,23 +268,19 @@ void main()
 
         // Setup Dear ImGui style
         ImGui::StyleColorsDark();
-        // ImGui::StyleColorsLight();
 
         float main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+
         // Setup scaling
         ImGuiStyle& style = ImGui::GetStyle();
         style.ScaleAllSizes(main_scale);
-        // Bake a fixed style scale. (until we have a solution for dynamic style
-        // scaling, changing this requires resetting Style + calling this again)
         style.FontScaleDpi = main_scale;
-        // Set initial font scale. (using io.ConfigDpiScaleFonts=true makes this
-        // unnecessary. We leave both here for documentation purpose)
 
         // Setup Platform/Renderer backends
         ImGui_ImplSDL3_InitForSDLGPU(window);
         ImGui_ImplSDLGPU3_InitInfo init_info = {};
-        init_info.Device = gpu_wrapper->data();
-        init_info.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(gpu_wrapper->data(), window);
+        init_info.Device = device;
+        init_info.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(device, window);
         init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1; // Only used in multi-viewports mode.
         init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR; // Only used in multi-viewports mode.
         init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
@@ -236,6 +301,13 @@ void main()
      */
     virtual SDL_AppResult iterate() override
     {
+        SDL_GPUDevice* device = get_device_or_log();
+        if (!device)
+        {
+            // Fatal GPU state; request exit.
+            return SDL_APP_FAILURE;
+        }
+
         ImGui_ImplSDLGPU3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
@@ -266,8 +338,13 @@ void main()
 
                 if (result.GetCompilationStatus() != shaderc_compilation_status_success)
                 {
-                    std::cerr << "[shaderc] compile error in " << "test.glsl" << ":\n"
+                    std::cerr << "[shaderc] compile error in "
+                              << "test.glsl"
+                              << ":\n"
                               << result.GetErrorMessage() << std::endl;
+                    SDL_LogError(SDL_LOG_CATEGORY_RENDER,
+                                 "[shaderc] compile error in test.glsl: %s",
+                                 result.GetErrorMessage().c_str());
                 }
                 else
                 {
@@ -276,8 +353,8 @@ void main()
 
                     // create the vertex shader
                     SDL_GPUShaderCreateInfo vertexInfo{};
-                    vertexInfo.code = (Uint8*)vertexCode.data();
-                    vertexInfo.code_size = vertexCode.size() * 4;
+                    vertexInfo.code = reinterpret_cast<Uint8*>(vertexCode.data());
+                    vertexInfo.code_size = vertexCode.size() * sizeof(uint32_t);
                     vertexInfo.entrypoint = "main";
                     vertexInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
                     vertexInfo.stage = SDL_GPU_SHADERSTAGE_VERTEX;
@@ -286,13 +363,24 @@ void main()
                     vertexInfo.num_storage_textures = 0;
                     vertexInfo.num_uniform_buffers = 0;
 
-
-                    SDL_ReleaseGPUShader(gpu_wrapper->data(), vertexShader);
-                    vertexShader = SDL_CreateGPUShader(gpu_wrapper->data(), &vertexInfo);
-
-                    pipelineInfo.vertex_shader = vertexShader;
-                    SDL_ReleaseGPUGraphicsPipeline(gpu_wrapper->data(), graphicsPipeline);
-                    graphicsPipeline = SDL_CreateGPUGraphicsPipeline(gpu_wrapper->data(), &pipelineInfo);
+                    SDL_ReleaseGPUShader(device, vertexShader);
+                    vertexShader = SDL_CreateGPUShader(device, &vertexInfo);
+                    if (!vertexShader)
+                    {
+                        SDL_LogError(SDL_LOG_CATEGORY_RENDER,
+                                     "Failed to recreate vertex shader: %s", SDL_GetError());
+                    }
+                    else
+                    {
+                        pipelineInfo.vertex_shader = vertexShader;
+                        SDL_ReleaseGPUGraphicsPipeline(device, graphicsPipeline);
+                        graphicsPipeline = SDL_CreateGPUGraphicsPipeline(device, &pipelineInfo);
+                        if (!graphicsPipeline)
+                        {
+                            SDL_LogError(SDL_LOG_CATEGORY_RENDER,
+                                         "Failed to recreate graphics pipeline: %s", SDL_GetError());
+                        }
+                    }
                 }
             }
 
@@ -303,17 +391,22 @@ void main()
         ImDrawData* draw_data = ImGui::GetDrawData();
 
         // acquire the command buffer
-        SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(gpu_wrapper->data());
+        SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(device);
+        if (!commandBuffer)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_GPU,
+                         "Failed to acquire GPU command buffer: %s", SDL_GetError());
+            return SDL_APP_FAILURE;
+        }
 
         // get the swapchain texture
         SDL_GPUTexture* swapchainTexture;
         Uint32 width, height;
-        SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, window, &swapchainTexture, &width, &height);
-
-        // end the frame early if a swapchain texture is not available
-        if (swapchainTexture == NULL)
+        if (SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, window, &swapchainTexture, &width, &height) ==
+                SDL_FALSE ||
+            swapchainTexture == nullptr)
         {
-            // you must always submit the command buffer
+            // no swapchain texture available; submit and continue
             SDL_SubmitGPUCommandBuffer(commandBuffer);
             return SDL_APP_CONTINUE;
         }
@@ -328,7 +421,7 @@ void main()
         colorTargetInfo.texture = swapchainTexture;
 
         // begin a render pass
-        SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, NULL);
+        SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, nullptr);
 
         // draw calls go here
         SDL_BindGPUGraphicsPipeline(renderPass, graphicsPipeline);
@@ -343,6 +436,7 @@ void main()
         SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
 
         ImGui_ImplSDLGPU3_RenderDrawData(draw_data, commandBuffer, renderPass);
+
         // end the render pass
         SDL_EndGPURenderPass(renderPass);
 
@@ -381,21 +475,43 @@ void main()
      */
     virtual void quit(SDL_AppResult result) override
     {
+        (void)result;
+
+        SDL_GPUDevice* device = get_device_or_log();
+
         ImGui_ImplSDL3_Shutdown();
         ImGui_ImplSDLGPU3_Shutdown();
         ImGui::DestroyContext();
 
-        // Release the shader
-        SDL_ReleaseGPUShader(gpu_wrapper->data(), vertexShader);
-        SDL_ReleaseGPUShader(gpu_wrapper->data(), fragmentShader);
+        if (device)
+        {
+            if (vertexShader)
+            {
+                SDL_ReleaseGPUShader(device, vertexShader);
+                vertexShader = nullptr;
+            }
+            if (fragmentShader)
+            {
+                SDL_ReleaseGPUShader(device, fragmentShader);
+                fragmentShader = nullptr;
+            }
+            if (graphicsPipeline)
+            {
+                SDL_ReleaseGPUGraphicsPipeline(device, graphicsPipeline);
+                graphicsPipeline = nullptr;
+            }
 
-        // release the pipeline
-        SDL_ReleaseGPUGraphicsPipeline(gpu_wrapper->data(), graphicsPipeline);
+            if (window)
+            {
+                SDL_ReleaseWindowFromGPUDevice(device, window);
+            }
+        }
 
-        SDL_ReleaseWindowFromGPUDevice(gpu_wrapper->data(), window);
-
-        // destroy the window
-        SDL_DestroyWindow(window);
+        if (window)
+        {
+            SDL_DestroyWindow(window);
+            window = nullptr;
+        }
     }
 };
 
