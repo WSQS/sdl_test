@@ -46,7 +46,6 @@ namespace sopho
         m_pipeline_info.target_info.num_color_targets = m_color_target_description.size();
 
         m_modified = true;
-
     }
 
     /**
