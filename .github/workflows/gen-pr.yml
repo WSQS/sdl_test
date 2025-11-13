@@ -1,0 +1,25 @@
+name: Generate PR with AI
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue-number:
+        description: "Issue number to implement"
+        required: true
+        type: number
+
+jobs:
+  gen-pr:
+    runs-on: ubuntu-latest
+
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate PR from issue using OpenRouter
+        uses: WillBooster/gen-pr@v4.1.4
+        with:
+          issue-number: ${{ inputs.issue-number }}
