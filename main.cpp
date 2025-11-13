@@ -361,6 +361,8 @@ void main()
         // release the pipeline
         SDL_ReleaseGPUGraphicsPipeline(gpu_wrapper->data(), graphicsPipeline);
 
+        gpu_wrapper.reset();
+
         // destroy the window
         SDL_DestroyWindow(window);
     }
