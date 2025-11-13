@@ -10,11 +10,12 @@ import :pipeline;
 namespace sopho
 {
     /**
- * @brief Initializes the PipelineWrapper with the given GPU device wrapper.
- *
- * @param p_device Shared pointer to a GpuWrapper representing the target GPU device; the wrapper retains this reference for its lifetime.
- */
-PipelineWrapper::PipelineWrapper(std::shared_ptr<GpuWrapper> p_device) : m_device(p_device) {}
+     * @brief Initializes the PipelineWrapper with the given GPU device wrapper.
+     *
+     * @param p_device Shared pointer to a GpuWrapper representing the target GPU device; the wrapper retains this
+     * reference for its lifetime.
+     */
+    PipelineWrapper::PipelineWrapper(std::shared_ptr<GpuWrapper> p_device) : m_device(p_device) {}
     /**
      * @brief Releases any GPU graphics pipeline owned by this wrapper.
      *
