@@ -383,6 +383,8 @@ void main()
         // release the pipeline
         SDL_ReleaseGPUGraphicsPipeline(gpu_wrapper->data(), graphicsPipeline);
 
+        SDL_ReleaseWindowFromGPUDevice(gpu_wrapper->data(), window);
+
         // destroy the window
         SDL_DestroyWindow(window);
     }
