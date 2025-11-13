@@ -8,5 +8,5 @@ coding-tool: aider
 aider-extra-args: "--model openrouter/openrouter/polaris-alpha"
 verbose: true
 
-# 例如让生成完代码后跑一个测试命令（按你的项目改）
+# Run build tests after code generation
 test-command: "cmake -S . -B build"
