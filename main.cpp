@@ -9,8 +9,8 @@
 #include "misc/cpp/imgui_stdlib.h"
 
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_log.h>
 #include <SDL3/SDL_gpu.h>
+#include <SDL3/SDL_log.h>
 
 import sdl_wrapper;
 
@@ -81,8 +81,7 @@ void main()
     {
         if (!gpu_wrapper)
         {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                         "GpuWrapper is null: GPU device is not available");
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "GpuWrapper is null: GPU device is not available");
             return nullptr;
         }
 
@@ -116,8 +115,7 @@ void main()
         window = SDL_CreateWindow("Hello, Triangle!", 960, 540, SDL_WINDOW_RESIZABLE);
         if (!window)
         {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                         "Failed to create SDL window: %s", SDL_GetError());
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create SDL window: %s", SDL_GetError());
             return SDL_APP_FAILURE;
         }
 
@@ -130,8 +128,7 @@ void main()
 
         if (SDL_ClaimWindowForGPUDevice(device, window) == SDL_FALSE)
         {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-                         "Failed to claim window for GPU device: %s", SDL_GetError());
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to claim window for GPU device: %s", SDL_GetError());
             return SDL_APP_FAILURE;
         }
 
@@ -140,8 +137,7 @@ void main()
 
         if (result.GetCompilationStatus() != shaderc_compilation_status_success)
         {
-            SDL_LogError(SDL_LOG_CATEGORY_RENDER,
-                         "[shaderc] compile error in test.glsl: %s",
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "[shaderc] compile error in test.glsl: %s",
                          result.GetErrorMessage().c_str());
             return SDL_APP_FAILURE;
         }
@@ -164,8 +160,7 @@ void main()
         vertexShader = SDL_CreateGPUShader(device, &vertexInfo);
         if (!vertexShader)
         {
-            SDL_LogError(SDL_LOG_CATEGORY_RENDER,
-                         "Failed to create vertex shader: %s", SDL_GetError());
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to create vertex shader: %s", SDL_GetError());
             return SDL_APP_FAILURE;
         }
 
@@ -173,8 +168,7 @@ void main()
 
         if (result.GetCompilationStatus() != shaderc_compilation_status_success)
         {
-            SDL_LogError(SDL_LOG_CATEGORY_RENDER,
-                         "[shaderc] compile error in test.frag: %s",
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "[shaderc] compile error in test.frag: %s",
                          result.GetErrorMessage().c_str());
             return SDL_APP_FAILURE;
         }
@@ -197,8 +191,7 @@ void main()
         fragmentShader = SDL_CreateGPUShader(device, &fragmentInfo);
         if (!fragmentShader)
         {
-            SDL_LogError(SDL_LOG_CATEGORY_RENDER,
-                         "Failed to create fragment shader: %s", SDL_GetError());
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to create fragment shader: %s", SDL_GetError());
             return SDL_APP_FAILURE;
         }
 
@@ -250,8 +243,7 @@ void main()
         graphicsPipeline = SDL_CreateGPUGraphicsPipeline(device, &pipelineInfo);
         if (!graphicsPipeline)
         {
-            SDL_LogError(SDL_LOG_CATEGORY_RENDER,
-                         "Failed to create graphics pipeline: %s", SDL_GetError());
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to create graphics pipeline: %s", SDL_GetError());
             return SDL_APP_FAILURE;
         }
 
@@ -342,8 +334,7 @@ void main()
                               << "test.glsl"
                               << ":\n"
                               << result.GetErrorMessage() << std::endl;
-                    SDL_LogError(SDL_LOG_CATEGORY_RENDER,
-                                 "[shaderc] compile error in test.glsl: %s",
+                    SDL_LogError(SDL_LOG_CATEGORY_RENDER, "[shaderc] compile error in test.glsl: %s",
                                  result.GetErrorMessage().c_str());
                 }
                 else
@@ -367,8 +358,7 @@ void main()
                     vertexShader = SDL_CreateGPUShader(device, &vertexInfo);
                     if (!vertexShader)
                     {
-                        SDL_LogError(SDL_LOG_CATEGORY_RENDER,
-                                     "Failed to recreate vertex shader: %s", SDL_GetError());
+                        SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to recreate vertex shader: %s", SDL_GetError());
                     }
                     else
                     {
@@ -377,8 +367,8 @@ void main()
                         graphicsPipeline = SDL_CreateGPUGraphicsPipeline(device, &pipelineInfo);
                         if (!graphicsPipeline)
                         {
-                            SDL_LogError(SDL_LOG_CATEGORY_RENDER,
-                                         "Failed to recreate graphics pipeline: %s", SDL_GetError());
+                            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to recreate graphics pipeline: %s",
+                                         SDL_GetError());
                         }
                     }
                 }
@@ -394,8 +384,7 @@ void main()
         SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(device);
         if (!commandBuffer)
         {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU,
-                         "Failed to acquire GPU command buffer: %s", SDL_GetError());
+            SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to acquire GPU command buffer: %s", SDL_GetError());
             return SDL_APP_FAILURE;
         }
 

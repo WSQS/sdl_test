@@ -230,7 +230,7 @@
 /* SDL internal assertion support */
 /* #undef SDL_DEFAULT_ASSERT_LEVEL_CONFIGURED */
 #ifdef SDL_DEFAULT_ASSERT_LEVEL_CONFIGURED
-#define SDL_DEFAULT_ASSERT_LEVEL 
+#define SDL_DEFAULT_ASSERT_LEVEL
 #endif
 
 /* Allow disabling of major subsystems */
@@ -507,9 +507,9 @@
 /* #undef SDL_VIDEO_VITA_PVR_OGL */
 
 /* Libdecor version info */
-#define SDL_LIBDECOR_VERSION_MAJOR 
-#define SDL_LIBDECOR_VERSION_MINOR 
-#define SDL_LIBDECOR_VERSION_PATCH 
+#define SDL_LIBDECOR_VERSION_MAJOR
+#define SDL_LIBDECOR_VERSION_MINOR
+#define SDL_LIBDECOR_VERSION_PATCH
 
 #if !defined(HAVE_STDINT_H) && !defined(_STDINT_H_)
 /* Most everything except Visual Studio 2008 and earlier has stdint.h now */
