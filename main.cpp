@@ -9,7 +9,8 @@
 #include "misc/cpp/imgui_stdlib.h"
 
 #include <SDL3/SDL.h>
-
+#include "SDL3/SDL_log.h"
+#include <SDL3/SDL_gpu.h>
 import sdl_wrapper;
 
 // the vertex input layout

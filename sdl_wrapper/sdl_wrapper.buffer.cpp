@@ -4,6 +4,7 @@
 module;
 #include <memory>
 #include "SDL3/SDL_gpu.h"
+#include "SDL3/SDL_stdinc.h"
 module sdl_wrapper;
 import :buffer;
 import :gpu;
