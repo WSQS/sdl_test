@@ -5,6 +5,7 @@ module;
 #include <memory>
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_log.h"
+#include "shaderc/shaderc.hpp"
 export module sdl_wrapper:gpu;
 import :buffer;
 import :pipeline;
@@ -13,6 +14,8 @@ namespace sopho
     export class GpuWrapper : public std::enable_shared_from_this<GpuWrapper>
     {
         SDL_GPUDevice* m_device{};
+
+        SDL_Window* m_window{};
 
     public:
         GpuWrapper() : m_device(SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, nullptr))
@@ -42,9 +45,39 @@ namespace sopho
             return result;
         }
 
-        auto create_pipeline()
+        auto create_pipeline() { return PipelineWrapper{shared_from_this()}; }
+
+        auto create_shader(const std::vector<uint8_t>& p_shader, SDL_GPUShaderStage p_stage)
         {
-            return PipelineWrapper{shared_from_this()};
+            SDL_GPUShaderCreateInfo vertexInfo{};
+            vertexInfo.code = p_shader.data();
+            vertexInfo.code_size = p_shader.size() * 4;
+            vertexInfo.entrypoint = "main";
+            vertexInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
+            vertexInfo.stage = p_stage;
+            vertexInfo.num_samplers = 0;
+            vertexInfo.num_storage_buffers = 0;
+            vertexInfo.num_storage_textures = 0;
+            vertexInfo.num_uniform_buffers = 0;
+            return SDL_CreateGPUShader(m_device, &vertexInfo);
+        }
+
+        auto release_shader(SDL_GPUShader* shader)
+        {
+            if (shader)
+            {
+                SDL_ReleaseGPUShader(m_device, shader);
+            }
+        }
+
+        auto get_texture_formate()
+        {
+            return SDL_GetGPUSwapchainTextureFormat(m_device, m_window);
+        }
+
+        auto set_window(SDL_Window* p_window)
+        {
+            m_window = p_window;
         }
     };
 } // namespace sopho

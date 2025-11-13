@@ -25,7 +25,7 @@ class UserApp : public sopho::App
 {
     std::shared_ptr<sopho::GpuWrapper> gpu_wrapper{std::make_shared<sopho::GpuWrapper>()};
     sopho::BufferWrapper vertex_buffer{gpu_wrapper->create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, sizeof(vertices))};
-    sopho::PipelineWrapper pipeline_wrapper{gpu_wrapper->create_pipeline()};
+    std::optional<sopho::PipelineWrapper> pipeline_wrapper{std::nullopt};
 
     SDL_Window* window{};
     SDL_GPUGraphicsPipeline* graphicsPipeline{};
@@ -87,8 +87,10 @@ void main()
     {
         // create a window
         window = SDL_CreateWindow("Hello, Triangle!", 960, 540, SDL_WINDOW_RESIZABLE);
+        gpu_wrapper->set_window(window);
 
         SDL_ClaimWindowForGPUDevice(gpu_wrapper->data(), window);
+        pipeline_wrapper.emplace(gpu_wrapper);
 
         options.SetTargetEnvironment(shaderc_target_env_vulkan, 0);
         auto result = compiler.CompileGlslToSpv(vertex_source, shaderc_glsl_vertex_shader, "test.glsl", options);
@@ -148,17 +150,17 @@ void main()
 
         // describe the vertex buffers
         vertexBufferDesctiptions[0].slot = 0;
+        vertexBufferDesctiptions[0].pitch = sizeof(Vertex);
         vertexBufferDesctiptions[0].input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
         vertexBufferDesctiptions[0].instance_step_rate = 0;
-        vertexBufferDesctiptions[0].pitch = sizeof(Vertex);
 
         pipelineInfo.vertex_input_state.num_vertex_buffers = 1;
         pipelineInfo.vertex_input_state.vertex_buffer_descriptions = vertexBufferDesctiptions;
 
         // describe the vertex attribute
         // a_position
-        vertexAttributes[0].buffer_slot = 0;
         vertexAttributes[0].location = 0;
+        vertexAttributes[0].buffer_slot = 0;
         vertexAttributes[0].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
         vertexAttributes[0].offset = 0;
 
@@ -173,13 +175,13 @@ void main()
 
         // describe the color target
         colorTargetDescriptions[0] = {};
-        colorTargetDescriptions[0].blend_state.enable_blend = true;
-        colorTargetDescriptions[0].blend_state.color_blend_op = SDL_GPU_BLENDOP_ADD;
-        colorTargetDescriptions[0].blend_state.alpha_blend_op = SDL_GPU_BLENDOP_ADD;
         colorTargetDescriptions[0].blend_state.src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
         colorTargetDescriptions[0].blend_state.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+        colorTargetDescriptions[0].blend_state.color_blend_op = SDL_GPU_BLENDOP_ADD;
         colorTargetDescriptions[0].blend_state.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
         colorTargetDescriptions[0].blend_state.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+        colorTargetDescriptions[0].blend_state.alpha_blend_op = SDL_GPU_BLENDOP_ADD;
+        colorTargetDescriptions[0].blend_state.enable_blend = true;
         colorTargetDescriptions[0].format = SDL_GetGPUSwapchainTextureFormat(gpu_wrapper->data(), window);
 
         pipelineInfo.target_info.num_color_targets = 1;
@@ -187,8 +189,12 @@ void main()
 
         // create the pipeline
         graphicsPipeline = SDL_CreateGPUGraphicsPipeline(gpu_wrapper->data(), &pipelineInfo);
+        pipeline_wrapper->set_vertex_shader(vertex_source);
+        pipeline_wrapper->set_fragment_shader(fragment_source);
+        pipeline_wrapper->submit();
 
         vertex_buffer.upload(&vertices, sizeof(vertices), 0);
+
 
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
@@ -262,39 +268,7 @@ void main()
                        std::min(ImGui::GetTextLineHeight() * (line_count + 3), ImGui::GetContentRegionAvail().y));
             if (ImGui::InputTextMultiline("code editor", &vertex_source, size, ImGuiInputTextFlags_AllowTabInput))
             {
-                auto result =
-                    compiler.CompileGlslToSpv(vertex_source, shaderc_glsl_vertex_shader, "test.glsl", options);
-
-                if (result.GetCompilationStatus() != shaderc_compilation_status_success)
-                {
-                    std::cerr << "[shaderc] compile error in " << "test.glsl" << ":\n"
-                              << result.GetErrorMessage() << std::endl;
-                }
-                else
-                {
-                    // load the vertex shader code
-                    std::vector<uint32_t> vertexCode{result.cbegin(), result.cend()};
-
-                    // create the vertex shader
-                    SDL_GPUShaderCreateInfo vertexInfo{};
-                    vertexInfo.code = (Uint8*)vertexCode.data();
-                    vertexInfo.code_size = vertexCode.size() * 4;
-                    vertexInfo.entrypoint = "main";
-                    vertexInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
-                    vertexInfo.stage = SDL_GPU_SHADERSTAGE_VERTEX;
-                    vertexInfo.num_samplers = 0;
-                    vertexInfo.num_storage_buffers = 0;
-                    vertexInfo.num_storage_textures = 0;
-                    vertexInfo.num_uniform_buffers = 0;
-
-
-                    SDL_ReleaseGPUShader(gpu_wrapper->data(), vertexShader);
-                    vertexShader = SDL_CreateGPUShader(gpu_wrapper->data(), &vertexInfo);
-
-                    pipelineInfo.vertex_shader = vertexShader;
-                    SDL_ReleaseGPUGraphicsPipeline(gpu_wrapper->data(), graphicsPipeline);
-                    graphicsPipeline = SDL_CreateGPUGraphicsPipeline(gpu_wrapper->data(), &pipelineInfo);
-                }
+                pipeline_wrapper->set_vertex_shader(vertex_source);
             }
 
             ImGui::End();
@@ -302,6 +276,8 @@ void main()
 
         ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();
+
+        pipeline_wrapper->submit();
 
         // acquire the command buffer
         SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(gpu_wrapper->data());
@@ -332,7 +308,7 @@ void main()
         SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, NULL);
 
         // draw calls go here
-        SDL_BindGPUGraphicsPipeline(renderPass, graphicsPipeline);
+        SDL_BindGPUGraphicsPipeline(renderPass, pipeline_wrapper->data());
 
         // bind the vertex buffer
         SDL_GPUBufferBinding bufferBindings[1];
@@ -385,13 +361,6 @@ void main()
         ImGui_ImplSDL3_Shutdown();
         ImGui_ImplSDLGPU3_Shutdown();
         ImGui::DestroyContext();
-
-        // Release the shader
-        SDL_ReleaseGPUShader(gpu_wrapper->data(), vertexShader);
-        SDL_ReleaseGPUShader(gpu_wrapper->data(), fragmentShader);
-
-        // release the pipeline
-        SDL_ReleaseGPUGraphicsPipeline(gpu_wrapper->data(), graphicsPipeline);
 
         SDL_ReleaseWindowFromGPUDevice(gpu_wrapper->data(), window);
 

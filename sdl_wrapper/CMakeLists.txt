@@ -19,4 +19,4 @@ target_sources(sdl_wrapper
         sdl_callback_implement.cpp
 )
 
-target_link_libraries(sdl_wrapper PUBLIC SDL3::SDL3)
+target_link_libraries(sdl_wrapper PUBLIC SDL3::SDL3 shaderc)
