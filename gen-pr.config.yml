@@ -6,6 +6,7 @@ repomix-extra-args: "--compress --remove-empty-lines --include '**/*.cpp' --incl
 
 coding-tool: aider
 aider-extra-args: "--model openrouter/openrouter/polaris-alpha"
+verbose: true
 
 # 例如让生成完代码后跑一个测试命令（按你的项目改）
-test-command: "cmake -S $GITHUB_WORKSPACE -B build"
+test-command: "cmake -S . -B build"
