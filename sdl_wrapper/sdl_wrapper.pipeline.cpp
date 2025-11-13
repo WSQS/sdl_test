@@ -4,7 +4,7 @@
 module;
 #include <memory>
 #include "SDL3/SDL_gpu.h"
-#include "SDL3/SDL_log.h"
+#include <memory>
 module sdl_wrapper;
 import :pipeline;
 
