@@ -1,11 +1,11 @@
 ﻿# gen-pr.config.yml
-planning-model: openrouter/deepseek/deepseek-r1-0528:free
+planning-model: openrouter/openrouter/polaris-alpha
 reasoning-effort: high
 
 repomix-extra-args: "--compress --remove-empty-lines --include '**/*.cpp'"
 
 coding-tool: aider
-aider-args: "--model openrouter/deepseek/deepseek-r1-0528:free"
+aider-args: "--model openrouter/openrouter/polaris-alpha"
 
 # 例如让生成完代码后跑一个测试命令（按你的项目改）
 test-command: "cmake -S $GITHUB_WORKSPACE -B build"
