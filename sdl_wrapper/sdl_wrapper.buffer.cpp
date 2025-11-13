@@ -10,10 +10,7 @@ import :gpu;
 
 namespace sopho
 {
-    BufferWrapper::BufferWrapper(std::shared_ptr<GpuWrapper> p_gpu, const SDL_GPUBufferCreateInfo& p_create_info) :
-        m_gpu(p_gpu), m_vertex_buffer(SDL_CreateGPUBuffer(m_gpu->data(), &p_create_info))
-    {
-    }
+
     BufferWrapper::~BufferWrapper()
     {
         SDL_ReleaseGPUBuffer(m_gpu->data(), m_vertex_buffer);
