@@ -1,0 +1,2 @@
+/usr/bin/ar qc libsdl_wrapper.a CMakeFiles/sdl_wrapper.dir/sdl_wrapper.ixx.o CMakeFiles/sdl_wrapper.dir/sdl_wrapper.buffer.ixx.o CMakeFiles/sdl_wrapper.dir/sdl_wrapper.app.ixx.o CMakeFiles/sdl_wrapper.dir/sdl_wrapper.pipeline.ixx.o CMakeFiles/sdl_wrapper.dir/sdl_wrapper.gpu.ixx.o CMakeFiles/sdl_wrapper.dir/sdl_wrapper.decl.ixx.o CMakeFiles/sdl_wrapper.dir/sdl_wrapper.buffer.cpp.o CMakeFiles/sdl_wrapper.dir/sdl_callback_implement.cpp.o
+/usr/bin/ranlib libsdl_wrapper.a
