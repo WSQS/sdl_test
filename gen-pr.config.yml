@@ -2,7 +2,7 @@
 planning-model: openrouter/openrouter/polaris-alpha
 reasoning-effort: high
 
-repomix-extra-args: "--compress --remove-empty-lines --include '**/*.cpp'"
+repomix-extra-args: "--compress --remove-empty-lines --include '**/*.cpp' --include '**/*.ixx'"
 
 coding-tool: aider
 aider-args: "--model openrouter/openrouter/polaris-alpha"
