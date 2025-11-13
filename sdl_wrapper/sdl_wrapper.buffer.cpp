@@ -10,6 +10,15 @@ import :gpu;
 
 namespace sopho
 {
+    /**
+     * @brief Releases GPU resources owned by this BufferWrapper.
+     *
+     * Releases the GPU vertex buffer and, if present, the transfer (staging) buffer,
+     * then clears the corresponding handles and resets the transfer buffer size.
+     *
+     * @note If the associated GPU has already been destroyed, releasing these resources
+     *       may have no effect or may be too late to perform a proper cleanup.
+     */
 
     BufferWrapper::~BufferWrapper()
     {
@@ -23,6 +32,18 @@ namespace sopho
         }
     }
 
+    /**
+     * @brief Uploads a block of data into the wrapped GPU vertex buffer at the specified offset.
+     *
+     * If the internal transfer (staging) buffer is smaller than `p_size`, it will be reallocated
+     * to accommodate the upload. The function copies `p_size` bytes from `p_data` into the transfer
+     * buffer and enqueues a GPU copy pass that transfers those bytes into the vertex buffer at
+     * `p_offset`.
+     *
+     * @param p_data Pointer to the source data to upload.
+     * @param p_size Size in bytes of the data to upload.
+     * @param p_offset Byte offset within the vertex buffer where the data will be written.
+     */
     void BufferWrapper::upload(void* p_data, uint32_t p_size, uint32_t p_offset)
     {
         if (p_size > m_transfer_buffer_size)
