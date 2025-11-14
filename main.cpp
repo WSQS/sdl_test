@@ -70,16 +70,11 @@ void main()
     SDL_GPUVertexBufferDescription vertexBufferDesctiptions[1]{};
 
     /**
-     * @brief Initialize the application by creating the window, compiling shaders, creating the GPU pipeline and
-     * resources, and initializing ImGui.
+     * @brief Initialize the application: create the window, configure GPU pipeline and resources, upload initial vertex data, and initialize ImGui.
      *
-     * Performs window creation and GPU device claim, compiles vertex and fragment GLSL to SPIR-V and creates GPU shader
-     * objects, configures and creates the graphics pipeline (vertex input, attributes, and color target/blend state),
-     * uploads initial vertex data to the vertex buffer, and initializes Dear ImGui (context, style, scaling, and
-     * SDL3/SDLGPU backends).
+     * Performs window creation and GPU device claim, configures vertex input and color target state, sets vertex and fragment shaders on the pipeline wrapper and submits pipeline creation, uploads initial vertex data to the vertex buffer, and initializes Dear ImGui (context, style scaling, and SDL3/SDLGPU backends).
      *
-     * @return SDL_AppResult `SDL_APP_CONTINUE` to enter the main loop, `SDL_APP_SUCCESS` to request immediate
-     * termination.
+     * @return SDL_AppResult `SDL_APP_CONTINUE` to enter the main loop, `SDL_APP_SUCCESS` to request immediate termination.
      */
     virtual SDL_AppResult init(int argc, char** argv) override
     {
@@ -290,11 +285,11 @@ void main()
     }
 
     /**
-     * @brief Shut down the application and release GPU and UI resources.
+     * @brief Clean up UI and GPU resources and close the application window.
      *
-     * Shuts down the ImGui SDL3 and SDLGPU backends, destroys the ImGui context,
-     * releases the vertex and fragment GPU shaders and the graphics pipeline, and
-     * destroys the SDL window.
+     * Shuts down ImGui SDL3 and SDLGPU backends, destroys the ImGui context,
+     * releases the application's association with the GPU device for the window,
+     * and destroys the SDL window.
      *
      * @param result Application exit result code provided by the SDL app framework.
      */
