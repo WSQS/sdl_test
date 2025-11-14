@@ -31,7 +31,7 @@ jobs:
         shell: bash
         run: |
           echo "build-output-dir=$GITHUB_WORKSPACE/build" >> "$GITHUB_OUTPUT"
-          echo "install-dir=$GITHUB_WORKSPACE/install/ubuntu-latest-gcc-Debug" >> "$GITHUB_OUTPUT"
+          echo "install-dir=$GITHUB_WORKSPACE/install/ubuntu-latest-clang-Debug" >> "$GITHUB_OUTPUT"
 
       - name: Install SDL windowing deps (Linux)
         run: |
@@ -48,8 +48,8 @@ jobs:
         # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
         run: >
           cmake -B ${{ steps.strings.outputs.build-output-dir }}
-          -DCMAKE_CXX_COMPILER=g++
-          -DCMAKE_C_COMPILER=gcc
+          -DCMAKE_CXX_COMPILER=clang++
+          -DCMAKE_C_COMPILER=clang
           -DCMAKE_BUILD_TYPE=Debug
           -S $GITHUB_WORKSPACE
           -G "Ninja Multi-Config"
