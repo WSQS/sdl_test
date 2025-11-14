@@ -1,0 +1,12 @@
+# gen-pr.config.yml
+planning-model: openrouter/openrouter/polaris-alpha
+reasoning-effort: high
+
+repomix-extra-args: "--compress --remove-empty-lines --include '**/*.cpp' --include '**/*.ixx'"
+
+coding-tool: aider
+aider-extra-args: "--model openrouter/openrouter/polaris-alpha"
+verbose: true
+
+# Run build tests after code generation
+test-command: "cmake -S . -B build"

@@ -3,5 +3,8 @@
 //
 
 export module sdl_wrapper;
-export import :buffer;
+export import :decl;
 export import :app;
+export import :gpu;
+export import :buffer;
+export import :pipeline;

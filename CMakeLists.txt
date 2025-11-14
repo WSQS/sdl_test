@@ -4,6 +4,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(FetchContent)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(FETCHCONTENT_QUIET OFF CACHE BOOL "" FORCE)
 set(CMAKE_DOWNLOAD_NO_PROGRESS OFF CACHE BOOL "" FORCE)
 set(CMAKE_MESSAGE_LOG_LEVEL STATUS CACHE STRING "" FORCE)
@@ -95,7 +97,7 @@ target_link_libraries(imgui PUBLIC SDL3::SDL3)
 add_subdirectory(sdl_wrapper)
 
 add_executable(SDL_TEST main.cpp)
-target_link_libraries(SDL_TEST PRIVATE shaderc imgui sdl_wrapper)
+target_link_libraries(SDL_TEST PRIVATE imgui sdl_wrapper)
 
 
 include(GNUInstallDirs)

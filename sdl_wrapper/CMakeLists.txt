@@ -10,8 +10,13 @@ target_sources(sdl_wrapper
         sdl_wrapper.ixx
         sdl_wrapper.buffer.ixx
         sdl_wrapper.app.ixx
+        sdl_wrapper.pipeline.ixx
+        sdl_wrapper.gpu.ixx
+        sdl_wrapper.decl.ixx
         PRIVATE
+        sdl_wrapper.buffer.cpp
+        sdl_wrapper.pipeline.cpp
         sdl_callback_implement.cpp
 )
 
-target_link_libraries(sdl_wrapper PUBLIC SDL3::SDL3)
+target_link_libraries(sdl_wrapper PUBLIC SDL3::SDL3 shaderc)
