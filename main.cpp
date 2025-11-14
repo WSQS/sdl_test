@@ -28,7 +28,7 @@ class UserApp : public sopho::App
     std::optional<sopho::PipelineWrapper> pipeline_wrapper{std::nullopt};
 
     SDL_Window* window{};
-    SDL_GPUGraphicsPipeline* graphicsPipeline{};
+    // SDL_GPUGraphicsPipeline* graphicsPipeline{};
 
     // a list of vertices
     std::array<Vertex, 3> vertices{
@@ -64,8 +64,6 @@ void main()
     shaderc::CompileOptions options{};
 
     SDL_GPUGraphicsPipelineCreateInfo pipelineInfo{};
-    SDL_GPUShader* vertexShader{};
-    SDL_GPUShader* fragmentShader{};
 
     SDL_GPUColorTargetDescription colorTargetDescriptions[1]{};
     SDL_GPUVertexAttribute vertexAttributes[2]{};
@@ -91,62 +89,6 @@ void main()
 
         SDL_ClaimWindowForGPUDevice(gpu_wrapper->data(), window);
         pipeline_wrapper.emplace(gpu_wrapper);
-
-        options.SetTargetEnvironment(shaderc_target_env_vulkan, 0);
-        auto result = compiler.CompileGlslToSpv(vertex_source, shaderc_glsl_vertex_shader, "test.glsl", options);
-
-        if (result.GetCompilationStatus() != shaderc_compilation_status_success)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "[shaderc] compile error in test.glsl: %s",
-                         result.GetErrorMessage().data());
-        }
-
-        // load the vertex shader code
-        std::vector<uint32_t> vertexCode{result.cbegin(), result.cend()};
-
-        // create the vertex shader
-        SDL_GPUShaderCreateInfo vertexInfo{};
-        vertexInfo.code = (Uint8*)vertexCode.data();
-        vertexInfo.code_size = vertexCode.size() * 4;
-        vertexInfo.entrypoint = "main";
-        vertexInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
-        vertexInfo.stage = SDL_GPU_SHADERSTAGE_VERTEX;
-        vertexInfo.num_samplers = 0;
-        vertexInfo.num_storage_buffers = 0;
-        vertexInfo.num_storage_textures = 0;
-        vertexInfo.num_uniform_buffers = 0;
-
-        vertexShader = SDL_CreateGPUShader(gpu_wrapper->data(), &vertexInfo);
-
-        result = compiler.CompileGlslToSpv(fragment_source, shaderc_glsl_fragment_shader, "test.frag", options);
-
-        if (result.GetCompilationStatus() != shaderc_compilation_status_success)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "[shaderc] compile error in test.frag: %s",
-                         result.GetErrorMessage().data());
-        }
-
-        // load the fragment shader code
-        std::vector<uint32_t> fragmentCode{result.cbegin(), result.cend()};
-
-        // create the fragment shader
-        SDL_GPUShaderCreateInfo fragmentInfo{};
-        fragmentInfo.code = (Uint8*)fragmentCode.data();
-        fragmentInfo.code_size = fragmentCode.size() * 4;
-        fragmentInfo.entrypoint = "main";
-        fragmentInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
-        fragmentInfo.stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
-        fragmentInfo.num_samplers = 0;
-        fragmentInfo.num_storage_buffers = 0;
-        fragmentInfo.num_storage_textures = 0;
-        fragmentInfo.num_uniform_buffers = 0;
-
-        fragmentShader = SDL_CreateGPUShader(gpu_wrapper->data(), &fragmentInfo);
-
-        // create the graphics pipeline
-        pipelineInfo.vertex_shader = vertexShader;
-        pipelineInfo.fragment_shader = fragmentShader;
-        pipelineInfo.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
 
         // describe the vertex buffers
         vertexBufferDesctiptions[0].slot = 0;
@@ -188,7 +130,7 @@ void main()
         pipelineInfo.target_info.color_target_descriptions = colorTargetDescriptions;
 
         // create the pipeline
-        graphicsPipeline = SDL_CreateGPUGraphicsPipeline(gpu_wrapper->data(), &pipelineInfo);
+        // graphicsPipeline = SDL_CreateGPUGraphicsPipeline(gpu_wrapper->data(), &pipelineInfo);
         pipeline_wrapper->set_vertex_shader(vertex_source);
         pipeline_wrapper->set_fragment_shader(fragment_source);
         pipeline_wrapper->submit();
