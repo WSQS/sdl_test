@@ -24,10 +24,9 @@ struct Vertex
 class UserApp : public sopho::App
 {
     std::shared_ptr<sopho::GpuWrapper> gpu_wrapper{std::make_shared<sopho::GpuWrapper>()};
+    sopho::WindowWrapper window_wrapper{gpu_wrapper->create_window()};
     sopho::BufferWrapper vertex_buffer{gpu_wrapper->create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, sizeof(vertices))};
     std::optional<sopho::PipelineWrapper> pipeline_wrapper{std::nullopt};
-
-    SDL_Window* window{};
 
     // a list of vertices
     std::array<Vertex, 3> vertices{
@@ -72,12 +71,6 @@ void main()
      */
     virtual SDL_AppResult init(int argc, char** argv) override
     {
-        // create a window
-        window = SDL_CreateWindow("Hello, Triangle!", 960, 540, SDL_WINDOW_RESIZABLE);
-        gpu_wrapper->set_window(window);
-
-        SDL_ClaimWindowForGPUDevice(gpu_wrapper->data(), window);
-
         pipeline_wrapper.emplace(gpu_wrapper);
 
         pipeline_wrapper->set_vertex_shader(vertex_source);
@@ -110,10 +103,10 @@ void main()
         // unnecessary. We leave both here for documentation purpose)
 
         // Setup Platform/Renderer backends
-        ImGui_ImplSDL3_InitForSDLGPU(window);
+        ImGui_ImplSDL3_InitForSDLGPU(window_wrapper.data());
         ImGui_ImplSDLGPU3_InitInfo init_info = {};
         init_info.Device = gpu_wrapper->data();
-        init_info.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(gpu_wrapper->data(), window);
+        init_info.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(gpu_wrapper->data(), window_wrapper.data());
         init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1; // Only used in multi-viewports mode.
         init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR; // Only used in multi-viewports mode.
         init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
@@ -176,7 +169,7 @@ void main()
         // get the swapchain texture
         SDL_GPUTexture* swapchainTexture;
         Uint32 width, height;
-        SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, window, &swapchainTexture, &width, &height);
+        SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, window_wrapper.data(), &swapchainTexture, &width, &height);
 
         // end the frame early if a swapchain texture is not available
         if (swapchainTexture == NULL)
@@ -252,11 +245,6 @@ void main()
         ImGui_ImplSDL3_Shutdown();
         ImGui_ImplSDLGPU3_Shutdown();
         ImGui::DestroyContext();
-
-        SDL_ReleaseWindowFromGPUDevice(gpu_wrapper->data(), window);
-
-        // destroy the window
-        SDL_DestroyWindow(window);
     }
 };
 

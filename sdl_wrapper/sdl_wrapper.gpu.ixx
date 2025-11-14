@@ -75,8 +75,18 @@ export namespace sopho
         auto create_window()
         {
             auto window = SDL_CreateWindow("Hello, Triangle!", 960, 540, SDL_WINDOW_RESIZABLE);
+            m_window = window;
             SDL_ClaimWindowForGPUDevice(m_device, window);
             return WindowWrapper{shared_from_this(),window};
+        }
+
+        auto release_window(SDL_Window* p_window)
+        {
+            if (p_window)
+            {
+                SDL_ReleaseWindowFromGPUDevice(m_device,p_window);
+                SDL_DestroyWindow(p_window);
+            }
         }
 
         auto set_window(SDL_Window* p_window)

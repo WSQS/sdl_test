@@ -15,7 +15,7 @@ namespace sopho
     }
     WindowWrapper::~WindowWrapper()
     {
-
+        m_gpu->release_window(m_window);
     }
 
 } // namespace sopho

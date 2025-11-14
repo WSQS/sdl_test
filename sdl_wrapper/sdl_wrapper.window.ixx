@@ -15,6 +15,10 @@ export namespace sopho
     public:
         WindowWrapper(std::shared_ptr<GpuWrapper> p_gpu, SDL_Window* p_window);
         ~WindowWrapper();
+        auto data()
+        {
+            return m_window;
+        }
         friend GpuWrapper;
     };
 } // namespace sopho
