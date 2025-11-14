@@ -248,4 +248,4 @@ void main()
     }
 };
 
-sopho::App* create_app() { return new UserApp(); }
+sopho::App* create_app(int argc, char** argv) { return new UserApp(); }
