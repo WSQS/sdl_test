@@ -50,12 +50,11 @@ jobs:
           cmake -B ${{ steps.strings.outputs.build-output-dir }}
           -DCMAKE_CXX_COMPILER=clang++
           -DCMAKE_C_COMPILER=clang
-          -DCMAKE_BUILD_TYPE=Debug
           -S $GITHUB_WORKSPACE
           -G "Ninja Multi-Config"
 
       - name: Build
-        run: cmake --build ${{ steps.strings.outputs.build-output-dir }}
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config Debug
 
       - name: Generate PR from issue using OpenRouter
         uses: WillBooster/gen-pr@v4.1.4
