@@ -11,7 +11,6 @@ export module sdl_wrapper:gpu;
 import :buffer;
 import :pipeline;
 import :window;
-namespace sopho
 export namespace sopho
 {
     export class GpuWrapper : public std::enable_shared_from_this<GpuWrapper>
