@@ -260,4 +260,11 @@ void main()
     }
 };
 
+/**
+ * @brief Creates a new application instance for the program.
+ *
+ * @param argc Program argument count as passed to main.
+ * @param argv Program argument vector as passed to main.
+ * @return sopho::App* Pointer to a heap-allocated application object; the caller takes ownership and is responsible for deleting it.
+ */
 sopho::App* create_app(int argc, char** argv) { return new UserApp(); }
