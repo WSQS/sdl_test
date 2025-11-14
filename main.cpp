@@ -25,9 +25,7 @@ class UserApp : public sopho::App
 {
     std::shared_ptr<sopho::GpuWrapper> gpu_wrapper{std::make_shared<sopho::GpuWrapper>()};
     sopho::BufferWrapper vertex_buffer{gpu_wrapper->create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, sizeof(vertices))};
-    std::optional<sopho::PipelineWrapper> pipeline_wrapper{std::nullopt};
-
-    SDL_Window* window{};
+    sopho::PipelineWrapper pipeline_wrapper{gpu_wrapper->create_pipeline()};
 
     // a list of vertices
     std::array<Vertex, 3> vertices{
@@ -72,17 +70,10 @@ void main()
      */
     virtual SDL_AppResult init(int argc, char** argv) override
     {
-        // create a window
-        window = SDL_CreateWindow("Hello, Triangle!", 960, 540, SDL_WINDOW_RESIZABLE);
-        gpu_wrapper->set_window(window);
 
-        SDL_ClaimWindowForGPUDevice(gpu_wrapper->data(), window);
-
-        pipeline_wrapper.emplace(gpu_wrapper);
-
-        pipeline_wrapper->set_vertex_shader(vertex_source);
-        pipeline_wrapper->set_fragment_shader(fragment_source);
-        pipeline_wrapper->submit();
+        pipeline_wrapper.set_vertex_shader(vertex_source);
+        pipeline_wrapper.set_fragment_shader(fragment_source);
+        pipeline_wrapper.submit();
 
         vertex_buffer.upload(&vertices, sizeof(vertices), 0);
 
@@ -110,10 +101,11 @@ void main()
         // unnecessary. We leave both here for documentation purpose)
 
         // Setup Platform/Renderer backends
-        ImGui_ImplSDL3_InitForSDLGPU(window);
+        ImGui_ImplSDL3_InitForSDLGPU(gpu_wrapper->acquire_window());
         ImGui_ImplSDLGPU3_InitInfo init_info = {};
         init_info.Device = gpu_wrapper->data();
-        init_info.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(gpu_wrapper->data(), window);
+        init_info.ColorTargetFormat =
+            SDL_GetGPUSwapchainTextureFormat(gpu_wrapper->data(), gpu_wrapper->acquire_window());
         init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1; // Only used in multi-viewports mode.
         init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR; // Only used in multi-viewports mode.
         init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
@@ -159,7 +151,7 @@ void main()
                        std::min(ImGui::GetTextLineHeight() * (line_count + 3), ImGui::GetContentRegionAvail().y));
             if (ImGui::InputTextMultiline("code editor", &vertex_source, size, ImGuiInputTextFlags_AllowTabInput))
             {
-                pipeline_wrapper->set_vertex_shader(vertex_source);
+                pipeline_wrapper.set_vertex_shader(vertex_source);
             }
 
             ImGui::End();
@@ -168,7 +160,7 @@ void main()
         ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();
 
-        pipeline_wrapper->submit();
+        pipeline_wrapper.submit();
 
         // acquire the command buffer
         SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(gpu_wrapper->data());
@@ -176,7 +168,8 @@ void main()
         // get the swapchain texture
         SDL_GPUTexture* swapchainTexture;
         Uint32 width, height;
-        SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, window, &swapchainTexture, &width, &height);
+        SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, gpu_wrapper->acquire_window(), &swapchainTexture, &width,
+                                              &height);
 
         // end the frame early if a swapchain texture is not available
         if (swapchainTexture == NULL)
@@ -199,7 +192,7 @@ void main()
         SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, NULL);
 
         // draw calls go here
-        SDL_BindGPUGraphicsPipeline(renderPass, pipeline_wrapper->data());
+        SDL_BindGPUGraphicsPipeline(renderPass, pipeline_wrapper.data());
 
         // bind the vertex buffer
         SDL_GPUBufferBinding bufferBindings[1];
@@ -252,11 +245,6 @@ void main()
         ImGui_ImplSDL3_Shutdown();
         ImGui_ImplSDLGPU3_Shutdown();
         ImGui::DestroyContext();
-
-        SDL_ReleaseWindowFromGPUDevice(gpu_wrapper->data(), window);
-
-        // destroy the window
-        SDL_DestroyWindow(window);
     }
 };
 
