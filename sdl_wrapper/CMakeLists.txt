@@ -16,6 +16,7 @@ target_sources(sdl_wrapper
         PRIVATE
         sdl_wrapper.buffer.cpp
         sdl_wrapper.pipeline.cpp
+        sdl_wrapper.gpu.cpp
         sdl_callback_implement.cpp
 )
 
