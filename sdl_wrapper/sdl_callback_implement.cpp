@@ -8,7 +8,6 @@ import sdl_wrapper;
 
 namespace sopho
 {
-    extern App* create_app(int argc, char** argv);
 }
 
 /**
