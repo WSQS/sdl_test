@@ -32,7 +32,7 @@ namespace sopho
 
         m_pipeline_info.primitive_type = SDL_GPU_PRIMITIVETYPE_LINELIST;
 
-        m_color_target_description.emplace_back(m_device->get_texture_formate(),
+        m_color_target_description.emplace_back(m_device->get_texture_format(),
                                                 SDL_GPUColorTargetBlendState{SDL_GPU_BLENDFACTOR_SRC_ALPHA,
                                                                              SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
                                                                              SDL_GPU_BLENDOP_ADD,

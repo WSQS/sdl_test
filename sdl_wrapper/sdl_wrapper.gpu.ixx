@@ -70,7 +70,7 @@ namespace sopho
             }
         }
 
-        auto get_texture_formate()
+        auto get_texture_format()
         {
             return SDL_GetGPUSwapchainTextureFormat(m_device, m_window);
         }
