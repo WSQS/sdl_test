@@ -51,7 +51,7 @@ namespace sopho
         {
             SDL_GPUShaderCreateInfo vertexInfo{};
             vertexInfo.code = p_shader.data();
-            vertexInfo.code_size = p_shader.size() * 4;
+            vertexInfo.code_size = p_shader.size();
             vertexInfo.entrypoint = "main";
             vertexInfo.format = SDL_GPU_SHADERFORMAT_SPIRV;
             vertexInfo.stage = p_stage;
