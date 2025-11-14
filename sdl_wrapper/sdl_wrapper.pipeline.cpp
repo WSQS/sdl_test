@@ -30,7 +30,7 @@ namespace sopho
         m_pipeline_info.vertex_input_state.vertex_attributes = m_vertex_attribute.data();
         m_pipeline_info.vertex_input_state.num_vertex_attributes = m_vertex_attribute.size();
 
-        m_pipeline_info.primitive_type = SDL_GPU_PRIMITIVETYPE_LINELIST;
+        m_pipeline_info.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
 
         m_color_target_description.emplace_back(m_device->get_texture_format(),
                                                 SDL_GPUColorTargetBlendState{SDL_GPU_BLENDFACTOR_SRC_ALPHA,
