@@ -9,4 +9,4 @@ aider-extra-args: "--model openrouter/openrouter/polaris-alpha"
 verbose: true
 
 # Run build tests after code generation
-test-command: "cmake -S . -B build"
+test-command: "cmake --build ./build --config Debug"
