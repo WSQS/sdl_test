@@ -104,7 +104,8 @@ void main()
         ImGui_ImplSDL3_InitForSDLGPU(gpu_wrapper->acquire_window());
         ImGui_ImplSDLGPU3_InitInfo init_info = {};
         init_info.Device = gpu_wrapper->data();
-        init_info.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(gpu_wrapper->data(), gpu_wrapper->acquire_window());
+        init_info.ColorTargetFormat =
+            SDL_GetGPUSwapchainTextureFormat(gpu_wrapper->data(), gpu_wrapper->acquire_window());
         init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1; // Only used in multi-viewports mode.
         init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR; // Only used in multi-viewports mode.
         init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
@@ -167,7 +168,8 @@ void main()
         // get the swapchain texture
         SDL_GPUTexture* swapchainTexture;
         Uint32 width, height;
-        SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, gpu_wrapper->acquire_window(), &swapchainTexture, &width, &height);
+        SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, gpu_wrapper->acquire_window(), &swapchainTexture, &width,
+                                              &height);
 
         // end the frame early if a swapchain texture is not available
         if (swapchainTexture == NULL)
