@@ -16,7 +16,7 @@ export namespace sopho
         SDL_GPUTransferBuffer* m_transfer_buffer{};
         uint32_t m_transfer_buffer_size{};
 
-        BufferWrapper(std::shared_ptr<GpuWrapper> p_gpu, SDL_GPUBuffer* p_buffer) :
+        BufferWrapper(std::shared_ptr<::sopho::GpuWrapper> p_gpu, SDL_GPUBuffer* p_buffer) :
             m_gpu(p_gpu), m_vertex_buffer(p_buffer)
         {
         }

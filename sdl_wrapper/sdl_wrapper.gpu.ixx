@@ -9,9 +9,9 @@ module;
 export module sdl_wrapper:gpu;
 import :buffer;
 import :pipeline;
-namespace sopho
+export namespace sopho
 {
-    export class GpuWrapper : public std::enable_shared_from_this<GpuWrapper>
+    class GpuWrapper : public std::enable_shared_from_this<GpuWrapper>
     {
         SDL_GPUDevice* m_device{};
 
@@ -37,13 +37,7 @@ namespace sopho
 
         auto data() { return m_device; }
 
-        auto create_buffer(SDL_GPUBufferUsageFlags flag, uint32_t size)
-        {
-            SDL_GPUBufferCreateInfo create_info{flag, size};
-            auto buffer = SDL_CreateGPUBuffer(m_device, &create_info);
-            BufferWrapper result(shared_from_this(), buffer);
-            return result;
-        }
+        BufferWrapper create_buffer(SDL_GPUBufferUsageFlags flag, uint32_t size);
 
         PipelineWrapper create_pipeline();
 

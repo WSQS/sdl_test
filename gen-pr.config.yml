@@ -1,12 +1,12 @@
 # gen-pr.config.yml
-planning-model: openrouter/openrouter/polaris-alpha
+planning-model: openrouter/kwaipilot/kat-coder-pro:free
 reasoning-effort: high
 
-repomix-extra-args: "--compress --remove-empty-lines --include '**/*.cpp' --include '**/*.ixx'"
+repomix-extra-args: "--compress --remove-empty-lines --include '**/*.cpp' --include '**/*.ixx' --include '**/CMakeLists.txt'"
 
 coding-tool: aider
-aider-extra-args: "--model openrouter/openrouter/polaris-alpha"
+aider-extra-args: "--model openrouter/kwaipilot/kat-coder-pro:free"
 verbose: true
 
 # Run build tests after code generation
-test-command: "cmake -S . -B build"
+test-command: "cmake --build ./build --config Debug"
