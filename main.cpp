@@ -70,11 +70,15 @@ void main()
     SDL_GPUVertexBufferDescription vertexBufferDesctiptions[1]{};
 
     /**
-     * @brief Initialize the application: create the window, configure GPU pipeline and resources, upload initial vertex data, and initialize ImGui.
+     * @brief Initialize the application: create the window, configure GPU pipeline and resources, upload initial vertex
+     * data, and initialize ImGui.
      *
-     * Performs window creation and GPU device claim, configures vertex input and color target state, sets vertex and fragment shaders on the pipeline wrapper and submits pipeline creation, uploads initial vertex data to the vertex buffer, and initializes Dear ImGui (context, style scaling, and SDL3/SDLGPU backends).
+     * Performs window creation and GPU device claim, configures vertex input and color target state, sets vertex and
+     * fragment shaders on the pipeline wrapper and submits pipeline creation, uploads initial vertex data to the vertex
+     * buffer, and initializes Dear ImGui (context, style scaling, and SDL3/SDLGPU backends).
      *
-     * @return SDL_AppResult `SDL_APP_CONTINUE` to enter the main loop, `SDL_APP_SUCCESS` to request immediate termination.
+     * @return SDL_AppResult `SDL_APP_CONTINUE` to enter the main loop, `SDL_APP_SUCCESS` to request immediate
+     * termination.
      */
     virtual SDL_AppResult init(int argc, char** argv) override
     {

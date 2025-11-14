@@ -18,7 +18,7 @@ namespace sopho
      * and initializes default vertex input state, primitive type, and color target description used when creating
      * graphics pipelines.
      *
-     * @param p_device Shared pointer to the GpuWrapper used to create and release shaders and graphics pipelines. 
+     * @param p_device Shared pointer to the GpuWrapper used to create and release shaders and graphics pipelines.
      */
     PipelineWrapper::PipelineWrapper(std::shared_ptr<GpuWrapper> p_device) : m_device(p_device)
     {
