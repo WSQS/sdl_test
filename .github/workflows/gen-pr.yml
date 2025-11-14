@@ -54,6 +54,9 @@ jobs:
           -S $GITHUB_WORKSPACE
           -G "Ninja Multi-Config"
 
+      - name: Build
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }}
+
       - name: Generate PR from issue using OpenRouter
         uses: WillBooster/gen-pr@v4.1.4
         with:
