@@ -5,13 +5,16 @@ module;
 #include <memory>
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_log.h"
+#include "SDL3/SDL_video.h"
 #include "shaderc/shaderc.hpp"
 export module sdl_wrapper:gpu;
 import :buffer;
 import :pipeline;
+import :window;
+namespace sopho
 export namespace sopho
 {
-    class GpuWrapper : public std::enable_shared_from_this<GpuWrapper>
+    export class GpuWrapper : public std::enable_shared_from_this<GpuWrapper>
     {
         SDL_GPUDevice* m_device{};
 
@@ -67,6 +70,13 @@ export namespace sopho
         auto get_texture_format()
         {
             return SDL_GetGPUSwapchainTextureFormat(m_device, m_window);
+        }
+
+        auto create_window()
+        {
+            auto window = SDL_CreateWindow("Hello, Triangle!", 960, 540, SDL_WINDOW_RESIZABLE);
+            SDL_ClaimWindowForGPUDevice(m_device, window);
+            return WindowWrapper{shared_from_this(),window};
         }
 
         auto set_window(SDL_Window* p_window)

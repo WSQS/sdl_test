@@ -8,3 +8,4 @@ export import :app;
 export import :gpu;
 export import :buffer;
 export import :pipeline;
+export import :window;
