@@ -9,9 +9,9 @@ module;
 export module sdl_wrapper:gpu;
 import :buffer;
 import :pipeline;
-namespace sopho
+export namespace sopho
 {
-    export class GpuWrapper : public std::enable_shared_from_this<GpuWrapper>
+    class GpuWrapper : public std::enable_shared_from_this<GpuWrapper>
     {
         SDL_GPUDevice* m_device{};
 
