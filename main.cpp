@@ -77,11 +77,20 @@ void main()
      * fragment shaders on the pipeline wrapper and submits pipeline creation, uploads initial vertex data to the vertex
      * buffer, and initializes Dear ImGui (context, style scaling, and SDL3/SDLGPU backends).
      *
+     * @param argc Program argument count.
+     * @param argv Program argument vector.
      * @return SDL_AppResult `SDL_APP_CONTINUE` to enter the main loop, `SDL_APP_SUCCESS` to request immediate
      * termination.
      */
     virtual SDL_AppResult init(int argc, char** argv) override
     {
+        // Log command line arguments for debugging
+        SDL_Log("Application started with %d arguments:", argc);
+        for (int i = 0; i < argc; ++i)
+        {
+            SDL_Log("  argv[%d] = %s", i, argv[i]);
+        }
+
         // create a window
         window = SDL_CreateWindow("Hello, Triangle!", 960, 540, SDL_WINDOW_RESIZABLE);
         gpu_wrapper->set_window(window);
@@ -310,4 +319,4 @@ void main()
     }
 };
 
-sopho::App* create_app() { return new UserApp(); }
+sopho::App* create_app(int argc, char** argv) { return new UserApp(); }

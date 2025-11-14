@@ -6,8 +6,6 @@
 #include <SDL3/SDL_main.h>
 import sdl_wrapper;
 
-extern sopho::App* create_app();
-
 /**
  * @brief Initializes the SDL video subsystem, constructs the application, and invokes its initialization.
  *
@@ -19,7 +17,7 @@ extern sopho::App* create_app();
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
 {
     SDL_Init(SDL_INIT_VIDEO);
-    auto app = create_app();
+    auto app = create_app(argc, argv);
     if (!app)
         return SDL_APP_FAILURE;
     *appstate = app;
