@@ -5,6 +5,7 @@ module;
 #include <memory>
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_log.h"
+#include "SDL3/SDL_video.h"
 #include "shaderc/shaderc.hpp"
 export module sdl_wrapper:gpu;
 import :buffer;
@@ -15,6 +16,7 @@ export namespace sopho
     {
         SDL_GPUDevice* m_device{};
 
+        // TODO: Consider multi window situation
         SDL_Window* m_window{};
 
     public:
@@ -28,6 +30,11 @@ export namespace sopho
 
         ~GpuWrapper()
         {
+            if (m_window)
+            {
+                SDL_ReleaseWindowFromGPUDevice(m_device, m_window);
+                SDL_DestroyWindow(m_window);
+            }
             if (m_device)
             {
                 SDL_DestroyGPUDevice(m_device);
@@ -64,14 +71,20 @@ export namespace sopho
             }
         }
 
-        auto get_texture_format()
+        auto acquire_window()
         {
-            return SDL_GetGPUSwapchainTextureFormat(m_device, m_window);
+            if (!m_window)
+            {
+                m_window = SDL_CreateWindow("Hello, Triangle!", 960, 540, SDL_WINDOW_RESIZABLE);
+                SDL_ClaimWindowForGPUDevice(m_device, m_window);
+            }
+            return m_window;
         }
 
-        auto set_window(SDL_Window* p_window)
+        auto get_texture_format()
         {
-            m_window = p_window;
+            return SDL_GetGPUSwapchainTextureFormat(m_device, acquire_window());
         }
+
     };
 } // namespace sopho

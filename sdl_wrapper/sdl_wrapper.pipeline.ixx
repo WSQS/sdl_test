@@ -26,10 +26,8 @@ export namespace sopho
 
         bool m_modified = false;
 
-    public:
         PipelineWrapper(std::shared_ptr<GpuWrapper> p_device);
-        PipelineWrapper(const PipelineWrapper&)=default;
-        PipelineWrapper(PipelineWrapper&&)=default;
+    public:
         ~PipelineWrapper();
 
         auto data() { return m_graphics_pipeline; }
