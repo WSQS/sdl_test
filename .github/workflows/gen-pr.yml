@@ -58,5 +58,5 @@ jobs:
         uses: WillBooster/gen-pr@v4.1.4
         with:
           issue-number: ${{ inputs.issue-number }}
-          aider-extra-args: "--model openrouter/openrouter/polaris-alpha"
+          aider-extra-args: "--model openrouter/kwaipilot/kat-coder-pro:free"
           verbose: true
