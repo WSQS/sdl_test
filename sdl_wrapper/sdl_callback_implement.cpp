@@ -6,6 +6,11 @@
 #include <SDL3/SDL_main.h>
 import sdl_wrapper;
 
+namespace sopho
+{
+    extern App* create_app(int argc, char** argv);
+}
+
 /**
  * @brief Initializes the SDL video subsystem, constructs the application, and invokes its initialization.
  *
@@ -28,6 +33,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
  * @brief Run a single per-frame iteration on the application.
  *
  * @param appstate Pointer to the sopho::App instance stored by SDL_AppInit.
+ * @param result  Result code describing why the application is quitting.
  * @return SDL_AppResult The application's requested next action.
  */
 SDL_AppResult SDL_AppIterate(void* appstate)
