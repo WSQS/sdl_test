@@ -10,13 +10,13 @@ module;
 export module sdl_wrapper:gpu;
 import :buffer;
 import :pipeline;
-import :window;
 export namespace sopho
 {
     class GpuWrapper : public std::enable_shared_from_this<GpuWrapper>
     {
         SDL_GPUDevice* m_device{};
 
+        // TODO: Consider multi window situation
         SDL_Window* m_window{};
 
     public:
@@ -30,6 +30,11 @@ export namespace sopho
 
         ~GpuWrapper()
         {
+            if (m_window)
+            {
+                SDL_ReleaseWindowFromGPUDevice(m_device, m_window);
+                SDL_DestroyWindow(m_window);
+            }
             if (m_device)
             {
                 SDL_DestroyGPUDevice(m_device);
@@ -66,31 +71,20 @@ export namespace sopho
             }
         }
 
+        auto& acquire_window()
+        {
+            if (!m_window)
+            {
+                m_window = SDL_CreateWindow("Hello, Triangle!", 960, 540, SDL_WINDOW_RESIZABLE);
+                SDL_ClaimWindowForGPUDevice(m_device, m_window);
+            }
+            return m_window;
+        }
+
         auto get_texture_format()
         {
-            return SDL_GetGPUSwapchainTextureFormat(m_device, m_window);
+            return SDL_GetGPUSwapchainTextureFormat(m_device, acquire_window());
         }
 
-        auto create_window()
-        {
-            auto window = SDL_CreateWindow("Hello, Triangle!", 960, 540, SDL_WINDOW_RESIZABLE);
-            m_window = window;
-            SDL_ClaimWindowForGPUDevice(m_device, window);
-            return WindowWrapper{shared_from_this(),window};
-        }
-
-        auto release_window(SDL_Window* p_window)
-        {
-            if (p_window)
-            {
-                SDL_ReleaseWindowFromGPUDevice(m_device,p_window);
-                SDL_DestroyWindow(p_window);
-            }
-        }
-
-        auto set_window(SDL_Window* p_window)
-        {
-            m_window = p_window;
-        }
     };
 } // namespace sopho

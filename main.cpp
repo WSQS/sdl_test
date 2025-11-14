@@ -24,7 +24,6 @@ struct Vertex
 class UserApp : public sopho::App
 {
     std::shared_ptr<sopho::GpuWrapper> gpu_wrapper{std::make_shared<sopho::GpuWrapper>()};
-    sopho::WindowWrapper window_wrapper{gpu_wrapper->create_window()};
     sopho::BufferWrapper vertex_buffer{gpu_wrapper->create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, sizeof(vertices))};
     sopho::PipelineWrapper pipeline_wrapper{gpu_wrapper->create_pipeline()};
 
@@ -102,10 +101,10 @@ void main()
         // unnecessary. We leave both here for documentation purpose)
 
         // Setup Platform/Renderer backends
-        ImGui_ImplSDL3_InitForSDLGPU(window_wrapper.data());
+        ImGui_ImplSDL3_InitForSDLGPU(gpu_wrapper->acquire_window());
         ImGui_ImplSDLGPU3_InitInfo init_info = {};
         init_info.Device = gpu_wrapper->data();
-        init_info.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(gpu_wrapper->data(), window_wrapper.data());
+        init_info.ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(gpu_wrapper->data(), gpu_wrapper->acquire_window());
         init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1; // Only used in multi-viewports mode.
         init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR; // Only used in multi-viewports mode.
         init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
@@ -168,7 +167,7 @@ void main()
         // get the swapchain texture
         SDL_GPUTexture* swapchainTexture;
         Uint32 width, height;
-        SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, window_wrapper.data(), &swapchainTexture, &width, &height);
+        SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, gpu_wrapper->acquire_window(), &swapchainTexture, &width, &height);
 
         // end the frame early if a swapchain texture is not available
         if (swapchainTexture == NULL)
