@@ -45,7 +45,7 @@ namespace sopho
             return result;
         }
 
-        auto create_pipeline() { return PipelineWrapper{shared_from_this()}; }
+        PipelineWrapper create_pipeline();
 
         auto create_shader(const std::vector<uint8_t>& p_shader, SDL_GPUShaderStage p_stage)
         {

@@ -20,7 +20,7 @@ namespace sopho
      *
      * @param p_device Shared pointer to the GpuWrapper used to create and release shaders and graphics pipelines.
      */
-    PipelineWrapper::PipelineWrapper(std::shared_ptr<GpuWrapper> p_device) : m_device(p_device)
+    PipelineWrapper::PipelineWrapper(std::shared_ptr<::sopho::GpuWrapper> p_device) : m_device(p_device)
     {
         options.SetTargetEnvironment(shaderc_target_env_vulkan, 0);
 
