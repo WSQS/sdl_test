@@ -71,7 +71,7 @@ export namespace sopho
             }
         }
 
-        auto& acquire_window()
+        auto acquire_window()
         {
             if (!m_window)
             {
