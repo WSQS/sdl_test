@@ -12,10 +12,13 @@ import :pipeline;
 namespace sopho
 {
     /**
-     * @brief Initializes the PipelineWrapper with the given GPU device wrapper.
+     * @brief Constructs a PipelineWrapper and configures default pipeline state for the provided GPU device.
      *
-     * @param p_device Shared pointer to a GpuWrapper representing the target GPU device; the wrapper retains this
-     * reference for its lifetime.
+     * Stores the provided GPU device wrapper for the wrapper's lifetime, configures the shaderc target environment,
+     * and initializes default vertex input state, primitive type, and color target description used when creating
+     * graphics pipelines.
+     *
+     * @param p_device Shared pointer to the GpuWrapper used to create and release shaders and graphics pipelines.
      */
     PipelineWrapper::PipelineWrapper(std::shared_ptr<GpuWrapper> p_device) : m_device(p_device)
     {
@@ -97,6 +100,17 @@ namespace sopho
         }
     }
 
+    /**
+     * @brief Compile and install a new vertex shader from GLSL source.
+     *
+     * Compiles the provided GLSL vertex shader source to SPIR‑V, replaces any previously installed
+     * vertex shader on the device with the newly created shader, updates the pipeline's vertex
+     * shader reference, and marks the pipeline wrapper as modified so the pipeline will be rebuilt.
+     *
+     * @param p_source GLSL source code for the vertex shader.
+     *
+     * On compilation failure, a compilation error is logged and the previously installed shader is left unchanged.
+     */
     void PipelineWrapper::set_vertex_shader(const std::string& p_source)
     {
         auto result = compiler.CompileGlslToSpv(p_source, shaderc_glsl_vertex_shader, "vertex.glsl", options);
@@ -116,6 +130,16 @@ namespace sopho
             m_modified = true;
         }
     }
+    /**
+     * @brief Compile and install a fragment shader from GLSL source.
+     *
+     * Compiles the provided GLSL fragment shader source to SPIR‑V; on compilation failure logs the error.
+     * On success, releases the previously installed fragment shader (if any), uploads the new SPIR‑V bytecode
+     * to the device as a fragment-stage shader, updates the internal pipeline description to reference it,
+     * and marks the wrapper as modified so the graphics pipeline will be rebuilt.
+     *
+     * @param p_source GLSL source code for the fragment shader.
+     */
     void PipelineWrapper::set_fragment_shader(const std::string& p_source)
     {
         auto result = compiler.CompileGlslToSpv(p_source, shaderc_glsl_fragment_shader, "fragment.glsl", options);
