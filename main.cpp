@@ -28,7 +28,6 @@ class UserApp : public sopho::App
     std::optional<sopho::PipelineWrapper> pipeline_wrapper{std::nullopt};
 
     SDL_Window* window{};
-    // SDL_GPUGraphicsPipeline* graphicsPipeline{};
 
     // a list of vertices
     std::array<Vertex, 3> vertices{
@@ -60,15 +59,6 @@ void main()
     FragColor = v_color;
 })WSQ";
 
-    shaderc::Compiler compiler{};
-    shaderc::CompileOptions options{};
-
-    SDL_GPUGraphicsPipelineCreateInfo pipelineInfo{};
-
-    SDL_GPUColorTargetDescription colorTargetDescriptions[1]{};
-    SDL_GPUVertexAttribute vertexAttributes[2]{};
-    SDL_GPUVertexBufferDescription vertexBufferDesctiptions[1]{};
-
     /**
      * @brief Initialize the application: create the window, configure GPU pipeline and resources, upload initial vertex
      * data, and initialize ImGui.
@@ -87,49 +77,9 @@ void main()
         gpu_wrapper->set_window(window);
 
         SDL_ClaimWindowForGPUDevice(gpu_wrapper->data(), window);
+
         pipeline_wrapper.emplace(gpu_wrapper);
 
-        // describe the vertex buffers
-        vertexBufferDesctiptions[0].slot = 0;
-        vertexBufferDesctiptions[0].pitch = sizeof(Vertex);
-        vertexBufferDesctiptions[0].input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
-        vertexBufferDesctiptions[0].instance_step_rate = 0;
-
-        pipelineInfo.vertex_input_state.num_vertex_buffers = 1;
-        pipelineInfo.vertex_input_state.vertex_buffer_descriptions = vertexBufferDesctiptions;
-
-        // describe the vertex attribute
-        // a_position
-        vertexAttributes[0].location = 0;
-        vertexAttributes[0].buffer_slot = 0;
-        vertexAttributes[0].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
-        vertexAttributes[0].offset = 0;
-
-        // a_color
-        vertexAttributes[1].buffer_slot = 0;
-        vertexAttributes[1].location = 1;
-        vertexAttributes[1].format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4;
-        vertexAttributes[1].offset = sizeof(float) * 3;
-
-        pipelineInfo.vertex_input_state.num_vertex_attributes = 2;
-        pipelineInfo.vertex_input_state.vertex_attributes = vertexAttributes;
-
-        // describe the color target
-        colorTargetDescriptions[0] = {};
-        colorTargetDescriptions[0].blend_state.src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
-        colorTargetDescriptions[0].blend_state.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-        colorTargetDescriptions[0].blend_state.color_blend_op = SDL_GPU_BLENDOP_ADD;
-        colorTargetDescriptions[0].blend_state.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
-        colorTargetDescriptions[0].blend_state.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-        colorTargetDescriptions[0].blend_state.alpha_blend_op = SDL_GPU_BLENDOP_ADD;
-        colorTargetDescriptions[0].blend_state.enable_blend = true;
-        colorTargetDescriptions[0].format = SDL_GetGPUSwapchainTextureFormat(gpu_wrapper->data(), window);
-
-        pipelineInfo.target_info.num_color_targets = 1;
-        pipelineInfo.target_info.color_target_descriptions = colorTargetDescriptions;
-
-        // create the pipeline
-        // graphicsPipeline = SDL_CreateGPUGraphicsPipeline(gpu_wrapper->data(), &pipelineInfo);
         pipeline_wrapper->set_vertex_shader(vertex_source);
         pipeline_wrapper->set_fragment_shader(fragment_source);
         pipeline_wrapper->submit();
