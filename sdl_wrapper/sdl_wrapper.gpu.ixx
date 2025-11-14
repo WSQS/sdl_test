@@ -13,7 +13,7 @@ import :pipeline;
 import :window;
 export namespace sopho
 {
-    export class GpuWrapper : public std::enable_shared_from_this<GpuWrapper>
+    class GpuWrapper : public std::enable_shared_from_this<GpuWrapper>
     {
         SDL_GPUDevice* m_device{};
 
