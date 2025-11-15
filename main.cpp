@@ -133,27 +133,51 @@ void main()
         ImGui::ShowDemoWindow();
 
         {
-            ImGui::Begin("NodeEditor");
-            auto change = ImGui::DragFloat3("node1", vertices[0].position(), 0.01f, -1.f, 1.f);
-            change = ImGui::DragFloat3("node2", vertices[1].position(), 0.01f, -1.f, 1.f) || change;
-            change = ImGui::DragFloat3("node3", vertices[2].position(), 0.01f, -1.f, 1.f) || change;
-            if (change)
+            ImGui::Begin("Editor");
+            static int current = 0;
+            const char* items[] = {"Node", "Vertex", "Fragment"};
+            ImGui::Combo("##Object", &current, items, IM_ARRAYSIZE(items));
+            switch (current)
             {
-                vertex_buffer.upload(&vertices, sizeof(vertices), 0);
-            }
-            ImGui::End();
-        }
-        {
-            ImGui::Begin("SourceEditor");
-            auto line_count = std::count(vertex_source.begin(), vertex_source.end(), '\n');
-            ImVec2 size =
-                ImVec2(ImGui::GetContentRegionAvail().x,
-                       std::min(ImGui::GetTextLineHeight() * (line_count + 3), ImGui::GetContentRegionAvail().y));
-            if (ImGui::InputTextMultiline("code editor", &vertex_source, size, ImGuiInputTextFlags_AllowTabInput))
-            {
-                pipeline_wrapper.set_vertex_shader(vertex_source);
-            }
+            case 0:
+                {
 
+                    auto change = ImGui::DragFloat3("##node1", vertices[0].position(), 0.01f, -1.f, 1.f);
+                    change = ImGui::DragFloat3("##node2", vertices[1].position(), 0.01f, -1.f, 1.f) || change;
+                    change = ImGui::DragFloat3("##node3", vertices[2].position(), 0.01f, -1.f, 1.f) || change;
+                    if (change)
+                    {
+                        vertex_buffer.upload(&vertices, sizeof(vertices), 0);
+                    }
+                }
+                break;
+            case 1:
+                {
+                    auto line_count = std::count(vertex_source.begin(), vertex_source.end(), '\n');
+                    ImVec2 size = ImVec2(
+                        ImGui::GetContentRegionAvail().x,
+                        std::min(ImGui::GetTextLineHeight() * (line_count + 3), ImGui::GetContentRegionAvail().y));
+                    if (ImGui::InputTextMultiline("##vertex editor", &vertex_source, size,
+                                                  ImGuiInputTextFlags_AllowTabInput))
+                    {
+                        pipeline_wrapper.set_vertex_shader(vertex_source);
+                    }
+                }
+                break;
+            case 2:
+                {
+                    auto line_count = std::count(fragment_source.begin(), fragment_source.end(), '\n');
+                    ImVec2 size = ImVec2(
+                        ImGui::GetContentRegionAvail().x,
+                        std::min(ImGui::GetTextLineHeight() * (line_count + 3), ImGui::GetContentRegionAvail().y));
+                    if (ImGui::InputTextMultiline("##fragment editor", &fragment_source, size,
+                                                  ImGuiInputTextFlags_AllowTabInput))
+                    {
+                        pipeline_wrapper.set_fragment_shader(fragment_source);
+                    }
+                }
+                break;
+            }
             ImGui::End();
         }
 
