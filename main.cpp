@@ -115,7 +115,8 @@ void main()
     }
 
     /**
-     * @brief Advance the UI frame, present interactive editors for triangle vertices and shader source, and apply edits.
+     * @brief Advance the UI frame, present interactive editors for triangle vertices and shader source, and apply
+     * edits.
      *
      * Presents a NodeEditor with draggable 3D position editors for each vertex and a SourceEditor with a multiline
      * shader text editor. If a vertex position is modified, the vertex buffer is updated with the new vertex data.
