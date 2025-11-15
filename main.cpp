@@ -21,6 +21,11 @@ struct Vertex
     auto position() { return &x; }
 };
 
+struct CameraUniform
+{
+    float m[16];
+};
+
 class UserApp : public sopho::App
 {
     std::shared_ptr<sopho::GpuWrapper> gpu_wrapper{std::make_shared<sopho::GpuWrapper>()};
@@ -34,6 +39,8 @@ class UserApp : public sopho::App
         Vertex{0.5F, -0.5F, 0.0F, 1.0F, 0.0F, 1.0F, 1.0F} // bottom right vertex
     };
 
+    CameraUniform cam{};
+
     std::string vertex_source =
         R"WSQ(#version 460
 
@@ -41,9 +48,14 @@ layout (location = 0) in vec3 a_position;
 layout (location = 1) in vec4 a_color;
 layout (location = 0) out vec4 v_color;
 
+layout(std140, set = 0, binding = 0) uniform Camera
+{
+    mat4 uView;
+};
+
 void main()
 {
-  gl_Position = vec4(a_position, 1.0f);
+  gl_Position = uView * vec4(a_position, 1.0f);
   v_color = a_color;
 })WSQ";
     std::string fragment_source =
@@ -76,6 +88,15 @@ void main()
         pipeline_wrapper.submit();
 
         vertex_buffer.upload(&vertices, sizeof(vertices), 0);
+
+        {
+            // identity
+            cam.m[0] = cam.m[5] = cam.m[10] = cam.m[15] = 1.0f;
+            cam.m[1] = cam.m[2] = cam.m[3] = 0.0f;
+            cam.m[4] = cam.m[6] = cam.m[7] = 0.0f;
+            cam.m[8] = cam.m[9] = cam.m[11] = 0.0f;
+            cam.m[12] = cam.m[13] = cam.m[14] = 0.0f;
+        }
 
 
         // Setup Dear ImGui context
@@ -235,6 +256,10 @@ void main()
 
         // draw calls go here
         SDL_BindGPUGraphicsPipeline(renderPass, pipeline_wrapper.data());
+
+        {
+            SDL_PushGPUVertexUniformData(commandBuffer, 0,cam.m,sizeof(cam.m));
+        }
 
         // bind the vertex buffer
         SDL_GPUBufferBinding bufferBindings[1];
