@@ -146,6 +146,7 @@ void main()
                     change = ImGui::DragFloat3("##node3", vertices[2].position(), 0.01f, -1.f, 1.f) || change;
                     if (change)
                     {
+                        // TODO: shouldn't upload in tick, we should delay this into draw function.
                         vertex_buffer.upload(&vertices, sizeof(vertices), 0);
                     }
                 }
