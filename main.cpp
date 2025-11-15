@@ -23,7 +23,7 @@ struct Vertex
 
 struct CameraUniform
 {
-    float m[16];
+    std::array<float,16> m{};
 };
 
 class UserApp : public sopho::App
@@ -91,11 +91,11 @@ void main()
 
         {
             // identity
-            cam.m[0] = cam.m[5] = cam.m[10] = cam.m[15] = 1.0f;
-            cam.m[1] = cam.m[2] = cam.m[3] = 0.0f;
-            cam.m[4] = cam.m[6] = cam.m[7] = 0.0f;
-            cam.m[8] = cam.m[9] = cam.m[11] = 0.0f;
-            cam.m[12] = cam.m[13] = cam.m[14] = 0.0f;
+            cam.m[0] = cam.m[5] = cam.m[10] = cam.m[15] = 1.0F;
+            cam.m[1] = cam.m[2] = cam.m[3] = 0.0F;
+            cam.m[4] = cam.m[6] = cam.m[7] = 0.0F;
+            cam.m[8] = cam.m[9] = cam.m[11] = 0.0F;
+            cam.m[12] = cam.m[13] = cam.m[14] = 0.0F;
         }
 
 
@@ -258,7 +258,7 @@ void main()
         SDL_BindGPUGraphicsPipeline(renderPass, pipeline_wrapper.data());
 
         {
-            SDL_PushGPUVertexUniformData(commandBuffer, 0,cam.m,sizeof(cam.m));
+            SDL_PushGPUVertexUniformData(commandBuffer, 0,cam.m.data(),sizeof(cam.m));
         }
 
         // bind the vertex buffer
