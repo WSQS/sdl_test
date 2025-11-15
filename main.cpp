@@ -1,7 +1,6 @@
 #include <array>
 #include <cmath>
 #include <iostream>
-#include <optional>
 #include "shaderc/shaderc.hpp"
 
 #include "imgui.h"
@@ -11,7 +10,6 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
-#include "SDL3/SDL_log.h"
 import sdl_wrapper;
 
 // the vertex input layout
