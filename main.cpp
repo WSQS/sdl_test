@@ -1,6 +1,6 @@
 #include <array>
+#include <cmath>
 #include <iostream>
-#include <optional>
 #include "shaderc/shaderc.hpp"
 
 #include "imgui.h"
@@ -10,7 +10,6 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
-#include "SDL3/SDL_log.h"
 import sdl_wrapper;
 
 // the vertex input layout
@@ -21,11 +20,19 @@ struct Vertex
     auto position() { return &x; }
 };
 
+struct CameraUniform
+{
+    std::array<float, 16> m{};
+};
+
 class UserApp : public sopho::App
 {
     std::shared_ptr<sopho::GpuWrapper> gpu_wrapper{std::make_shared<sopho::GpuWrapper>()};
     sopho::BufferWrapper vertex_buffer{gpu_wrapper->create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, sizeof(vertices))};
     sopho::PipelineWrapper pipeline_wrapper{gpu_wrapper->create_pipeline()};
+
+    float yaw = 0.0f;
+    float pitch = 0.0f;
 
     // a list of vertices
     std::array<Vertex, 3> vertices{
@@ -34,6 +41,8 @@ class UserApp : public sopho::App
         Vertex{0.5F, -0.5F, 0.0F, 1.0F, 0.0F, 1.0F, 1.0F} // bottom right vertex
     };
 
+    CameraUniform cam{};
+
     std::string vertex_source =
         R"WSQ(#version 460
 
@@ -41,9 +50,14 @@ layout (location = 0) in vec3 a_position;
 layout (location = 1) in vec4 a_color;
 layout (location = 0) out vec4 v_color;
 
+layout(std140, set = 1, binding = 0) uniform Camera
+{
+    mat4 uView;
+};
+
 void main()
 {
-  gl_Position = vec4(a_position, 1.0f);
+  gl_Position = uView * vec4(a_position, 1.0f);
   v_color = a_color;
 })WSQ";
     std::string fragment_source =
@@ -76,6 +90,15 @@ void main()
         pipeline_wrapper.submit();
 
         vertex_buffer.upload(&vertices, sizeof(vertices), 0);
+
+        {
+            // identity
+            cam.m[0] = cam.m[5] = cam.m[10] = cam.m[15] = 1.0F;
+            cam.m[1] = cam.m[2] = cam.m[3] = 0.0F;
+            cam.m[4] = cam.m[6] = cam.m[7] = 0.0F;
+            cam.m[8] = cam.m[9] = cam.m[11] = 0.0F;
+            cam.m[12] = cam.m[13] = cam.m[14] = 0.0F;
+        }
 
 
         // Setup Dear ImGui context
@@ -236,6 +259,34 @@ void main()
         // draw calls go here
         SDL_BindGPUGraphicsPipeline(renderPass, pipeline_wrapper.data());
 
+        {
+
+            float cy = std::cos(yaw);
+            float sy = std::sin(yaw);
+            float cp = std::cos(pitch);
+            float sp = std::sin(pitch);
+
+            float Ry[16] = {cy, 0.0f, sy, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -sy, 0.0f, cy, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+
+            float Rx[16] = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, cp, sp, 0.0f, 0.0f, -sp, cp, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+
+            auto mulMat4 = [](const float* A, const float* B, float* C)
+            {
+                for (int col = 0; col < 4; ++col)
+                {
+                    for (int row = 0; row < 4; ++row)
+                    {
+                        C[col * 4 + row] = A[0 * 4 + row] * B[col * 4 + 0] + A[1 * 4 + row] * B[col * 4 + 1] +
+                            A[2 * 4 + row] * B[col * 4 + 2] + A[3 * 4 + row] * B[col * 4 + 3];
+                    }
+                }
+            };
+
+            // uView = Rx * Ry
+            mulMat4(Rx, Ry, cam.m.data());
+            SDL_PushGPUVertexUniformData(commandBuffer, 0, cam.m.data(), sizeof(cam.m));
+        }
+
         // bind the vertex buffer
         SDL_GPUBufferBinding bufferBindings[1];
         bufferBindings[0].buffer = vertex_buffer.data(); // index 0 is slot 0 in this example
@@ -283,6 +334,26 @@ void main()
     virtual SDL_AppResult event(SDL_Event* event) override
     {
         ImGui_ImplSDL3_ProcessEvent(event);
+        if (event->type == SDL_EVENT_KEY_DOWN)
+        {
+            switch (event->key.key)
+            {
+            case SDLK_UP:
+                pitch += 0.1f;
+                break;
+            case SDLK_DOWN:
+                pitch -= 0.1f;
+                break;
+            case SDLK_LEFT:
+                yaw += 0.1f;
+                break;
+            case SDLK_RIGHT:
+                yaw -= 0.1f;
+                break;
+            default:
+                break;
+            }
+        }
         // close the window on request
         if (event->type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
         {
