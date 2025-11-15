@@ -16,7 +16,12 @@ import sdl_wrapper;
 struct Vertex
 {
     float x, y, z; // vec3 position
-    float r, g, b, a; // vec4 color
+    float r, g, b, a; /**
+                       * @brief Get a pointer to the vertex position's first component.
+                       *
+                       * @return float* Pointer to the `x` member; can be used to access the contiguous position
+                       * components `(x, y, z)`.
+                       */
     auto position() { return &x; }
 };
 
@@ -72,12 +77,11 @@ void main()
 })WSQ";
 
     /**
-     * @brief Initialize the application: create the window, configure GPU pipeline and resources, upload initial vertex
-     * data, and initialize ImGui.
+     * @brief Initialize application resources, GPU pipeline, vertex data, and Dear ImGui.
      *
-     * Performs window creation and GPU device claim, configures vertex input and color target state, sets vertex and
-     * fragment shaders on the pipeline wrapper and submits pipeline creation, uploads initial vertex data to the vertex
-     * buffer, and initializes Dear ImGui (context, style scaling, and SDL3/SDLGPU backends).
+     * Configures the graphics pipeline and vertex input, uploads the initial vertex buffer contents,
+     * initializes the camera uniform to the identity matrix, and sets up Dear ImGui (context, style/DPI
+     * scaling, and SDL3/SDLGPU backends).
      *
      * @return SDL_AppResult `SDL_APP_CONTINUE` to enter the main loop, `SDL_APP_SUCCESS` to request immediate
      * termination.
@@ -211,12 +215,11 @@ void main()
     }
 
     /**
-     * @brief Render ImGui draw data and the application's triangle to the GPU, then present the swapchain texture.
+     * @brief Render the application's triangle and ImGui UI to the GPU and present the current swapchain frame.
      *
-     * Prepares ImGui draw data, submits the graphics pipeline, acquires a GPU command buffer and the current
-     * swapchain texture, records rendering commands (including binding the pipeline and vertex buffer and issuing
-     * a draw call), executes ImGui rendering into the render pass, and submits the command buffer for presentation.
-     * If no swapchain texture is available the function still submits the command buffer and continues.
+     * Records and submits GPU commands for drawing the triangle, uploads the per-frame camera uniform,
+     * renders ImGui draw data into the same render pass, and presents the swapchain texture.
+     * If no swapchain texture is available, the function still submits any recorded command buffer and continues.
      *
      * @return SDL_AppResult `SDL_APP_CONTINUE` to continue the application main loop.
      */
