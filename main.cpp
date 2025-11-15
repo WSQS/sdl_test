@@ -17,10 +17,11 @@ struct Vertex
 {
     float x, y, z; // vec3 position
     float r, g, b, a; /**
- * @brief Get a pointer to the vertex position's first component.
- *
- * @return float* Pointer to the `x` member; can be used to access the contiguous position components `(x, y, z)`.
- */
+                       * @brief Get a pointer to the vertex position's first component.
+                       *
+                       * @return float* Pointer to the `x` member; can be used to access the contiguous position
+                       * components `(x, y, z)`.
+                       */
     auto position() { return &x; }
 };
 
@@ -82,7 +83,8 @@ void main()
      * initializes the camera uniform to the identity matrix, and sets up Dear ImGui (context, style/DPI
      * scaling, and SDL3/SDLGPU backends).
      *
-     * @return SDL_AppResult `SDL_APP_CONTINUE` to enter the main loop, `SDL_APP_SUCCESS` to request immediate termination.
+     * @return SDL_AppResult `SDL_APP_CONTINUE` to enter the main loop, `SDL_APP_SUCCESS` to request immediate
+     * termination.
      */
     virtual SDL_AppResult init(int argc, char** argv) override
     {
