@@ -177,6 +177,8 @@ void main()
                     }
                 }
                 break;
+            default:
+                break;
             }
             ImGui::End();
         }
