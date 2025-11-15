@@ -141,7 +141,6 @@ void main()
             {
             case 0:
                 {
-
                     auto change = ImGui::DragFloat3("##node1", vertices[0].position(), 0.01f, -1.f, 1.f);
                     change = ImGui::DragFloat3("##node2", vertices[1].position(), 0.01f, -1.f, 1.f) || change;
                     change = ImGui::DragFloat3("##node3", vertices[2].position(), 0.01f, -1.f, 1.f) || change;
