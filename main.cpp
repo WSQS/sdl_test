@@ -114,17 +114,7 @@ void main()
         return SDL_APP_CONTINUE;
     }
 
-    /**
-     * @brief Advance the application by one frame: update UI, apply vertex edits and live shader recompilation, render,
-     * and submit GPU work.
-     *
-     * Processes ImGui frames, uploads vertex data when edited, recompiles and replaces the vertex shader and graphics
-     * pipeline on shader edits, records a render pass that draws the triangle and ImGui draw lists, and submits the GPU
-     * command buffer for presentation.
-     *
-     * @return `SDL_APP_CONTINUE` to continue the main loop.
-     */
-    virtual SDL_AppResult iterate() override
+    SDL_AppResult tick()
     {
         ImGui_ImplSDLGPU3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
@@ -157,6 +147,12 @@ void main()
             ImGui::End();
         }
 
+        ImGui::EndFrame();
+        return SDL_APP_CONTINUE;
+    }
+
+    SDL_AppResult draw()
+    {
         ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();
 
@@ -211,6 +207,27 @@ void main()
         SDL_SubmitGPUCommandBuffer(commandBuffer);
 
         return SDL_APP_CONTINUE;
+    }
+
+    /**
+     * @brief Advance the application by one frame: update UI, apply vertex edits and live shader recompilation, render,
+     * and submit GPU work.
+     *
+     * Processes ImGui frames, uploads vertex data when edited, recompiles and replaces the vertex shader and graphics
+     * pipeline on shader edits, records a render pass that draws the triangle and ImGui draw lists, and submits the GPU
+     * command buffer for presentation.
+     *
+     * @return `SDL_APP_CONTINUE` to continue the main loop.
+     */
+    virtual SDL_AppResult iterate() override
+    {
+
+        auto result = tick();
+        if (result == SDL_APP_CONTINUE)
+        {
+            result = draw();
+        }
+        return result;
     }
 
     /**
