@@ -135,8 +135,8 @@ void main()
         {
             ImGui::Begin("Editor");
             static int current = 0;
-            const char* items[] = {"Node", "Vertex", "Fragment"};
-            ImGui::Combo("##Object", &current, items, IM_ARRAYSIZE(items));
+            std::array<const char*, 3> items = {"Node", "Vertex", "Fragment"};
+            ImGui::Combo("##Object", &current, items.data(), items.size());
             switch (current)
             {
             case 0:
