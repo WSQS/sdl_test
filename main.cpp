@@ -114,6 +114,15 @@ void main()
         return SDL_APP_CONTINUE;
     }
 
+    /**
+     * @brief Advance the UI frame, present interactive editors for triangle vertices and shader source, and apply edits.
+     *
+     * Presents a NodeEditor with draggable 3D position editors for each vertex and a SourceEditor with a multiline
+     * shader text editor. If a vertex position is modified, the vertex buffer is updated with the new vertex data.
+     * If the shader source is modified, the pipeline's vertex shader source is updated.
+     *
+     * @return SDL_AppResult SDL_APP_CONTINUE to indicate the application should continue running.
+     */
     SDL_AppResult tick()
     {
         ImGui_ImplSDLGPU3_NewFrame();
@@ -151,6 +160,16 @@ void main()
         return SDL_APP_CONTINUE;
     }
 
+    /**
+     * @brief Render ImGui draw data and the application's triangle to the GPU, then present the swapchain texture.
+     *
+     * Prepares ImGui draw data, submits the graphics pipeline, acquires a GPU command buffer and the current
+     * swapchain texture, records rendering commands (including binding the pipeline and vertex buffer and issuing
+     * a draw call), executes ImGui rendering into the render pass, and submits the command buffer for presentation.
+     * If no swapchain texture is available the function still submits the command buffer and continues.
+     *
+     * @return SDL_AppResult `SDL_APP_CONTINUE` to continue the application main loop.
+     */
     SDL_AppResult draw()
     {
         ImGui::Render();
@@ -210,14 +229,12 @@ void main()
     }
 
     /**
-     * @brief Advance the application by one frame: update UI, apply vertex edits and live shader recompilation, render,
-     * and submit GPU work.
+     * @brief Advance the application one iteration by performing per-frame updates and rendering.
      *
-     * Processes ImGui frames, uploads vertex data when edited, recompiles and replaces the vertex shader and graphics
-     * pipeline on shader edits, records a render pass that draws the triangle and ImGui draw lists, and submits the GPU
-     * command buffer for presentation.
+     * Performs per-frame UI and state updates; if those updates indicate continuation, executes rendering and submits
+     * GPU work for presentation.
      *
-     * @return `SDL_APP_CONTINUE` to continue the main loop.
+     * @return `SDL_APP_CONTINUE` to continue the main loop, or another `SDL_AppResult` to terminate.
      */
     virtual SDL_AppResult iterate() override
     {
