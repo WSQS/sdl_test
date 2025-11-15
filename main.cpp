@@ -336,7 +336,7 @@ void main()
         ImGui_ImplSDL3_ProcessEvent(event);
         if (event->type == SDL_EVENT_KEY_DOWN)
         {
-            switch (reinterpret_cast<SDL_KeyboardEvent*>(event)->key)
+            switch (event->key.key)
             {
             case SDLK_UP:
                 pitch += 0.1f;
