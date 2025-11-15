@@ -1,4 +1,5 @@
 #include <array>
+#include <cmath>
 #include <iostream>
 #include <optional>
 #include "shaderc/shaderc.hpp"
@@ -23,7 +24,7 @@ struct Vertex
 
 struct CameraUniform
 {
-    std::array<float,16> m{};
+    std::array<float, 16> m{};
 };
 
 class UserApp : public sopho::App
@@ -31,6 +32,9 @@ class UserApp : public sopho::App
     std::shared_ptr<sopho::GpuWrapper> gpu_wrapper{std::make_shared<sopho::GpuWrapper>()};
     sopho::BufferWrapper vertex_buffer{gpu_wrapper->create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, sizeof(vertices))};
     sopho::PipelineWrapper pipeline_wrapper{gpu_wrapper->create_pipeline()};
+
+    float yaw = 0.0f;
+    float pitch = 0.0f;
 
     // a list of vertices
     std::array<Vertex, 3> vertices{
@@ -258,7 +262,31 @@ void main()
         SDL_BindGPUGraphicsPipeline(renderPass, pipeline_wrapper.data());
 
         {
-            SDL_PushGPUVertexUniformData(commandBuffer, 0,cam.m.data(),sizeof(cam.m));
+
+            float cy = std::cos(yaw);
+            float sy = std::sin(yaw);
+            float cp = std::cos(pitch);
+            float sp = std::sin(pitch);
+
+            float Ry[16] = {cy, 0.0f, sy, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -sy, 0.0f, cy, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+
+            float Rx[16] = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, cp, sp, 0.0f, 0.0f, -sp, cp, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+
+            auto mulMat4 = [](const float* A, const float* B, float* C)
+            {
+                for (int col = 0; col < 4; ++col)
+                {
+                    for (int row = 0; row < 4; ++row)
+                    {
+                        C[col * 4 + row] = A[0 * 4 + row] * B[col * 4 + 0] + A[1 * 4 + row] * B[col * 4 + 1] +
+                            A[2 * 4 + row] * B[col * 4 + 2] + A[3 * 4 + row] * B[col * 4 + 3];
+                    }
+                }
+            };
+
+            // uView = Rx * Ry
+            mulMat4(Rx, Ry, cam.m.data());
+            SDL_PushGPUVertexUniformData(commandBuffer, 0, cam.m.data(), sizeof(cam.m));
         }
 
         // bind the vertex buffer
@@ -308,6 +336,26 @@ void main()
     virtual SDL_AppResult event(SDL_Event* event) override
     {
         ImGui_ImplSDL3_ProcessEvent(event);
+        if (event->type == SDL_EVENT_KEY_DOWN)
+        {
+            switch (reinterpret_cast<SDL_KeyboardEvent*>(event)->key)
+            {
+            case SDLK_UP:
+                pitch += 0.1f;
+                break;
+            case SDLK_DOWN:
+                pitch -= 0.1f;
+                break;
+            case SDLK_LEFT:
+                yaw += 0.1f;
+                break;
+            case SDLK_RIGHT:
+                yaw -= 0.1f;
+                break;
+            default:
+                break;
+            }
+        }
         // close the window on request
         if (event->type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
         {
