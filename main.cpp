@@ -313,6 +313,8 @@ public:
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "Pipeline submit failed, error = %d",
                          static_cast<int>(pipeline_submit.error()));
+            // Upload pipeline failed, no need to draw.
+            return SDL_APP_CONTINUE;
         }
 
         SDL_GPUDevice* device = m_gpu->device();
