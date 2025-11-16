@@ -1,6 +1,8 @@
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <iostream>
-#include <optional>
+#include <numbers>
 #include "shaderc/shaderc.hpp"
 
 #include "imgui.h"
@@ -8,17 +10,27 @@
 #include "imgui_impl_sdlgpu3.h"
 #include "misc/cpp/imgui_stdlib.h"
 
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_gpu.h>
-#include "SDL3/SDL_log.h"
+#include "SDL3/SDL.h"
+#include "SDL3/SDL_gpu.h"
+#include "SDL3/SDL_keycode.h"
 import sdl_wrapper;
 
 // the vertex input layout
 struct Vertex
 {
     float x, y, z; // vec3 position
-    float r, g, b, a; // vec4 color
+    float r, g, b, a; /**
+                       * @brief Get a pointer to the vertex position's first component.
+                       *
+                       * @return float* Pointer to the `x` member; can be used to access the contiguous position
+                       * components `(x, y, z)`.
+                       */
     auto position() { return &x; }
+};
+
+struct CameraUniform
+{
+    std::array<float, 16> m{};
 };
 
 class UserApp : public sopho::App
@@ -27,12 +39,17 @@ class UserApp : public sopho::App
     sopho::BufferWrapper vertex_buffer{gpu_wrapper->create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, sizeof(vertices))};
     sopho::PipelineWrapper pipeline_wrapper{gpu_wrapper->create_pipeline()};
 
+    float yaw = 0.0f;
+    float pitch = 0.0f;
+
     // a list of vertices
     std::array<Vertex, 3> vertices{
         Vertex{0.0F, 0.5F, 0.0F, 1.0F, 0.0F, 0.0F, 1.0F}, // top vertex
         Vertex{-0.5F, -0.5F, 0.0F, 1.0F, 1.0F, 0.0F, 1.0F}, // bottom left vertex
         Vertex{0.5F, -0.5F, 0.0F, 1.0F, 0.0F, 1.0F, 1.0F} // bottom right vertex
     };
+
+    CameraUniform cam{};
 
     std::string vertex_source =
         R"WSQ(#version 460
@@ -41,9 +58,14 @@ layout (location = 0) in vec3 a_position;
 layout (location = 1) in vec4 a_color;
 layout (location = 0) out vec4 v_color;
 
+layout(std140, set = 1, binding = 0) uniform Camera
+{
+    mat4 uView;
+};
+
 void main()
 {
-  gl_Position = vec4(a_position, 1.0f);
+  gl_Position = uView * vec4(a_position, 1.0f);
   v_color = a_color;
 })WSQ";
     std::string fragment_source =
@@ -58,12 +80,11 @@ void main()
 })WSQ";
 
     /**
-     * @brief Initialize the application: create the window, configure GPU pipeline and resources, upload initial vertex
-     * data, and initialize ImGui.
+     * @brief Initialize application resources, GPU pipeline, vertex data, and Dear ImGui.
      *
-     * Performs window creation and GPU device claim, configures vertex input and color target state, sets vertex and
-     * fragment shaders on the pipeline wrapper and submits pipeline creation, uploads initial vertex data to the vertex
-     * buffer, and initializes Dear ImGui (context, style scaling, and SDL3/SDLGPU backends).
+     * Configures the graphics pipeline and vertex input, uploads the initial vertex buffer contents,
+     * initializes the camera uniform to the identity matrix, and sets up Dear ImGui (context, style/DPI
+     * scaling, and SDL3/SDLGPU backends).
      *
      * @return SDL_AppResult `SDL_APP_CONTINUE` to enter the main loop, `SDL_APP_SUCCESS` to request immediate
      * termination.
@@ -76,6 +97,15 @@ void main()
         pipeline_wrapper.submit();
 
         vertex_buffer.upload(&vertices, sizeof(vertices), 0);
+
+        {
+            // identity
+            cam.m[0] = cam.m[5] = cam.m[10] = cam.m[15] = 1.0F;
+            cam.m[1] = cam.m[2] = cam.m[3] = 0.0F;
+            cam.m[4] = cam.m[6] = cam.m[7] = 0.0F;
+            cam.m[8] = cam.m[9] = cam.m[11] = 0.0F;
+            cam.m[12] = cam.m[13] = cam.m[14] = 0.0F;
+        }
 
 
         // Setup Dear ImGui context
@@ -188,12 +218,11 @@ void main()
     }
 
     /**
-     * @brief Render ImGui draw data and the application's triangle to the GPU, then present the swapchain texture.
+     * @brief Render the application's triangle and ImGui UI to the GPU and present the current swapchain frame.
      *
-     * Prepares ImGui draw data, submits the graphics pipeline, acquires a GPU command buffer and the current
-     * swapchain texture, records rendering commands (including binding the pipeline and vertex buffer and issuing
-     * a draw call), executes ImGui rendering into the render pass, and submits the command buffer for presentation.
-     * If no swapchain texture is available the function still submits the command buffer and continues.
+     * Records and submits GPU commands for drawing the triangle, uploads the per-frame camera uniform,
+     * renders ImGui draw data into the same render pass, and presents the swapchain texture.
+     * If no swapchain texture is available, the function still submits any recorded command buffer and continues.
      *
      * @return SDL_AppResult `SDL_APP_CONTINUE` to continue the application main loop.
      */
@@ -235,6 +264,34 @@ void main()
 
         // draw calls go here
         SDL_BindGPUGraphicsPipeline(renderPass, pipeline_wrapper.data());
+
+        {
+
+            float cy = std::cos(yaw);
+            float sy = std::sin(yaw);
+            float cp = std::cos(pitch);
+            float sp = std::sin(pitch);
+
+            std::array Ry = {cy, 0.0F, sy, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, -sy, 0.0F, cy, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
+
+            std::array Rx = {1.0F, 0.0F, 0.0F, 0.0F, 0.0F, cp, sp, 0.0F, 0.0F, -sp, cp, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
+
+            auto mulMat4 = [](const float* A, const float* B, float* C)
+            {
+                for (int col = 0; col < 4; ++col)
+                {
+                    for (int row = 0; row < 4; ++row)
+                    {
+                        C[col * 4 + row] = A[0 * 4 + row] * B[col * 4 + 0] + A[1 * 4 + row] * B[col * 4 + 1] +
+                            A[2 * 4 + row] * B[col * 4 + 2] + A[3 * 4 + row] * B[col * 4 + 3];
+                    }
+                }
+            };
+
+            // uView = Rx * Ry
+            mulMat4(Rx.data(), Ry.data(), cam.m.data());
+            SDL_PushGPUVertexUniformData(commandBuffer, 0, cam.m.data(), sizeof(cam.m));
+        }
 
         // bind the vertex buffer
         SDL_GPUBufferBinding bufferBindings[1];
@@ -283,6 +340,28 @@ void main()
     virtual SDL_AppResult event(SDL_Event* event) override
     {
         ImGui_ImplSDL3_ProcessEvent(event);
+        if (event->type == SDL_EVENT_KEY_DOWN)
+        {
+            switch (event->key.key)
+            {
+            case SDLK_UP:
+                pitch += 0.1F;
+                pitch = std::clamp<float>(pitch, -std::numbers::pi / 2, std::numbers::pi / 2);
+                break;
+            case SDLK_DOWN:
+                pitch -= 0.1F;
+                pitch = std::clamp<float>(pitch, -std::numbers::pi / 2, std::numbers::pi / 2);
+                break;
+            case SDLK_LEFT:
+                yaw += 0.1F;
+                break;
+            case SDLK_RIGHT:
+                yaw -= 0.1F;
+                break;
+            default:
+                break;
+            }
+        }
         // close the window on request
         if (event->type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
         {

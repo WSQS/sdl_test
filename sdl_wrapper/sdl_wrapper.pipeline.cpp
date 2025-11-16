@@ -125,7 +125,7 @@ namespace sopho
             auto code_size = static_cast<size_t>(result.cend() - result.cbegin()) * sizeof(uint32_t);
             auto ptr = reinterpret_cast<const uint8_t*>(result.cbegin());
             std::vector<uint8_t> code{ptr, ptr + code_size};
-            m_vertex_shader = m_device->create_shader(code, SDL_GPU_SHADERSTAGE_VERTEX);
+            m_vertex_shader = m_device->create_shader(code, SDL_GPU_SHADERSTAGE_VERTEX, 1);
             m_pipeline_info.vertex_shader = m_vertex_shader;
             m_modified = true;
         }
@@ -154,7 +154,7 @@ namespace sopho
             auto code_size = static_cast<size_t>(result.cend() - result.cbegin()) * sizeof(uint32_t);
             auto ptr = reinterpret_cast<const uint8_t*>(result.cbegin());
             std::vector<uint8_t> code{ptr, ptr + code_size};
-            m_fragment_shader = m_device->create_shader(code, SDL_GPU_SHADERSTAGE_FRAGMENT);
+            m_fragment_shader = m_device->create_shader(code, SDL_GPU_SHADERSTAGE_FRAGMENT, 0);
             m_pipeline_info.fragment_shader = m_fragment_shader;
             m_modified = true;
         }

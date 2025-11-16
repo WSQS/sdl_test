@@ -48,7 +48,7 @@ export namespace sopho
 
         PipelineWrapper create_pipeline();
 
-        auto create_shader(const std::vector<uint8_t>& p_shader, SDL_GPUShaderStage p_stage)
+        auto create_shader(const std::vector<uint8_t>& p_shader, SDL_GPUShaderStage p_stage,uint32_t p_num_uniform_buffers)
         {
             SDL_GPUShaderCreateInfo vertexInfo{};
             vertexInfo.code = p_shader.data();
@@ -59,7 +59,7 @@ export namespace sopho
             vertexInfo.num_samplers = 0;
             vertexInfo.num_storage_buffers = 0;
             vertexInfo.num_storage_textures = 0;
-            vertexInfo.num_uniform_buffers = 0;
+            vertexInfo.num_uniform_buffers = p_num_uniform_buffers;
             return SDL_CreateGPUShader(m_device, &vertexInfo);
         }
 
