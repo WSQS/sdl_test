@@ -200,6 +200,7 @@ export namespace sopho
                 [](GpuContext ctx) { return std::shared_ptr<GpuWrapper>(new GpuWrapper(std::move(ctx))); });
         }
 
+        // Release resource in m_ctx
         ~GpuWrapper() = default;
 
         GpuWrapper(const GpuWrapper&) = delete;

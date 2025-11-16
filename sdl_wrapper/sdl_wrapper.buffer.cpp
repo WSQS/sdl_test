@@ -48,7 +48,6 @@ namespace sopho
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d buffer overflow: size=%u, offset=%u, buffer_size=%u", __FILE__,
                          __LINE__, size, offset, m_vertex_buffer_size);
 
-            // NOTE: You should add this value to your GpuError enum.
             return std::unexpected(GpuError::BUFFER_OVERFLOW);
         }
 
