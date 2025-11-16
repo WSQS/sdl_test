@@ -340,9 +340,11 @@ void main()
             {
             case SDLK_UP:
                 pitch += 0.1f;
+                pitch = std::clamp<float>(pitch, -M_PI_2, M_PI_2);
                 break;
             case SDLK_DOWN:
                 pitch -= 0.1f;
+                pitch = std::clamp<float>(pitch, -M_PI_2, M_PI_2);
                 break;
             case SDLK_LEFT:
                 yaw += 0.1f;
