@@ -12,22 +12,19 @@ namespace sopho
 {
     std::expected<BufferWrapper, GpuError> GpuWrapper::create_buffer(SDL_GPUBufferUsageFlags flag, uint32_t size)
     {
-        return m_device.and_then(
-            [&](auto device) -> std::expected<BufferWrapper, GpuError>
-            {
-                SDL_GPUBufferCreateInfo create_info{flag, size};
-                auto buffer = SDL_CreateGPUBuffer(device, &create_info);
-                if (!buffer)
-                {
-                    SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
-                    return std::unexpected(GpuError::CREATE_BUFFER_FAILED);
-                }
-                return BufferWrapper{shared_from_this(), buffer};
-            });
+        SDL_GPUBufferCreateInfo create_info{.usage = flag, .size = size};
+        auto buffer = SDL_CreateGPUBuffer(device(), &create_info);
+        if (!buffer)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
+            return std::unexpected(GpuError::CREATE_BUFFER_FAILED);
+        }
+        return BufferWrapper{shared_from_this(), buffer, size};
     }
-    std::expected<PipelineWrapper,GpuError> GpuWrapper::create_pipeline_wrapper() {
-        return m_device.transform([&](auto device)-> PipelineWrapper {
-            return PipelineWrapper{shared_from_this()};
-        });
+    std::expected<PipelineWrapper, GpuError> GpuWrapper::create_pipeline_wrapper()
+    {
+        // Query texture format, then construct PipelineWrapper
+        return get_texture_format().transform([self = shared_from_this()](SDL_GPUTextureFormat format)
+                                              { return PipelineWrapper{self, format}; });
     }
 } // namespace sopho
