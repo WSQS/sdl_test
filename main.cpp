@@ -1,7 +1,7 @@
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <iostream>
-#include <algorithm>
 #include <numbers>
 #include "shaderc/shaderc.hpp"
 
