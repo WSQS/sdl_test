@@ -1,6 +1,8 @@
 #include <array>
 #include <cmath>
 #include <iostream>
+#include <algorithm>
+#include <numbers>
 #include "shaderc/shaderc.hpp"
 
 #include "imgui.h"
@@ -8,8 +10,8 @@
 #include "imgui_impl_sdlgpu3.h"
 #include "misc/cpp/imgui_stdlib.h"
 
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_gpu.h>
+#include "SDL3/SDL.h"
+#include "SDL3/SDL_gpu.h"
 import sdl_wrapper;
 
 // the vertex input layout
@@ -343,11 +345,11 @@ void main()
             {
             case SDLK_UP:
                 pitch += 0.1F;
-                pitch = std::clamp<float>(pitch, -M_PI_2, M_PI_2);
+                pitch = std::clamp<float>(pitch, -std::numbers::pi / 2, std::numbers::pi / 2);
                 break;
             case SDLK_DOWN:
                 pitch -= 0.1F;
-                pitch = std::clamp<float>(pitch, -M_PI_2, M_PI_2);
+                pitch = std::clamp<float>(pitch, -std::numbers::pi / 2, std::numbers::pi / 2);
                 break;
             case SDLK_LEFT:
                 yaw += 0.1F;
