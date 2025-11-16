@@ -39,8 +39,10 @@ class UserApp : public sopho::App
 {
     // GPU + resources
     std::shared_ptr<sopho::GpuWrapper> m_gpu{};
-    std::expected<sopho::BufferWrapper, sopho::GpuError> m_vertex_buffer{std::unexpected(sopho::GpuError::UNINITIALIZED)};
-    std::expected<sopho::PipelineWrapper, sopho::GpuError> m_pipeline_wrapper{std::unexpected(sopho::GpuError::UNINITIALIZED)};
+    std::expected<sopho::BufferWrapper, sopho::GpuError> m_vertex_buffer{
+        std::unexpected(sopho::GpuError::UNINITIALIZED)};
+    std::expected<sopho::PipelineWrapper, sopho::GpuError> m_pipeline_wrapper{
+        std::unexpected(sopho::GpuError::UNINITIALIZED)};
 
     // camera state
     float yaw = 0.0f;
