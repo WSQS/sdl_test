@@ -269,9 +269,9 @@ void main()
             float cp = std::cos(pitch);
             float sp = std::sin(pitch);
 
-            float Ry[16] = {cy, 0.0f, sy, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -sy, 0.0f, cy, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+            std::array Ry = {cy, 0.0F, sy, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, -sy, 0.0F, cy, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
 
-            float Rx[16] = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, cp, sp, 0.0f, 0.0f, -sp, cp, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+            std::array Rx = {1.0F, 0.0F, 0.0F, 0.0F, 0.0F, cp, sp, 0.0F, 0.0F, -sp, cp, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
 
             auto mulMat4 = [](const float* A, const float* B, float* C)
             {
@@ -286,7 +286,7 @@ void main()
             };
 
             // uView = Rx * Ry
-            mulMat4(Rx, Ry, cam.m.data());
+            mulMat4(Rx.data(), Ry.data(), cam.m.data());
             SDL_PushGPUVertexUniformData(commandBuffer, 0, cam.m.data(), sizeof(cam.m));
         }
 
@@ -342,18 +342,18 @@ void main()
             switch (event->key.key)
             {
             case SDLK_UP:
-                pitch += 0.1f;
+                pitch += 0.1F;
                 pitch = std::clamp<float>(pitch, -M_PI_2, M_PI_2);
                 break;
             case SDLK_DOWN:
-                pitch -= 0.1f;
+                pitch -= 0.1F;
                 pitch = std::clamp<float>(pitch, -M_PI_2, M_PI_2);
                 break;
             case SDLK_LEFT:
-                yaw += 0.1f;
+                yaw += 0.1F;
                 break;
             case SDLK_RIGHT:
-                yaw -= 0.1f;
+                yaw -= 0.1F;
                 break;
             default:
                 break;
