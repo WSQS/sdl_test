@@ -27,17 +27,25 @@ export namespace sopho
     public:
         GpuWrapper()
         {
-            m_device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, nullptr);
-            if (!m_device)
+            auto device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, nullptr);
+            if (device == nullptr)
             {
                 SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
                 m_device = std::unexpected(GpuError::CREATE_DEVICE_FAILED);
             }
-            m_window = SDL_CreateWindow("Hello, Triangle!", 960, 540, SDL_WINDOW_RESIZABLE);
-            if (!m_window)
+            else
+            {
+                m_device = device;
+            }
+            auto window = SDL_CreateWindow("Hello, Triangle!", 960, 540, SDL_WINDOW_RESIZABLE);
+            if (window == nullptr)
             {
                 SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
                 m_window = std::unexpected(GpuError::CREATE_WINDOW_FAILED);
+            }
+            else
+            {
+                m_window = window;
             }
             m_device.and_then(
                 [&](auto device)
