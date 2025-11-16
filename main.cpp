@@ -1,3 +1,4 @@
+// main.cpp
 #include <algorithm>
 #include <array>
 #include <cmath>
