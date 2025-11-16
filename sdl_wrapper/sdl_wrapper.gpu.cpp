@@ -2,6 +2,7 @@
 // Created by wsqsy on 11/14/2025.
 //
 module;
+#include <expected>
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_log.h"
 module sdl_wrapper;
@@ -24,7 +25,7 @@ namespace sopho
                 return BufferWrapper{shared_from_this(), buffer};
             });
     }
-    std::expected<PipelineWrapper,GpuError> GpuWrapper::create_pipeline() {
+    std::expected<PipelineWrapper,GpuError> GpuWrapper::create_pipeline_wrapper() {
         return m_device.transform([&](auto device)-> PipelineWrapper {
             return PipelineWrapper{shared_from_this()};
         });

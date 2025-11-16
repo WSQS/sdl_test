@@ -22,6 +22,10 @@ export namespace sopho
         }
 
     public:
+        BufferWrapper(const BufferWrapper&) = delete;
+        BufferWrapper& operator=(const BufferWrapper&) = delete;
+        BufferWrapper(BufferWrapper&& other) noexcept = default;
+        BufferWrapper& operator=(BufferWrapper&& other) noexcept = default;
         void upload(void* p_data, uint32_t p_size, uint32_t p_offset);
 
         auto data() { return m_vertex_buffer; }

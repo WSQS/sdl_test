@@ -2,7 +2,9 @@
 // Created by sophomore on 11/13/25.
 //
 module;
+#include <expected>
 #include <memory>
+#include <variant>
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_log.h"
 #include "shaderc/shaderc.hpp"
@@ -25,28 +27,36 @@ namespace sopho
         options.SetTargetEnvironment(shaderc_target_env_vulkan, 0);
 
         m_vertex_buffer_description.emplace_back(0, 28, SDL_GPU_VERTEXINPUTRATE_VERTEX, 0);
-        m_pipeline_info.vertex_input_state.vertex_buffer_descriptions = m_vertex_buffer_description.data();
-        m_pipeline_info.vertex_input_state.num_vertex_buffers = m_vertex_buffer_description.size();
+        m_pipeline_info = m_device->get_texture_format().transform(
+            [&](auto format)
+            {
+                SDL_GPUGraphicsPipelineCreateInfo pipeline_info{};
 
-        m_vertex_attribute.emplace_back(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, 0);
-        m_vertex_attribute.emplace_back(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, sizeof(float) * 3);
-        m_pipeline_info.vertex_input_state.vertex_attributes = m_vertex_attribute.data();
-        m_pipeline_info.vertex_input_state.num_vertex_attributes = m_vertex_attribute.size();
+                pipeline_info.vertex_input_state.vertex_buffer_descriptions = m_vertex_buffer_description.data();
+                pipeline_info.vertex_input_state.num_vertex_buffers = m_vertex_buffer_description.size();
 
-        m_pipeline_info.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+                m_vertex_attribute.emplace_back(0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, 0);
+                m_vertex_attribute.emplace_back(1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, sizeof(float) * 3);
+                pipeline_info.vertex_input_state.vertex_attributes = m_vertex_attribute.data();
+                pipeline_info.vertex_input_state.num_vertex_attributes = m_vertex_attribute.size();
 
-        m_color_target_description.emplace_back(m_device->get_texture_format(),
-                                                SDL_GPUColorTargetBlendState{SDL_GPU_BLENDFACTOR_SRC_ALPHA,
-                                                                             SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-                                                                             SDL_GPU_BLENDOP_ADD,
-                                                                             SDL_GPU_BLENDFACTOR_SRC_ALPHA,
-                                                                             SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-                                                                             SDL_GPU_BLENDOP_ADD,
-                                                                             {},
-                                                                             true});
+                pipeline_info.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
 
-        m_pipeline_info.target_info.color_target_descriptions = m_color_target_description.data();
-        m_pipeline_info.target_info.num_color_targets = m_color_target_description.size();
+                m_color_target_description.emplace_back(
+                    format,
+                    SDL_GPUColorTargetBlendState{SDL_GPU_BLENDFACTOR_SRC_ALPHA,
+                                                 SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+                                                 SDL_GPU_BLENDOP_ADD,
+                                                 SDL_GPU_BLENDFACTOR_SRC_ALPHA,
+                                                 SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+                                                 SDL_GPU_BLENDOP_ADD,
+                                                 {},
+                                                 true});
+                pipeline_info.target_info.color_target_descriptions = m_color_target_description.data();
+                pipeline_info.target_info.num_color_targets = m_color_target_description.size();
+                return pipeline_info;
+            });
+
 
         m_modified = true;
     }
@@ -62,7 +72,7 @@ namespace sopho
     {
         if (m_graphics_pipeline)
         {
-            SDL_ReleaseGPUGraphicsPipeline(m_device->data(), m_graphics_pipeline);
+            m_device->release_pipeline(m_graphics_pipeline);
             m_graphics_pipeline = nullptr;
         }
         m_device->release_shader(m_vertex_shader);
@@ -81,17 +91,22 @@ namespace sopho
         if (m_modified)
         {
             m_modified = false;
-            m_pipeline_info.vertex_input_state.vertex_buffer_descriptions = m_vertex_buffer_description.data();
-            m_pipeline_info.vertex_input_state.vertex_attributes = m_vertex_attribute.data();
-            m_pipeline_info.target_info.color_target_descriptions = m_color_target_description.data();
-            auto new_graphics_pipeline = SDL_CreateGPUGraphicsPipeline(m_device->data(), &m_pipeline_info);
+            m_pipeline_info = m_pipeline_info.transform(
+                [&](auto pipeline_info)
+                {
+                    pipeline_info.vertex_input_state.vertex_buffer_descriptions = m_vertex_buffer_description.data();
+                    pipeline_info.vertex_input_state.vertex_attributes = m_vertex_attribute.data();
+                    pipeline_info.target_info.color_target_descriptions = m_color_target_description.data();
+                    return pipeline_info;
+                });
+            auto new_graphics_pipeline = m_device->create_pipeline(m_pipeline_info);
             if (new_graphics_pipeline)
             {
                 if (m_graphics_pipeline)
                 {
-                    SDL_ReleaseGPUGraphicsPipeline(m_device->data(), m_graphics_pipeline);
+                    m_device->release_pipeline(m_graphics_pipeline);
                 }
-                m_graphics_pipeline = new_graphics_pipeline;
+                m_graphics_pipeline = new_graphics_pipeline.value();
             }
             else
             {
@@ -126,7 +141,17 @@ namespace sopho
             auto ptr = reinterpret_cast<const uint8_t*>(result.cbegin());
             std::vector<uint8_t> code{ptr, ptr + code_size};
             m_vertex_shader = m_device->create_shader(code, SDL_GPU_SHADERSTAGE_VERTEX, 1);
-            m_pipeline_info.vertex_shader = m_vertex_shader;
+            m_vertex_shader.and_then(
+                [&](auto shader) -> std::expected<std::monostate, GpuError>
+                {
+                    m_pipeline_info = m_pipeline_info.transform(
+                        [&](auto pipeline_info)
+                        {
+                            pipeline_info.vertex_shader = shader;
+                            return pipeline_info;
+                        });
+                    return std::monostate{};
+                });
             m_modified = true;
         }
     }
@@ -155,7 +180,17 @@ namespace sopho
             auto ptr = reinterpret_cast<const uint8_t*>(result.cbegin());
             std::vector<uint8_t> code{ptr, ptr + code_size};
             m_fragment_shader = m_device->create_shader(code, SDL_GPU_SHADERSTAGE_FRAGMENT, 0);
-            m_pipeline_info.fragment_shader = m_fragment_shader;
+            m_fragment_shader.and_then(
+                [&](auto shader) -> std::expected<std::monostate, GpuError>
+                {
+                    m_pipeline_info = m_pipeline_info.transform(
+                        [&](auto pipeline_info)
+                        {
+                            pipeline_info.fragment_shader = shader;
+                            return pipeline_info;
+                        });
+                    return std::monostate{};
+                });
             m_modified = true;
         }
     }

@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <expected>
 #include <iostream>
 #include <numbers>
 #include "shaderc/shaderc.hpp"
@@ -37,8 +38,9 @@ struct CameraUniform
 class UserApp : public sopho::App
 {
     std::shared_ptr<sopho::GpuWrapper> gpu_wrapper{std::make_shared<sopho::GpuWrapper>()};
-    sopho::BufferWrapper vertex_buffer{gpu_wrapper->create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, sizeof(vertices))};
-    sopho::PipelineWrapper pipeline_wrapper{gpu_wrapper->create_pipeline()};
+    std::expected<sopho::BufferWrapper, sopho::GpuError> m_vertex_buffer{
+        gpu_wrapper->create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, sizeof(vertices))};
+    std::expected<sopho::PipelineWrapper, sopho::GpuError> m_pipeline_wrapper{gpu_wrapper->create_pipeline_wrapper()};
 
     float yaw = 0.0f;
     float pitch = 0.0f;
@@ -92,12 +94,20 @@ void main()
      */
     virtual SDL_AppResult init(int argc, char** argv) override
     {
-
-        pipeline_wrapper.set_vertex_shader(vertex_source);
-        pipeline_wrapper.set_fragment_shader(fragment_source);
-        pipeline_wrapper.submit();
-
-        vertex_buffer.upload(&vertices, sizeof(vertices), 0);
+        m_pipeline_wrapper.and_then(
+            [&](auto& pipeline_wrapper) -> std::expected<std::monostate, sopho::GpuError>
+            {
+                pipeline_wrapper.set_vertex_shader(vertex_source);
+                pipeline_wrapper.set_fragment_shader(fragment_source);
+                pipeline_wrapper.submit();
+                return std::monostate{};
+            });
+        m_vertex_buffer.and_then(
+            [&](auto& vertex_buffer) -> std::expected<std::monostate, sopho::GpuError>
+            {
+                vertex_buffer.upload(&vertices, sizeof(vertices), 0);
+                return std::monostate{};
+            });
 
         {
             // identity
@@ -131,16 +141,25 @@ void main()
         // Set initial font scale. (using io.ConfigDpiScaleFonts=true makes this
         // unnecessary. We leave both here for documentation purpose)
 
+        gpu_wrapper->acquire_window().and_then(
+            [&](auto window) -> std::expected<std::monostate, sopho::GpuError>
+            {
+                ImGui_ImplSDL3_InitForSDLGPU(window);
+                return std::monostate{};
+            });
         // Setup Platform/Renderer backends
-        ImGui_ImplSDL3_InitForSDLGPU(gpu_wrapper->acquire_window());
-        ImGui_ImplSDLGPU3_InitInfo init_info = {};
-        init_info.Device = gpu_wrapper->data();
-        init_info.ColorTargetFormat =
-            SDL_GetGPUSwapchainTextureFormat(gpu_wrapper->data(), gpu_wrapper->acquire_window());
-        init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1; // Only used in multi-viewports mode.
-        init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR; // Only used in multi-viewports mode.
-        init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
-        ImGui_ImplSDLGPU3_Init(&init_info);
+        gpu_wrapper->get_texture_format().and_then(
+            [&](auto format) -> std::expected<std::monostate, sopho::GpuError>
+            {
+                ImGui_ImplSDLGPU3_InitInfo init_info = {};
+                init_info.Device = gpu_wrapper->data().value();
+                init_info.ColorTargetFormat = format;
+                init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1; // Only used in multi-viewports mode.
+                init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR; // Only used in multi-viewports mode.
+                init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
+                ImGui_ImplSDLGPU3_Init(&init_info);
+                return std::monostate{};
+            });
 
         return SDL_APP_CONTINUE;
     }
@@ -178,7 +197,12 @@ void main()
                     if (change)
                     {
                         // TODO: shouldn't upload in tick, we should delay this into draw function.
-                        vertex_buffer.upload(&vertices, sizeof(vertices), 0);
+                        m_vertex_buffer.and_then(
+                            [&](auto& vertex_buffer) -> std::expected<std::monostate, sopho::GpuError>
+                            {
+                                vertex_buffer.upload(&vertices, sizeof(vertices), 0);
+                                return std::monostate{};
+                            });
                     }
                 }
                 break;
@@ -191,7 +215,12 @@ void main()
                     if (ImGui::InputTextMultiline("##vertex editor", &vertex_source, size,
                                                   ImGuiInputTextFlags_AllowTabInput))
                     {
-                        pipeline_wrapper.set_vertex_shader(vertex_source);
+                        m_pipeline_wrapper.and_then(
+                            [&](auto& pipeline_wrapper) -> std::expected<std::monostate, sopho::GpuError>
+                            {
+                                pipeline_wrapper.set_vertex_shader(vertex_source);
+                                return std::monostate{};
+                            });
                     }
                 }
                 break;
@@ -204,7 +233,12 @@ void main()
                     if (ImGui::InputTextMultiline("##fragment editor", &fragment_source, size,
                                                   ImGuiInputTextFlags_AllowTabInput))
                     {
-                        pipeline_wrapper.set_fragment_shader(fragment_source);
+                        m_pipeline_wrapper.and_then(
+                            [&](auto& pipeline_wrapper) -> std::expected<std::monostate, sopho::GpuError>
+                            {
+                                pipeline_wrapper.set_fragment_shader(fragment_source);
+                                return std::monostate{};
+                            });
                     }
                 }
                 break;
@@ -232,84 +266,105 @@ void main()
         ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();
 
-        pipeline_wrapper.submit();
-
-        // acquire the command buffer
-        SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(gpu_wrapper->data());
-
-        // get the swapchain texture
-        SDL_GPUTexture* swapchainTexture;
-        Uint32 width, height;
-        SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, gpu_wrapper->acquire_window(), &swapchainTexture, &width,
-                                              &height);
-
-        // end the frame early if a swapchain texture is not available
-        if (swapchainTexture == NULL)
-        {
-            // you must always submit the command buffer
-            SDL_SubmitGPUCommandBuffer(commandBuffer);
-            return SDL_APP_CONTINUE;
-        }
-
-        ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, commandBuffer);
-
-        // create the color target
-        SDL_GPUColorTargetInfo colorTargetInfo{};
-        colorTargetInfo.clear_color = {240 / 255.0F, 240 / 255.0F, 240 / 255.0F, 255 / 255.0F};
-        colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
-        colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
-        colorTargetInfo.texture = swapchainTexture;
-
-        // begin a render pass
-        SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, NULL);
-
-        // draw calls go here
-        SDL_BindGPUGraphicsPipeline(renderPass, pipeline_wrapper.data());
-
-        {
-
-            float cy = std::cos(yaw);
-            float sy = std::sin(yaw);
-            float cp = std::cos(pitch);
-            float sp = std::sin(pitch);
-
-            std::array Ry = {cy, 0.0F, sy, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, -sy, 0.0F, cy, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
-
-            std::array Rx = {1.0F, 0.0F, 0.0F, 0.0F, 0.0F, cp, sp, 0.0F, 0.0F, -sp, cp, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
-
-            auto mulMat4 = [](const float* A, const float* B, float* C)
+        m_pipeline_wrapper.and_then(
+            [](auto& pipeline_wrapper) -> std::expected<std::monostate, sopho::GpuError>
             {
-                for (int col = 0; col < 4; ++col)
-                {
-                    for (int row = 0; row < 4; ++row)
+                pipeline_wrapper.submit();
+                return std::monostate{};
+            });
+        gpu_wrapper->data().and_then(
+            [&](auto gpu)->std::expected<std::monostate,sopho::GpuError>
+            {
+                // acquire the command buffer
+                SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(gpu);
+                // get the swapchain texture
+                SDL_GPUTexture* swapchainTexture;
+                Uint32 width, height;
+                gpu_wrapper->acquire_window().and_then(
+                    [&](auto window) ->std::expected<std::monostate,sopho::GpuError>
                     {
-                        C[col * 4 + row] = A[0 * 4 + row] * B[col * 4 + 0] + A[1 * 4 + row] * B[col * 4 + 1] +
-                            A[2 * 4 + row] * B[col * 4 + 2] + A[3 * 4 + row] * B[col * 4 + 3];
-                    }
+                        SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, window, &swapchainTexture, &width,
+                                                              &height);
+                        return std::monostate{};
+                    });
+                // end the frame early if a swapchain texture is not available
+                if (swapchainTexture == NULL)
+                {
+                    // you must always submit the command buffer
+                    SDL_SubmitGPUCommandBuffer(commandBuffer);
+                    // return SDL_APP_CONTINUE;
                 }
-            };
+                ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, commandBuffer);
+                // create the color target
+                SDL_GPUColorTargetInfo colorTargetInfo{};
+                colorTargetInfo.clear_color = {240 / 255.0F, 240 / 255.0F, 240 / 255.0F, 255 / 255.0F};
+                colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
+                colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
+                colorTargetInfo.texture = swapchainTexture;
 
-            // uView = Rx * Ry
-            mulMat4(Rx.data(), Ry.data(), cam.m.data());
-            SDL_PushGPUVertexUniformData(commandBuffer, 0, cam.m.data(), sizeof(cam.m));
-        }
 
-        // bind the vertex buffer
-        SDL_GPUBufferBinding bufferBindings[1];
-        bufferBindings[0].buffer = vertex_buffer.data(); // index 0 is slot 0 in this example
-        bufferBindings[0].offset = 0; // start from the first byte
+                // begin a render pass
+                SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, NULL);
+                m_pipeline_wrapper.and_then(
+                    [&](auto& pipeline_wrapper)->std::expected<std::monostate,sopho::GpuError>
+                    {
+                        // draw calls go here
+                        SDL_BindGPUGraphicsPipeline(renderPass, pipeline_wrapper.data());
+                        return std::monostate{};
+                    });
+                {
 
-        SDL_BindGPUVertexBuffers(renderPass, 0, bufferBindings, 1); // bind one buffer starting from slot 0
+                    float cy = std::cos(yaw);
+                    float sy = std::sin(yaw);
+                    float cp = std::cos(pitch);
+                    float sp = std::sin(pitch);
 
-        SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
+                    std::array Ry = {cy,  0.0F, sy, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
+                                     -sy, 0.0F, cy, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
 
-        ImGui_ImplSDLGPU3_RenderDrawData(draw_data, commandBuffer, renderPass);
-        // end the render pass
-        SDL_EndGPURenderPass(renderPass);
+                    std::array Rx = {1.0F, 0.0F, 0.0F, 0.0F, 0.0F, cp,   sp,   0.0F,
+                                     0.0F, -sp,  cp,   0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
 
-        // submit the command buffer
-        SDL_SubmitGPUCommandBuffer(commandBuffer);
+                    auto mulMat4 = [](const float* A, const float* B, float* C)
+                    {
+                        for (int col = 0; col < 4; ++col)
+                        {
+                            for (int row = 0; row < 4; ++row)
+                            {
+                                C[col * 4 + row] = A[0 * 4 + row] * B[col * 4 + 0] + A[1 * 4 + row] * B[col * 4 + 1] +
+                                    A[2 * 4 + row] * B[col * 4 + 2] + A[3 * 4 + row] * B[col * 4 + 3];
+                            }
+                        }
+                    };
 
+                    // uView = Rx * Ry
+                    mulMat4(Rx.data(), Ry.data(), cam.m.data());
+                    SDL_PushGPUVertexUniformData(commandBuffer, 0, cam.m.data(), sizeof(cam.m));
+                }
+
+                m_vertex_buffer.and_then(
+                    [&](auto& vertex_buffer)->std::expected<std::monostate,sopho::GpuError>
+                    {
+                        // bind the vertex buffer
+                        SDL_GPUBufferBinding bufferBindings[1];
+                        bufferBindings[0].buffer = vertex_buffer.data(); // index 0 is slot 0 in this example
+                        bufferBindings[0].offset = 0; // start from the first byte
+
+                        SDL_BindGPUVertexBuffers(renderPass, 0, bufferBindings,
+                                                 1); // bind one buffer starting from slot 0
+                        return std::monostate{};
+                    });
+
+                SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
+
+                ImGui_ImplSDLGPU3_RenderDrawData(draw_data, commandBuffer, renderPass);
+                // end the render pass
+                SDL_EndGPURenderPass(renderPass);
+
+                // submit the command buffer
+                SDL_SubmitGPUCommandBuffer(commandBuffer);
+                return std::monostate{};
+            });
         return SDL_APP_CONTINUE;
     }
 

@@ -4,31 +4,25 @@
 module;
 #include <expected>
 #include <memory>
+#include <variant>
+
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_log.h"
 #include "SDL3/SDL_video.h"
 #include "shaderc/shaderc.hpp"
 export module sdl_wrapper:gpu;
+import :decl;
 import :buffer;
 import :pipeline;
 export namespace sopho
 {
-
-    enum class GpuError
-    {
-        CREATE_DEVICE_FAILED,
-        CREATE_WINDOW_FAILED,
-        CREATE_BUFFER_FAILED,
-        CREATE_SHADER_FAILED,
-        GET_TEXTUREFORMAT_FAILED,
-    };
 
     class GpuWrapper : public std::enable_shared_from_this<GpuWrapper>
     {
         std::expected<SDL_GPUDevice*, GpuError> m_device{};
 
         // TODO: Consider multi window situation
-        std::expected<SDL_Window*,GpuError> m_window{};
+        std::expected<SDL_Window*, GpuError> m_window{};
 
     public:
         GpuWrapper()
@@ -45,33 +39,74 @@ export namespace sopho
                 SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
                 m_window = std::unexpected(GpuError::CREATE_WINDOW_FAILED);
             }
+            m_device.and_then(
+                [&](auto device)
+                {
+                    return m_window.and_then(
+                        [&](auto window) -> std::expected<std::monostate, GpuError>
+                        {
+                            SDL_ClaimWindowForGPUDevice(device, window);
+                            return std::monostate{};
+                        });
+                });
         }
 
         ~GpuWrapper()
         {
-            m_window.and_then([&](auto window)
-            {
-                m_device.and_then([&](auto device)
+            m_window.and_then(
+                [&](auto window)
                 {
-                SDL_ReleaseWindowFromGPUDevice(window, device);
+                    SDL_DestroyWindow(window);
+                    return m_device.and_then(
+                        [&](auto device) -> std::expected<std::monostate, GpuError>
+                        {
+                            SDL_ReleaseWindowFromGPUDevice(device, window);
+                            return std::monostate{};
+                        });
                 });
-                SDL_DestroyWindow(window);
-            });
-            m_device.and_then([&](auto device)
-            {
-                SDL_DestroyGPUDevice(device);
-            });
-
+            m_device.and_then(
+                [&](auto device) -> std::expected<std::monostate, GpuError>
+                {
+                    SDL_DestroyGPUDevice(device);
+                    return std::monostate{};
+                });
         }
 
         auto data() { return m_device; }
 
         std::expected<BufferWrapper, GpuError> create_buffer(SDL_GPUBufferUsageFlags flag, uint32_t size);
 
-        std::expected<PipelineWrapper,GpuError> create_pipeline();
+        auto release_buffer(SDL_GPUBuffer* buffer)
+        {
+            m_device.and_then(
+                [&](auto device) -> std::expected<std::monostate, GpuError>
+                {
+                    SDL_ReleaseGPUBuffer(device, buffer);
+                    return std::monostate{};
+                });
+        }
 
-        auto create_shader(const std::vector<uint8_t>& shader, SDL_GPUShaderStage stage,
-                           uint32_t num_uniform_buffers)
+        std::expected<PipelineWrapper, GpuError> create_pipeline_wrapper();
+
+        auto create_pipeline(const std::expected<SDL_GPUGraphicsPipelineCreateInfo, GpuError>& create_info)
+        {
+            return m_device.and_then(
+                [&](auto device)
+                {
+                    return create_info.and_then(
+                        [&](auto pipeline_info) -> std::expected<SDL_GPUGraphicsPipeline*, GpuError>
+                        {
+                            auto pipeline = SDL_CreateGPUGraphicsPipeline(device, &pipeline_info);
+                            if (!pipeline)
+                            {
+                                return std::unexpected(GpuError::CREATE_PIPELINE_FAILED);
+                            }
+                            return pipeline;
+                        });
+                });
+        }
+
+        auto create_shader(const std::vector<uint8_t>& shader, SDL_GPUShaderStage stage, uint32_t num_uniform_buffers)
         {
             return m_device.and_then(
                 [&](auto p_device) -> std::expected<SDL_GPUShader*, GpuError>
@@ -99,30 +134,46 @@ export namespace sopho
         auto release_shader(const std::expected<SDL_GPUShader*, GpuError>& shader_expected)
         {
             m_device.and_then(
-                [&](auto p_device)
-                { shader_expected.and_then([&](auto shader) { SDL_ReleaseGPUShader(p_device, shader); }); });
+                [&](auto device)
+                {
+                    return shader_expected.and_then(
+                        [&](auto shader) -> std::expected<std::monostate, GpuError>
+                        {
+                            SDL_ReleaseGPUShader(device, shader);
+                            return std::monostate{};
+                        });
+                });
         }
 
-        auto acquire_window()
+        auto release_pipeline(SDL_GPUGraphicsPipeline* graphics_pipeline)
         {
-            return m_window;
+            m_device.and_then(
+                [&](auto device) -> std::expected<std::monostate, GpuError>
+                {
+                    SDL_ReleaseGPUGraphicsPipeline(device, graphics_pipeline);
+                    return std::monostate{};
+                });
         }
+
+        auto acquire_window() { return m_window; }
 
         auto get_texture_format()
         {
-            return m_device.and_then([&](auto device) -> std::expected<SDL_GPUTextureFormat, GpuError>
-            {
-                return m_window.and_then([&](auto window)
+            return m_device.and_then(
+                [&](auto device) -> std::expected<SDL_GPUTextureFormat, GpuError>
                 {
-                    auto format = SDL_GetGPUSwapchainTextureFormat(device, window);
-                    if (format == SDL_GPU_TEXTUREFORMAT_INVALID)
-                    {
-                        SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
-                        return std::unexpected(GpuError::GET_TEXTUREFORMAT_FAILED);
-                    }
-                    return format;
+                    return m_window.and_then(
+                        [&](auto window) -> std::expected<SDL_GPUTextureFormat, GpuError>
+                        {
+                            auto format = SDL_GetGPUSwapchainTextureFormat(device, window);
+                            if (format == SDL_GPU_TEXTUREFORMAT_INVALID)
+                            {
+                                SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
+                                return std::unexpected(GpuError::GET_TEXTUREFORMAT_FAILED);
+                            }
+                            return format;
+                        });
                 });
-            });
         }
     };
 } // namespace sopho

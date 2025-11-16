@@ -2,6 +2,7 @@
 // Created by sophomore on 11/11/25.
 //
 module;
+#include <expected>
 #include <memory>
 #include "SDL3/SDL_gpu.h"
 #include "shaderc/shaderc.hpp"
@@ -14,12 +15,12 @@ export namespace sopho
         SDL_GPUGraphicsPipeline* m_graphics_pipeline{};
         std::shared_ptr<GpuWrapper> m_device{};
 
-        SDL_GPUShader* m_vertex_shader{};
-        SDL_GPUShader* m_fragment_shader{};
+        std::expected<SDL_GPUShader*,GpuError> m_vertex_shader{};
+        std::expected<SDL_GPUShader*,GpuError> m_fragment_shader{};
         std::vector<SDL_GPUVertexBufferDescription> m_vertex_buffer_description{};
         std::vector<SDL_GPUVertexAttribute> m_vertex_attribute{};
         std::vector<SDL_GPUColorTargetDescription> m_color_target_description{};
-        SDL_GPUGraphicsPipelineCreateInfo m_pipeline_info{};
+        std::expected<SDL_GPUGraphicsPipelineCreateInfo,GpuError> m_pipeline_info{};
 
         shaderc::Compiler compiler{};
         shaderc::CompileOptions options{};

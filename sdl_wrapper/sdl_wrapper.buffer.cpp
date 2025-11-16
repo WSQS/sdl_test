@@ -23,11 +23,15 @@ namespace sopho
 
     BufferWrapper::~BufferWrapper()
     {
-        SDL_ReleaseGPUBuffer(m_gpu->data(), m_vertex_buffer);
+        if (!m_gpu)
+        {
+            return;
+        }
+        m_gpu->release_buffer(m_vertex_buffer);
         m_vertex_buffer = nullptr;
         if (m_transfer_buffer)
         {
-            SDL_ReleaseGPUTransferBuffer(m_gpu->data(), m_transfer_buffer);
+            SDL_ReleaseGPUTransferBuffer(m_gpu->data().value(), m_transfer_buffer);
             m_transfer_buffer = nullptr;
             m_transfer_buffer_size = 0;
         }
@@ -50,19 +54,19 @@ namespace sopho
         {
             if (m_transfer_buffer != nullptr)
             {
-                SDL_ReleaseGPUTransferBuffer(m_gpu->data(), m_transfer_buffer);
+                SDL_ReleaseGPUTransferBuffer(m_gpu->data().value(), m_transfer_buffer);
             }
             SDL_GPUTransferBufferCreateInfo transfer_info{SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, p_size, 0};
-            m_transfer_buffer = SDL_CreateGPUTransferBuffer(m_gpu->data(), &transfer_info);
+            m_transfer_buffer = SDL_CreateGPUTransferBuffer(m_gpu->data().value(), &transfer_info);
             m_transfer_buffer_size = transfer_info.size;
         }
 
-        auto data = SDL_MapGPUTransferBuffer(m_gpu->data(), m_transfer_buffer, false);
+        auto data = SDL_MapGPUTransferBuffer(m_gpu->data().value(), m_transfer_buffer, false);
         SDL_memcpy(data, p_data, p_size);
-        SDL_UnmapGPUTransferBuffer(m_gpu->data(), m_transfer_buffer);
+        SDL_UnmapGPUTransferBuffer(m_gpu->data().value(), m_transfer_buffer);
 
         // TODO: Delay submit command in collect
-        auto command_buffer = SDL_AcquireGPUCommandBuffer(m_gpu->data());
+        auto command_buffer = SDL_AcquireGPUCommandBuffer(m_gpu->data().value());
         auto copy_pass = SDL_BeginGPUCopyPass(command_buffer);
 
         SDL_GPUTransferBufferLocation location{};
