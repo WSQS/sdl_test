@@ -12,6 +12,7 @@
 
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_gpu.h"
+#include "SDL3/SDL_keycode.h"
 import sdl_wrapper;
 
 // the vertex input layout
