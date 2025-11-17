@@ -1,4 +1,6 @@
 // main.cpp
+// Created by wsqsy on 11/06/2025.
+//
 #include <algorithm>
 #include <array>
 #include <cmath>
