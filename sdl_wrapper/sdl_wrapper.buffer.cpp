@@ -1,9 +1,14 @@
-//
+// sdl_wrapper.buffer.cpp
 // Created by sophomore on 11/12/25.
 //
 module;
+#include <cstdint>
+#include <expected>
 #include <memory>
+#include <variant>
+
 #include "SDL3/SDL_gpu.h"
+#include "SDL3/SDL_log.h"
 #include "SDL3/SDL_stdinc.h"
 module sdl_wrapper;
 import :buffer;
@@ -11,59 +16,102 @@ import :gpu;
 
 namespace sopho
 {
-    /**
-     * @brief Releases GPU resources owned by this BufferWrapper.
-     *
-     * Releases the GPU vertex buffer and, if present, the transfer (staging) buffer,
-     * then clears the corresponding handles and resets the transfer buffer size.
-     *
-     * @note If the associated GPU has already been destroyed, releasing these resources
-     *       may have no effect or may be too late to perform a proper cleanup.
-     */
-
-    BufferWrapper::~BufferWrapper()
+    BufferWrapper::~BufferWrapper() noexcept
     {
-        SDL_ReleaseGPUBuffer(m_gpu->data(), m_vertex_buffer);
-        m_vertex_buffer = nullptr;
+        if (!m_gpu)
+        {
+            return;
+        }
+
+        // Release vertex buffer
+        if (m_vertex_buffer)
+        {
+            m_gpu->release_buffer(m_vertex_buffer);
+            m_vertex_buffer = nullptr;
+        }
+
+        // Release transfer buffer
         if (m_transfer_buffer)
         {
-            SDL_ReleaseGPUTransferBuffer(m_gpu->data(), m_transfer_buffer);
+            SDL_ReleaseGPUTransferBuffer(m_gpu->device(), m_transfer_buffer);
             m_transfer_buffer = nullptr;
             m_transfer_buffer_size = 0;
         }
     }
 
-    /**
-     * @brief Uploads a block of data into the wrapped GPU vertex buffer at the specified byte offset.
-     *
-     * Reallocates the internal staging (transfer) buffer if its capacity is less than the requested size,
-     * copies p_size bytes from p_data into the staging buffer, and enqueues a GPU copy pass that writes the data
-     * into the vertex buffer at p_offset. The GPU command buffer is submitted immediately.
-     *
-     * @param p_data Pointer to the source data to upload.
-     * @param p_size Size in bytes of the data to upload.
-     * @param p_offset Byte offset within the vertex buffer where the data will be written.
-     */
-    void BufferWrapper::upload(void* p_data, uint32_t p_size, uint32_t p_offset)
+    [[nodiscard]] std::expected<std::monostate, GpuError>
+    BufferWrapper::upload(const void* src_data, std::uint32_t size, std::uint32_t offset)
     {
-        if (p_size > m_transfer_buffer_size)
+        // Bounds check to avoid writing past the end of the GPU buffer.
+        if (offset + size > m_vertex_buffer_size)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d buffer overflow: size=%u, offset=%u, buffer_size=%u", __FILE__,
+                         __LINE__, size, offset, m_vertex_buffer_size);
+
+            return std::unexpected(GpuError::BUFFER_OVERFLOW);
+        }
+
+        auto* device = m_gpu->device();
+
+        // 1. Ensure the transfer buffer capacity is sufficient.
+        if (size > m_transfer_buffer_size)
         {
             if (m_transfer_buffer != nullptr)
             {
-                SDL_ReleaseGPUTransferBuffer(m_gpu->data(), m_transfer_buffer);
+                SDL_ReleaseGPUTransferBuffer(device, m_transfer_buffer);
+                m_transfer_buffer = nullptr;
+                m_transfer_buffer_size = 0;
             }
-            SDL_GPUTransferBufferCreateInfo transfer_info{SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, p_size, 0};
-            m_transfer_buffer = SDL_CreateGPUTransferBuffer(m_gpu->data(), &transfer_info);
+
+            SDL_GPUTransferBufferCreateInfo transfer_info{};
+            transfer_info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+            transfer_info.size = size;
+            transfer_info.props = 0;
+
+            m_transfer_buffer = SDL_CreateGPUTransferBuffer(device, &transfer_info);
+            if (!m_transfer_buffer)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to create transfer buffer: %s", __FILE__, __LINE__,
+                             SDL_GetError());
+
+                return std::unexpected(GpuError::CREATE_TRANSFER_BUFFER_FAILED);
+            }
+
             m_transfer_buffer_size = transfer_info.size;
         }
 
-        auto data = SDL_MapGPUTransferBuffer(m_gpu->data(), m_transfer_buffer, false);
-        SDL_memcpy(data, p_data, p_size);
-        SDL_UnmapGPUTransferBuffer(m_gpu->data(), m_transfer_buffer);
+        // 2. Map the transfer buffer and copy data into it.
+        void* dst = SDL_MapGPUTransferBuffer(device, m_transfer_buffer, false);
+        if (!dst)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to map transfer buffer: %s", __FILE__, __LINE__,
+                         SDL_GetError());
 
-        // TODO: Delay submit command in collect
-        auto command_buffer = SDL_AcquireGPUCommandBuffer(m_gpu->data());
-        auto copy_pass = SDL_BeginGPUCopyPass(command_buffer);
+            return std::unexpected(GpuError::MAP_TRANSFER_BUFFER_FAILED);
+        }
+
+        SDL_memcpy(dst, src_data, size);
+        SDL_UnmapGPUTransferBuffer(device, m_transfer_buffer);
+
+        // 3. Acquire a command buffer and enqueue the copy pass.
+        auto* command_buffer = SDL_AcquireGPUCommandBuffer(device);
+        if (!command_buffer)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to acquire GPU command buffer: %s", __FILE__, __LINE__,
+                         SDL_GetError());
+
+            return std::unexpected(GpuError::ACQUIRE_COMMAND_BUFFER_FAILED);
+        }
+
+        auto* copy_pass = SDL_BeginGPUCopyPass(command_buffer);
+
+        if (!copy_pass)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to begin GPU copy pass: %s", __FILE__, __LINE__,
+                         SDL_GetError());
+            SDL_SubmitGPUCommandBuffer(command_buffer);
+            return std::unexpected(GpuError::BEGIN_COPY_PASS_FAILED);
+        }
 
         SDL_GPUTransferBufferLocation location{};
         location.transfer_buffer = m_transfer_buffer;
@@ -71,12 +119,19 @@ namespace sopho
 
         SDL_GPUBufferRegion region{};
         region.buffer = m_vertex_buffer;
-        region.size = p_size;
-        region.offset = p_offset;
+        region.size = size;
+        region.offset = offset;
 
         SDL_UploadToGPUBuffer(copy_pass, &location, &region, false);
 
         SDL_EndGPUCopyPass(copy_pass);
-        SDL_SubmitGPUCommandBuffer(command_buffer);
+        if (!SDL_SubmitGPUCommandBuffer(command_buffer))
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
+            return std::unexpected(GpuError::SUBMIT_COMMAND_FAILED);
+        }
+
+        return std::monostate{};
     }
+
 } // namespace sopho
