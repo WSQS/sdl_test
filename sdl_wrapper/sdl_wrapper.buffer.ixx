@@ -1,9 +1,7 @@
 // sdl_wrapper.buffer.ixx
 // Created by sophomore on 11/8/25.
 //
-
 module;
-
 #include <expected>
 #include <memory>
 #include <variant>

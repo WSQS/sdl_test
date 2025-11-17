@@ -39,7 +39,7 @@ export namespace sopho
     public:
         RenderProcedural(const RenderProcedural&) = delete;
         RenderProcedural& operator=(const RenderProcedural&) = delete;
-        RenderProcedural(RenderProcedural&&)  noexcept = default;
+        RenderProcedural(RenderProcedural&&) noexcept = default;
         RenderProcedural& operator=(RenderProcedural&&) = delete;
         ~RenderProcedural() noexcept;
 
@@ -71,6 +71,8 @@ export namespace sopho
             m_vertex_layout.set_vertex_attributes(std::move(vertex_attributes));
             m_modified = true;
         }
+
+        auto& vertex_layout() const { return m_vertex_layout; }
 
         friend class GpuWrapper;
     };
