@@ -53,20 +53,7 @@ namespace sopho
         vb_desc.instance_step_rate = 0;
         m_vertex_buffer_descriptions.push_back(vb_desc);
 
-        // Setup vertex attributes: position (float3) + color (float4).
-        SDL_GPUVertexAttribute attr_pos{};
-        attr_pos.location = 0;
-        attr_pos.buffer_slot = 0;
-        attr_pos.format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
-        attr_pos.offset = 0;
-        m_vertex_attributes.push_back(attr_pos);
-
-        SDL_GPUVertexAttribute attr_color{};
-        attr_color.location = 1;
-        attr_color.buffer_slot = 0;
-        attr_color.format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4;
-        attr_color.offset = sizeof(float) * 3;
-        m_vertex_attributes.push_back(attr_color);
+        m_vertex_layout.set_vertex_attributes({SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4});
 
         // Setup color target blend state.
         SDL_GPUColorTargetBlendState blend{};
@@ -88,8 +75,9 @@ namespace sopho
         SDL_GPUGraphicsPipelineCreateInfo info{};
         info.vertex_input_state.vertex_buffer_descriptions = m_vertex_buffer_descriptions.data();
         info.vertex_input_state.num_vertex_buffers = static_cast<std::uint32_t>(m_vertex_buffer_descriptions.size());
-        info.vertex_input_state.vertex_attributes = m_vertex_attributes.data();
-        info.vertex_input_state.num_vertex_attributes = static_cast<std::uint32_t>(m_vertex_attributes.size());
+        info.vertex_input_state.vertex_attributes = m_vertex_layout.get_vertex_attributes().data();
+        info.vertex_input_state.num_vertex_attributes =
+            static_cast<std::uint32_t>(m_vertex_layout.get_vertex_attributes().size());
 
         info.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
 
@@ -143,9 +131,9 @@ namespace sopho
         m_pipeline_info.vertex_input_state.num_vertex_buffers =
             static_cast<std::uint32_t>(m_vertex_buffer_descriptions.size());
 
-        m_pipeline_info.vertex_input_state.vertex_attributes = m_vertex_attributes.data();
+        m_pipeline_info.vertex_input_state.vertex_attributes = m_vertex_layout.get_vertex_attributes().data();
         m_pipeline_info.vertex_input_state.num_vertex_attributes =
-            static_cast<std::uint32_t>(m_vertex_attributes.size());
+            static_cast<std::uint32_t>(m_vertex_layout.get_vertex_attributes().size());
 
         m_pipeline_info.target_info.color_target_descriptions = m_color_target_descriptions.data();
         m_pipeline_info.target_info.num_color_targets = static_cast<std::uint32_t>(m_color_target_descriptions.size());

@@ -12,7 +12,7 @@ module;
 #include "shaderc/shaderc.hpp"
 export module sdl_wrapper:pipeline;
 import :decl; // GpuError, forward declarations, etc.
-
+import :vertex_layout;
 export namespace sopho
 {
     class PipelineWrapper
@@ -24,13 +24,13 @@ export namespace sopho
         SDL_GPUShader* m_fragment_shader{};
 
         std::vector<SDL_GPUVertexBufferDescription> m_vertex_buffer_descriptions{};
-        std::vector<SDL_GPUVertexAttribute> m_vertex_attributes{};
         std::vector<SDL_GPUColorTargetDescription> m_color_target_descriptions{};
         SDL_GPUGraphicsPipelineCreateInfo m_pipeline_info{};
 
         shaderc::Compiler m_compiler{};
         shaderc::CompileOptions m_options{};
 
+        VertexLayout m_vertex_layout{};
         bool m_modified{false};
 
         // Internal constructor: assumes texture format is already known and valid.
@@ -65,6 +65,12 @@ export namespace sopho
         /// pipeline create info, and marks the pipeline as modified.
         /// On failure, a compile or creation error is returned.
         [[nodiscard]] std::expected<std::monostate, GpuError> set_fragment_shader(const std::string& source);
+
+        auto set_vertex_attributes(std::vector<SDL_GPUVertexElementFormat> vertex_attributes)
+        {
+            m_vertex_layout.set_vertex_attributes(std::move(vertex_attributes));
+            m_modified = true;
+        }
 
         friend class GpuWrapper;
     };
