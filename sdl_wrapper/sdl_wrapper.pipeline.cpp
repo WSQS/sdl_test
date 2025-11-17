@@ -42,18 +42,18 @@ namespace sopho
     PipelineWrapper::PipelineWrapper(std::shared_ptr<GpuWrapper> gpu, SDL_GPUTextureFormat swapchain_format) noexcept :
         m_gpu(std::move(gpu))
     {
+        m_vertex_layout.set_vertex_attributes({SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4});
         // Configure shaderc to target Vulkan/SPIR-V.
         m_options.SetTargetEnvironment(shaderc_target_env_vulkan, 0);
 
         // Setup vertex buffer description.
         SDL_GPUVertexBufferDescription vb_desc{};
         vb_desc.slot = 0;
-        vb_desc.pitch = 28; // 3 * float + 4 * float = 28 bytes
+        vb_desc.pitch = m_vertex_layout.get_stride();
         vb_desc.input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
         vb_desc.instance_step_rate = 0;
         m_vertex_buffer_descriptions.push_back(vb_desc);
 
-        m_vertex_layout.set_vertex_attributes({SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4});
 
         // Setup color target blend state.
         SDL_GPUColorTargetBlendState blend{};
