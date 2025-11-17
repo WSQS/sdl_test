@@ -12,7 +12,7 @@ module;
 export module sdl_wrapper:gpu;
 import :decl;
 import :buffer;
-import :pipeline;
+import :render_procedural;
 export namespace sopho
 {
 
@@ -222,7 +222,7 @@ export namespace sopho
             }
         }
 
-        [[nodiscard]] std::expected<PipelineWrapper, GpuError> create_pipeline_wrapper();
+        [[nodiscard]] std::expected<RenderProcedural, GpuError> create_pipeline_wrapper();
 
         std::expected<SDL_GPUGraphicsPipeline*, GpuError>
         create_pipeline(const SDL_GPUGraphicsPipelineCreateInfo& create_info)

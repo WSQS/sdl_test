@@ -12,7 +12,7 @@ module;
 #include "SDL3/SDL_log.h"
 #include "shaderc/shaderc.hpp"
 module sdl_wrapper;
-import :pipeline;
+import :render_procedural;
 import :gpu;
 
 namespace sopho
@@ -39,7 +39,7 @@ namespace sopho
         return bytes;
     }
 
-    PipelineWrapper::PipelineWrapper(std::shared_ptr<GpuWrapper> gpu, SDL_GPUTextureFormat swapchain_format) noexcept :
+    RenderProcedural::RenderProcedural(std::shared_ptr<GpuWrapper> gpu, SDL_GPUTextureFormat swapchain_format) noexcept :
         m_gpu(std::move(gpu))
     {
         m_vertex_layout.set_vertex_attributes({SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4});
@@ -92,7 +92,7 @@ namespace sopho
         m_modified = true;
     }
 
-    PipelineWrapper::~PipelineWrapper() noexcept
+    RenderProcedural::~RenderProcedural() noexcept
     {
         if (!m_gpu)
         {
@@ -118,7 +118,7 @@ namespace sopho
         }
     }
 
-    [[nodiscard]] std::expected<std::monostate, GpuError> PipelineWrapper::submit()
+    [[nodiscard]] std::expected<std::monostate, GpuError> RenderProcedural::submit()
     {
         if (!m_modified)
         {
@@ -160,7 +160,7 @@ namespace sopho
         return std::monostate{};
     }
 
-    [[nodiscard]] std::expected<std::monostate, GpuError> PipelineWrapper::set_vertex_shader(const std::string& source)
+    [[nodiscard]] std::expected<std::monostate, GpuError> RenderProcedural::set_vertex_shader(const std::string& source)
     {
         auto result = m_compiler.CompileGlslToSpv(source, shaderc_glsl_vertex_shader, "vertex.glsl", m_options);
         if (result.GetCompilationStatus() != shaderc_compilation_status_success)
@@ -197,7 +197,7 @@ namespace sopho
     }
 
     [[nodiscard]] std::expected<std::monostate, GpuError>
-    PipelineWrapper::set_fragment_shader(const std::string& source)
+    RenderProcedural::set_fragment_shader(const std::string& source)
     {
         auto result = m_compiler.CompileGlslToSpv(source, shaderc_glsl_fragment_shader, "fragment.glsl", m_options);
         if (result.GetCompilationStatus() != shaderc_compilation_status_success)

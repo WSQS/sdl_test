@@ -7,7 +7,7 @@ module;
 #include "SDL3/SDL_log.h"
 module sdl_wrapper;
 import :gpu;
-import :pipeline;
+import :render_procedural;
 namespace sopho
 {
     std::expected<BufferWrapper, GpuError> GpuWrapper::create_buffer(SDL_GPUBufferUsageFlags flag, uint32_t size)
@@ -21,10 +21,10 @@ namespace sopho
         }
         return BufferWrapper{shared_from_this(), buffer, size};
     }
-    std::expected<PipelineWrapper, GpuError> GpuWrapper::create_pipeline_wrapper()
+    std::expected<RenderProcedural, GpuError> GpuWrapper::create_pipeline_wrapper()
     {
-        // Query texture format, then construct PipelineWrapper
+        // Query texture format, then construct RenderProcedural
         return get_texture_format().transform([self = shared_from_this()](SDL_GPUTextureFormat format)
-                                              { return PipelineWrapper{self, format}; });
+                                              { return RenderProcedural{self, format}; });
     }
 } // namespace sopho

@@ -10,12 +10,12 @@ module;
 
 #include "SDL3/SDL_gpu.h"
 #include "shaderc/shaderc.hpp"
-export module sdl_wrapper:pipeline;
+export module sdl_wrapper:render_procedural;
 import :decl; // GpuError, forward declarations, etc.
 import :vertex_layout;
 export namespace sopho
 {
-    class PipelineWrapper
+    class RenderProcedural
     {
         std::shared_ptr<GpuWrapper> m_gpu{};
 
@@ -34,14 +34,14 @@ export namespace sopho
         bool m_modified{false};
 
         // Internal constructor: assumes texture format is already known and valid.
-        PipelineWrapper(std::shared_ptr<GpuWrapper> gpu, SDL_GPUTextureFormat swapchain_format) noexcept;
+        RenderProcedural(std::shared_ptr<GpuWrapper> gpu, SDL_GPUTextureFormat swapchain_format) noexcept;
 
     public:
-        PipelineWrapper(const PipelineWrapper&) = delete;
-        PipelineWrapper& operator=(const PipelineWrapper&) = delete;
-        PipelineWrapper(PipelineWrapper&&)  noexcept = default;
-        PipelineWrapper& operator=(PipelineWrapper&&) = delete;
-        ~PipelineWrapper() noexcept;
+        RenderProcedural(const RenderProcedural&) = delete;
+        RenderProcedural& operator=(const RenderProcedural&) = delete;
+        RenderProcedural(RenderProcedural&&)  noexcept = default;
+        RenderProcedural& operator=(RenderProcedural&&) = delete;
+        ~RenderProcedural() noexcept;
 
         /// Returns the underlying SDL_GPUGraphicsPipeline*.
         [[nodiscard]] SDL_GPUGraphicsPipeline* data() const noexcept { return m_graphics_pipeline; }

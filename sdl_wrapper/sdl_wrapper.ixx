@@ -7,5 +7,5 @@ export import :decl;
 export import :app;
 export import :gpu;
 export import :buffer;
-export import :pipeline;
+export import :render_procedural;
 export import :vertex_layout;

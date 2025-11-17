@@ -43,7 +43,7 @@ class UserApp : public sopho::App
     std::shared_ptr<sopho::GpuWrapper> m_gpu{};
     std::expected<sopho::BufferWrapper, sopho::GpuError> m_vertex_buffer{
         std::unexpected(sopho::GpuError::UNINITIALIZED)};
-    std::expected<sopho::PipelineWrapper, sopho::GpuError> m_pipeline_wrapper{
+    std::expected<sopho::RenderProcedural, sopho::GpuError> m_pipeline_wrapper{
         std::unexpected(sopho::GpuError::UNINITIALIZED)};
 
     // camera state
