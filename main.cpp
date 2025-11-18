@@ -32,7 +32,7 @@ class UserApp : public sopho::App
     std::shared_ptr<sopho::GpuWrapper> m_gpu{};
     std::expected<sopho::RenderProcedural, sopho::GpuError> m_render_procedural{
         std::unexpected(sopho::GpuError::UNINITIALIZED)};
-    std::expected<sopho::RenderData, sopho::GpuError> m_vertex_buffer{
+    std::expected<sopho::RenderData, sopho::GpuError> m_render_data{
         std::unexpected(sopho::GpuError::UNINITIALIZED)};
 
     // camera state
@@ -101,12 +101,12 @@ public:
         m_render_procedural.emplace(std::move(pw_result.value()));
 
         // 3. Create vertex buffer.
-        m_vertex_buffer =
+        m_render_data =
             std::move(m_gpu->create_data(m_render_procedural.value(),3));
-        if (!m_vertex_buffer)
+        if (!m_render_data)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
-                         static_cast<int>(m_vertex_buffer.error()));
+                         static_cast<int>(m_render_data.error()));
             return SDL_APP_FAILURE;
         }
 
@@ -124,7 +124,7 @@ public:
         }
 
         // 5. Upload initial vertex data.
-        auto upload_result = m_vertex_buffer.and_then(
+        auto upload_result = m_render_data.and_then(
             [&](auto& vertex_buffer)
             { return vertex_buffer.buffer().upload(); });
 
@@ -214,16 +214,16 @@ public:
         case 0: // Vertex positions
             {
                 bool changed = false;
-                changed |= ImGui::DragFloat3("##node1", reinterpret_cast<float*>(m_vertex_buffer.value().buffer().cpu_buffer()),
+                changed |= ImGui::DragFloat3("##node1", reinterpret_cast<float*>(m_render_data.value().buffer().cpu_buffer()),
                                              0.01f, -1.f, 1.f);
                 changed |= ImGui::DragFloat3(
-                    "##node2", reinterpret_cast<float*>(m_vertex_buffer.value().buffer().cpu_buffer()) + 7, 0.01f, -1.f, 1.f);
+                    "##node2", reinterpret_cast<float*>(m_render_data.value().buffer().cpu_buffer()) + 7, 0.01f, -1.f, 1.f);
                 changed |= ImGui::DragFloat3(
-                    "##node3", reinterpret_cast<float*>(m_vertex_buffer.value().buffer().cpu_buffer()) + 14, 0.01f, -1.f, 1.f);
+                    "##node3", reinterpret_cast<float*>(m_render_data.value().buffer().cpu_buffer()) + 14, 0.01f, -1.f, 1.f);
 
                 if (changed)
                 {
-                    auto upload_result = m_vertex_buffer.and_then(
+                    auto upload_result = m_render_data.and_then(
                         [&](auto& vertex_buffer)
                         {
                             return vertex_buffer.buffer().upload();
@@ -394,7 +394,7 @@ public:
         }
 
         // Bind vertex buffer and draw.
-        m_vertex_buffer.and_then(
+        m_render_data.and_then(
             [&](auto& vertex_buffer) -> std::expected<std::monostate, sopho::GpuError>
             {
                 SDL_GPUBufferBinding bufferBindings[1]{};
