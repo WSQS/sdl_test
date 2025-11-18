@@ -44,15 +44,6 @@ namespace sopho
     {
         auto src_data = m_cpu_buffer.data();
         auto size = m_cpu_buffer.size();
-        auto offset = 0;
-        // Bounds check to avoid writing past the end of the GPU buffer.
-        if (offset + size > m_gpu_buffer_size)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d buffer overflow: size=%u, offset=%u, buffer_size=%u", __FILE__,
-                         __LINE__, size, offset, m_gpu_buffer_size);
-
-            return std::unexpected(GpuError::BUFFER_OVERFLOW);
-        }
 
         auto* device = m_gpu->device();
 
@@ -123,7 +114,7 @@ namespace sopho
         SDL_GPUBufferRegion region{};
         region.buffer = m_gpu_buffer;
         region.size = size;
-        region.offset = offset;
+        region.offset = 0;
 
         SDL_UploadToGPUBuffer(copy_pass, &location, &region, false);
 
