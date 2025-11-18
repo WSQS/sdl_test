@@ -398,7 +398,7 @@ public:
             [&](auto& vertex_buffer) -> std::expected<std::monostate, sopho::GpuError>
             {
                 SDL_GPUBufferBinding bufferBindings[1]{};
-                bufferBindings[0].buffer = vertex_buffer.data();
+                bufferBindings[0].buffer = vertex_buffer.gpu_buffer();
                 bufferBindings[0].offset = 0;
 
                 SDL_BindGPUVertexBuffers(renderPass, 0, bufferBindings, 1);

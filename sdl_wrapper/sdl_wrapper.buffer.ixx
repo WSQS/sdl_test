@@ -48,7 +48,7 @@ export namespace sopho
         [[nodiscard]] std::expected<std::monostate, GpuError> upload();
 
         /// Returns the underlying SDL_GPUBuffer pointer.
-        [[nodiscard]] SDL_GPUBuffer* data() const noexcept { return m_vertex_buffer; }
+        [[nodiscard]] SDL_GPUBuffer* gpu_buffer() const noexcept { return m_vertex_buffer; }
         [[nodiscard]] auto cpu_buffer()noexcept { return m_cpu_buffer.data(); }
 
         ~BufferWrapper() noexcept;
