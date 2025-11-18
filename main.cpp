@@ -91,7 +91,7 @@ public:
         m_gpu = std::move(gpu_result.value());
 
         // 2. Create pipeline wrapper.
-        auto pw_result = m_gpu->create_pipeline_wrapper();
+        auto pw_result = m_gpu->create_render_procedural();
         if (!pw_result)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create pipeline wrapper, error = %d",

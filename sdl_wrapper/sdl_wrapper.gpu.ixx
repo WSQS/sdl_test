@@ -224,7 +224,7 @@ export namespace sopho
             }
         }
 
-        [[nodiscard]] std::expected<RenderProcedural, GpuError> create_pipeline_wrapper();
+        [[nodiscard]] std::expected<RenderProcedural, GpuError> create_render_procedural();
 
         std::expected<SDL_GPUGraphicsPipeline*, GpuError>
         create_pipeline(const SDL_GPUGraphicsPipelineCreateInfo& create_info)

@@ -44,7 +44,7 @@ namespace sopho
         }
         return RenderData{std::move(buffer.value() )};
     }
-    std::expected<RenderProcedural, GpuError> GpuWrapper::create_pipeline_wrapper()
+    std::expected<RenderProcedural, GpuError> GpuWrapper::create_render_procedural()
     {
         // Query texture format, then construct RenderProcedural
         return get_texture_format().transform([self = shared_from_this()](SDL_GPUTextureFormat format)
