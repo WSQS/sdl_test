@@ -35,7 +35,6 @@ namespace sopho
         {
             SDL_ReleaseGPUTransferBuffer(m_gpu->device(), m_transfer_buffer);
             m_transfer_buffer = nullptr;
-            m_transfer_buffer_size = 0;
         }
     }
 
@@ -46,33 +45,6 @@ namespace sopho
         auto size = m_cpu_buffer.size();
 
         auto* device = m_gpu->device();
-
-        // 1. Ensure the transfer buffer capacity is sufficient.
-        if (size > m_transfer_buffer_size)
-        {
-            if (m_transfer_buffer != nullptr)
-            {
-                SDL_ReleaseGPUTransferBuffer(device, m_transfer_buffer);
-                m_transfer_buffer = nullptr;
-                m_transfer_buffer_size = 0;
-            }
-
-            SDL_GPUTransferBufferCreateInfo transfer_info{};
-            transfer_info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-            transfer_info.size = size;
-            transfer_info.props = 0;
-
-            m_transfer_buffer = SDL_CreateGPUTransferBuffer(device, &transfer_info);
-            if (!m_transfer_buffer)
-            {
-                SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to create transfer buffer: %s", __FILE__, __LINE__,
-                             SDL_GetError());
-
-                return std::unexpected(GpuError::CREATE_TRANSFER_BUFFER_FAILED);
-            }
-
-            m_transfer_buffer_size = transfer_info.size;
-        }
 
         // 2. Map the transfer buffer and copy data into it.
         void* dst = SDL_MapGPUTransferBuffer(device, m_transfer_buffer, false);

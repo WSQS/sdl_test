@@ -13,13 +13,23 @@ namespace sopho
     std::expected<BufferWrapper, GpuError> GpuWrapper::create_buffer(SDL_GPUBufferUsageFlags flag, uint32_t size)
     {
         SDL_GPUBufferCreateInfo create_info{.usage = flag, .size = size};
-        auto buffer = SDL_CreateGPUBuffer(device(), &create_info);
-        if (!buffer)
+        auto gpu_buffer = SDL_CreateGPUBuffer(device(), &create_info);
+        if (!gpu_buffer)
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
-            return std::unexpected(GpuError::CREATE_BUFFER_FAILED);
+            return std::unexpected(GpuError::CREATE_GPU_BUFFER_FAILED);
         }
-        return BufferWrapper{shared_from_this(), buffer, size};
+        SDL_GPUTransferBufferCreateInfo transfer_info{};
+        transfer_info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+        transfer_info.size = size;
+        transfer_info.props = 0;
+        auto transfer_buffer = SDL_CreateGPUTransferBuffer(device(), &transfer_info);
+        if (!transfer_buffer)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
+            return std::unexpected(GpuError::CREATE_TRANSFER_BUFFER_FAILED);
+        }
+        return BufferWrapper{shared_from_this(), gpu_buffer, transfer_buffer, size};
     }
     std::expected<RenderProcedural, GpuError> GpuWrapper::create_pipeline_wrapper()
     {
