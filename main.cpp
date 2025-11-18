@@ -100,16 +100,6 @@ public:
         }
         m_render_procedural.emplace(std::move(pw_result.value()));
 
-        // 3. Create vertex buffer.
-        m_render_data =
-            std::move(m_gpu->create_data(m_render_procedural.value(),3));
-        if (!m_render_data)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
-                         static_cast<int>(m_render_data.error()));
-            return SDL_APP_FAILURE;
-        }
-
         // 4. Compile shaders and build initial pipeline.
         auto pipeline_init =
             m_render_procedural.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
@@ -120,6 +110,16 @@ public:
         {
             SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to initialize pipeline, error = %d",
                          static_cast<int>(pipeline_init.error()));
+            return SDL_APP_FAILURE;
+        }
+
+        // 3. Create vertex buffer.
+        m_render_data =
+            std::move(m_gpu->create_data(m_render_procedural.value(),3));
+        if (!m_render_data)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
+                         static_cast<int>(m_render_data.error()));
             return SDL_APP_FAILURE;
         }
 
