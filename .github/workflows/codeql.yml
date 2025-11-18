@@ -10,6 +10,9 @@ jobs:
   codeql:
     name: CodeQL C++ Analysis
     runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --user root
 
     permissions:
       contents: read
@@ -19,15 +22,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set reusable strings
+        id: strings
+        shell: bash
+        run: |
+          echo "build-output-dir=$GITHUB_WORKSPACE/build" >> "$GITHUB_OUTPUT"
+          echo "install-dir=$GITHUB_WORKSPACE/install/archlinux-gcc-release" >> "$GITHUB_OUTPUT"
+
       - name: Install SDL windowing deps (Linux)
         run: |
-          sudo apt update
-          sudo apt install -y \
-              build-essential cmake ninja-build pkg-config gcc clang git python3 \
-              libasound2-dev libjack-jackd2-dev libpulse-dev \
-              xorg-dev libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev \
-              libxkbcommon-dev wayland-protocols libwayland-dev \
-              libdrm-dev mesa-utils mesa-common-dev
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm --needed \
+              base-devel cmake ninja pkgconf gcc git python3 \
+              alsa-lib jack libpulse \
+              xorgproto libx11 libxext libxrandr libxcursor libxfixes libxi libxss libxtst \
+              libxkbcommon wayland wayland-protocols \
+              libdrm mesa mesa-utils
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
@@ -36,17 +46,20 @@ jobs:
           build-mode: manual
 
       - name: Configure CMake
-        run: |
-          mkdir -p build
-          cmake -B build \
-            -DCMAKE_CXX_COMPILER=clang++ \
-            -DCMAKE_C_COMPILER=clang \
-            -S $GITHUB_WORKSPACE \
-            -G "Ninja Multi-Config"
+        run: >
+          cmake -B ${{ steps.strings.outputs.build-output-dir }}
+          -DCMAKE_C_COMPILER=gcc
+          -DCMAKE_CXX_COMPILER=g++
+          -DCMAKE_BUILD_TYPE=Release
+          -S $GITHUB_WORKSPACE
+          -G "Ninja Multi-Config"
 
-      - name: Build with CMake
-        run: |
-          cmake --build build --config Debug -- -j"$(nproc)"
+      - name: Build
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config Release
+
+      - name: Test
+        working-directory: ${{ steps.strings.outputs.build-output-dir }}
+        run: ctest --build-config Release
 
       - name: Run CodeQL analysis
         uses: github/codeql-action/analyze@v4
