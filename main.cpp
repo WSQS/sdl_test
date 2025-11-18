@@ -30,7 +30,7 @@ class UserApp : public sopho::App
 {
     // GPU + resources
     std::shared_ptr<sopho::GpuWrapper> m_gpu{};
-    std::expected<sopho::RenderProcedural, sopho::GpuError> m_pipeline_wrapper{
+    std::expected<sopho::RenderProcedural, sopho::GpuError> m_render_procedural{
         std::unexpected(sopho::GpuError::UNINITIALIZED)};
     std::expected<sopho::RenderData, sopho::GpuError> m_vertex_buffer{
         std::unexpected(sopho::GpuError::UNINITIALIZED)};
@@ -98,11 +98,11 @@ public:
                          static_cast<int>(pw_result.error()));
             return SDL_APP_FAILURE;
         }
-        m_pipeline_wrapper.emplace(std::move(pw_result.value()));
+        m_render_procedural.emplace(std::move(pw_result.value()));
 
         // 3. Create vertex buffer.
         m_vertex_buffer =
-            std::move(m_gpu->create_data(m_pipeline_wrapper.value(),3));
+            std::move(m_gpu->create_data(m_render_procedural.value(),3));
         if (!m_vertex_buffer)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
@@ -112,9 +112,9 @@ public:
 
         // 4. Compile shaders and build initial pipeline.
         auto pipeline_init =
-            m_pipeline_wrapper.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
-                .and_then([&](std::monostate) { return m_pipeline_wrapper->set_fragment_shader(fragment_source); })
-                .and_then([&](std::monostate) { return m_pipeline_wrapper->submit(); });
+            m_render_procedural.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
+                .and_then([&](std::monostate) { return m_render_procedural->set_fragment_shader(fragment_source); })
+                .and_then([&](std::monostate) { return m_render_procedural->submit(); });
 
         if (!pipeline_init)
         {
@@ -246,7 +246,7 @@ public:
                 if (ImGui::InputTextMultiline("##vertex editor", &vertex_source, size,
                                               ImGuiInputTextFlags_AllowTabInput))
                 {
-                    auto result = m_pipeline_wrapper.and_then(
+                    auto result = m_render_procedural.and_then(
                         [&](auto& pipeline_wrapper) { return pipeline_wrapper.set_vertex_shader(vertex_source); });
                     if (!result)
                     {
@@ -266,7 +266,7 @@ public:
                 if (ImGui::InputTextMultiline("##fragment editor", &fragment_source, size,
                                               ImGuiInputTextFlags_AllowTabInput))
                 {
-                    auto result = m_pipeline_wrapper.and_then(
+                    auto result = m_render_procedural.and_then(
                         [&](auto& pipeline_wrapper) { return pipeline_wrapper.set_fragment_shader(fragment_source); });
                     if (!result)
                     {
@@ -296,7 +296,7 @@ public:
 
         // Rebuild pipeline if needed.
         auto pipeline_submit =
-            m_pipeline_wrapper.and_then([](auto& pipeline_wrapper) { return pipeline_wrapper.submit(); });
+            m_render_procedural.and_then([](auto& pipeline_wrapper) { return pipeline_wrapper.submit(); });
         if (!pipeline_submit)
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "Pipeline submit failed, error = %d",
@@ -356,7 +356,7 @@ public:
         SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, nullptr);
 
         // Bind pipeline if available.
-        m_pipeline_wrapper.and_then(
+        m_render_procedural.and_then(
             [&](auto& pipeline_wrapper) -> std::expected<std::monostate, sopho::GpuError>
             {
                 SDL_BindGPUGraphicsPipeline(renderPass, pipeline_wrapper.data());
