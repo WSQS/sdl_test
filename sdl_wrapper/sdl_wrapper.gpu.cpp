@@ -8,6 +8,8 @@ module;
 module sdl_wrapper;
 import :gpu;
 import :render_procedural;
+import :render_data;
+import :vertex_layout;
 namespace sopho
 {
     std::expected<BufferWrapper, GpuError> GpuWrapper::create_buffer(SDL_GPUBufferUsageFlags flag, uint32_t size)
@@ -30,6 +32,17 @@ namespace sopho
             return std::unexpected(GpuError::CREATE_TRANSFER_BUFFER_FAILED);
         }
         return BufferWrapper{shared_from_this(), gpu_buffer, transfer_buffer, size};
+    }
+    std::expected<RenderData, GpuError> GpuWrapper::create_data(const RenderProcedural& render_procedural,
+                                                                uint32_t vertex_count)
+    {
+        auto size = render_procedural.vertex_layout().get_stride()*vertex_count;
+        auto buffer = create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX,size);
+        if (!buffer)
+        {
+            return std::unexpected(buffer.error());
+        }
+        return RenderData{std::move(buffer.value() )};
     }
     std::expected<RenderProcedural, GpuError> GpuWrapper::create_pipeline_wrapper()
     {

@@ -31,4 +31,5 @@ export namespace sopho
     class GpuWrapper;
     class BufferWrapper;
     class RenderProcedural;
+    class RenderData;
 }

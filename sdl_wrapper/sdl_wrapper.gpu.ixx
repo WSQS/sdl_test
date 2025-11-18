@@ -213,6 +213,8 @@ export namespace sopho
         [[nodiscard]] auto window() const { return m_ctx.window.raw; }
 
         [[nodiscard]] std::expected<BufferWrapper, GpuError> create_buffer(SDL_GPUBufferUsageFlags flag, uint32_t size);
+        [[nodiscard]] std::expected<RenderData, GpuError>
+        create_data(const RenderProcedural& render_procedural, uint32_t vertex_count);
 
         auto release_buffer(SDL_GPUBuffer* buffer)
         {

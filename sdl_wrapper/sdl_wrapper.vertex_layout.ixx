@@ -105,6 +105,6 @@ namespace sopho
         }
 
         const auto& get_vertex_attributes() { return attributes; }
-        auto get_stride() { return stride; }
+        auto get_stride()const { return stride; }
     };
 } // namespace sopho

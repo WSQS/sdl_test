@@ -30,9 +30,9 @@ class UserApp : public sopho::App
 {
     // GPU + resources
     std::shared_ptr<sopho::GpuWrapper> m_gpu{};
-    std::expected<sopho::BufferWrapper, sopho::GpuError> m_vertex_buffer{
-        std::unexpected(sopho::GpuError::UNINITIALIZED)};
     std::expected<sopho::RenderProcedural, sopho::GpuError> m_pipeline_wrapper{
+        std::unexpected(sopho::GpuError::UNINITIALIZED)};
+    std::expected<sopho::RenderData, sopho::GpuError> m_vertex_buffer{
         std::unexpected(sopho::GpuError::UNINITIALIZED)};
 
     // camera state
@@ -90,17 +90,7 @@ public:
         }
         m_gpu = std::move(gpu_result.value());
 
-        // 2. Create vertex buffer.
-        m_vertex_buffer =
-            m_gpu->create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, static_cast<std::uint32_t>(84));
-        if (!m_vertex_buffer)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
-                         static_cast<int>(m_vertex_buffer.error()));
-            return SDL_APP_FAILURE;
-        }
-
-        // 3. Create pipeline wrapper.
+        // 2. Create pipeline wrapper.
         auto pw_result = m_gpu->create_pipeline_wrapper();
         if (!pw_result)
         {
@@ -109,6 +99,16 @@ public:
             return SDL_APP_FAILURE;
         }
         m_pipeline_wrapper.emplace(std::move(pw_result.value()));
+
+        // 3. Create vertex buffer.
+        m_vertex_buffer =
+            std::move(m_gpu->create_data(m_pipeline_wrapper.value(),3));
+        if (!m_vertex_buffer)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
+                         static_cast<int>(m_vertex_buffer.error()));
+            return SDL_APP_FAILURE;
+        }
 
         // 4. Compile shaders and build initial pipeline.
         auto pipeline_init =
@@ -126,7 +126,7 @@ public:
         // 5. Upload initial vertex data.
         auto upload_result = m_vertex_buffer.and_then(
             [&](auto& vertex_buffer)
-            { return vertex_buffer.upload(); });
+            { return vertex_buffer.buffer().upload(); });
 
         if (!upload_result)
         {
@@ -214,19 +214,19 @@ public:
         case 0: // Vertex positions
             {
                 bool changed = false;
-                changed |= ImGui::DragFloat3("##node1", reinterpret_cast<float*>(m_vertex_buffer.value().cpu_buffer()),
+                changed |= ImGui::DragFloat3("##node1", reinterpret_cast<float*>(m_vertex_buffer.value().buffer().cpu_buffer()),
                                              0.01f, -1.f, 1.f);
                 changed |= ImGui::DragFloat3(
-                    "##node2", reinterpret_cast<float*>(m_vertex_buffer.value().cpu_buffer()) + 7, 0.01f, -1.f, 1.f);
+                    "##node2", reinterpret_cast<float*>(m_vertex_buffer.value().buffer().cpu_buffer()) + 7, 0.01f, -1.f, 1.f);
                 changed |= ImGui::DragFloat3(
-                    "##node3", reinterpret_cast<float*>(m_vertex_buffer.value().cpu_buffer()) + 14, 0.01f, -1.f, 1.f);
+                    "##node3", reinterpret_cast<float*>(m_vertex_buffer.value().buffer().cpu_buffer()) + 14, 0.01f, -1.f, 1.f);
 
                 if (changed)
                 {
                     auto upload_result = m_vertex_buffer.and_then(
                         [&](auto& vertex_buffer)
                         {
-                            return vertex_buffer.upload();
+                            return vertex_buffer.buffer().upload();
                         });
                     if (!upload_result)
                     {
@@ -398,7 +398,7 @@ public:
             [&](auto& vertex_buffer) -> std::expected<std::monostate, sopho::GpuError>
             {
                 SDL_GPUBufferBinding bufferBindings[1]{};
-                bufferBindings[0].buffer = vertex_buffer.gpu_buffer();
+                bufferBindings[0].buffer = vertex_buffer.buffer().gpu_buffer();
                 bufferBindings[0].offset = 0;
 
                 SDL_BindGPUVertexBuffers(renderPass, 0, bufferBindings, 1);
