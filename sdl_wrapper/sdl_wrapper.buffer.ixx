@@ -5,6 +5,7 @@ module;
 #include <expected>
 #include <memory>
 #include <variant>
+#include <vector>
 
 #include "SDL3/SDL_gpu.h"
 
@@ -20,11 +21,13 @@ export namespace sopho
         SDL_GPUTransferBuffer* m_transfer_buffer{}; // Staging/transfer buffer
         std::uint32_t m_vertex_buffer_size{}; // Total size of the GPU buffer
         std::uint32_t m_transfer_buffer_size{}; // Current capacity of the transfer buffer
+        std::vector<std::byte> m_cpu_buffer{};
 
         // Only GpuWrapper is allowed to construct this type.
         BufferWrapper(std::shared_ptr<GpuWrapper> gpu, SDL_GPUBuffer* buffer, std::uint32_t size) noexcept :
             m_gpu(std::move(gpu)), m_vertex_buffer(buffer), m_vertex_buffer_size(size)
         {
+            m_cpu_buffer.resize(m_vertex_buffer_size);
         }
 
     public:
@@ -42,11 +45,11 @@ export namespace sopho
         ///  - Acquiring a GPU command buffer fails.
         ///
         /// All such failures are reported via the returned std::expected.
-        [[nodiscard]] std::expected<std::monostate, GpuError> upload(const void* data, std::uint32_t size,
-                                                                     std::uint32_t offset);
+        [[nodiscard]] std::expected<std::monostate, GpuError> upload();
 
         /// Returns the underlying SDL_GPUBuffer pointer.
         [[nodiscard]] SDL_GPUBuffer* data() const noexcept { return m_vertex_buffer; }
+        [[nodiscard]] auto cpu_buffer()noexcept { return m_cpu_buffer.data(); }
 
         ~BufferWrapper() noexcept;
 

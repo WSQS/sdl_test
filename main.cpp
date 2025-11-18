@@ -21,17 +21,6 @@
 
 import sdl_wrapper;
 
-// the vertex input layout
-struct Vertex
-{
-    float x, y, z; // vec3 position
-    float r, g, b, a; // vec4 color
-
-    /// Returns a pointer to the first component of the position (x).
-    /// This can be passed to ImGui::DragFloat3 etc.
-    float* position() { return &x; }
-};
-
 struct CameraUniform
 {
     std::array<float, 16> m{};
@@ -50,13 +39,6 @@ class UserApp : public sopho::App
     float yaw = 0.0f;
     float pitch = 0.0f;
 
-    // a list of vertices
-    std::array<Vertex, 3> vertices{
-        Vertex{0.0F, 0.5F, 0.0F, 1.0F, 0.0F, 0.0F, 1.0F}, // top vertex
-        Vertex{-0.5F, -0.5F, 0.0F, 1.0F, 1.0F, 0.0F, 1.0F}, // bottom left vertex
-        Vertex{0.5F, -0.5F, 0.0F, 1.0F, 0.0F, 1.0F, 1.0F} // bottom right vertex
-    };
-
     CameraUniform cam{};
 
     std::string vertex_source =
@@ -74,7 +56,7 @@ layout(std140, set = 1, binding = 0) uniform Camera
 void main()
 {
   gl_Position = uView * vec4(a_position, 1.0f);
-  v_color = a_color;
+  v_color = vec4(1);
 })WSQ";
 
     std::string fragment_source =
@@ -110,7 +92,7 @@ public:
 
         // 2. Create vertex buffer.
         m_vertex_buffer =
-            m_gpu->create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, static_cast<std::uint32_t>(sizeof(vertices)));
+            m_gpu->create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, static_cast<std::uint32_t>(84));
         if (!m_vertex_buffer)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
@@ -144,7 +126,7 @@ public:
         // 5. Upload initial vertex data.
         auto upload_result = m_vertex_buffer.and_then(
             [&](auto& vertex_buffer)
-            { return vertex_buffer.upload(vertices.data(), static_cast<std::uint32_t>(sizeof(vertices)), 0); });
+            { return vertex_buffer.upload(); });
 
         if (!upload_result)
         {
@@ -232,17 +214,19 @@ public:
         case 0: // Vertex positions
             {
                 bool changed = false;
-                changed = ImGui::DragFloat3("##node1", vertices[0].position(), 0.01f, -1.f, 1.f) || changed;
-                changed = ImGui::DragFloat3("##node2", vertices[1].position(), 0.01f, -1.f, 1.f) || changed;
-                changed = ImGui::DragFloat3("##node3", vertices[2].position(), 0.01f, -1.f, 1.f) || changed;
+                changed |= ImGui::DragFloat3("##node1", reinterpret_cast<float*>(m_vertex_buffer.value().cpu_buffer()),
+                                             0.01f, -1.f, 1.f);
+                changed |= ImGui::DragFloat3(
+                    "##node2", reinterpret_cast<float*>(m_vertex_buffer.value().cpu_buffer()) + 7, 0.01f, -1.f, 1.f);
+                changed |= ImGui::DragFloat3(
+                    "##node3", reinterpret_cast<float*>(m_vertex_buffer.value().cpu_buffer()) + 14, 0.01f, -1.f, 1.f);
 
                 if (changed)
                 {
                     auto upload_result = m_vertex_buffer.and_then(
                         [&](auto& vertex_buffer)
                         {
-                            return vertex_buffer.upload(vertices.data(), static_cast<std::uint32_t>(sizeof(vertices)),
-                                                        0);
+                            return vertex_buffer.upload();
                         });
                     if (!upload_result)
                     {

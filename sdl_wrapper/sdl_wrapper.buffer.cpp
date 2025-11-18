@@ -40,8 +40,11 @@ namespace sopho
     }
 
     [[nodiscard]] std::expected<std::monostate, GpuError>
-    BufferWrapper::upload(const void* src_data, std::uint32_t size, std::uint32_t offset)
+    BufferWrapper::upload()
     {
+        auto src_data = m_cpu_buffer.data();
+        auto size = m_cpu_buffer.size();
+        auto offset = 0;
         // Bounds check to avoid writing past the end of the GPU buffer.
         if (offset + size > m_vertex_buffer_size)
         {
