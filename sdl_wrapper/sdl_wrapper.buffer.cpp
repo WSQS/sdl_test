@@ -24,10 +24,10 @@ namespace sopho
         }
 
         // Release vertex buffer
-        if (m_vertex_buffer)
+        if (m_gpu_buffer)
         {
-            m_gpu->release_buffer(m_vertex_buffer);
-            m_vertex_buffer = nullptr;
+            m_gpu->release_buffer(m_gpu_buffer);
+            m_gpu_buffer = nullptr;
         }
 
         // Release transfer buffer
@@ -46,10 +46,10 @@ namespace sopho
         auto size = m_cpu_buffer.size();
         auto offset = 0;
         // Bounds check to avoid writing past the end of the GPU buffer.
-        if (offset + size > m_vertex_buffer_size)
+        if (offset + size > m_gpu_buffer_size)
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d buffer overflow: size=%u, offset=%u, buffer_size=%u", __FILE__,
-                         __LINE__, size, offset, m_vertex_buffer_size);
+                         __LINE__, size, offset, m_gpu_buffer_size);
 
             return std::unexpected(GpuError::BUFFER_OVERFLOW);
         }
@@ -121,7 +121,7 @@ namespace sopho
         location.offset = 0;
 
         SDL_GPUBufferRegion region{};
-        region.buffer = m_vertex_buffer;
+        region.buffer = m_gpu_buffer;
         region.size = size;
         region.offset = offset;
 
