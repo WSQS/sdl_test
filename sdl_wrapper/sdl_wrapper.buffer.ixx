@@ -36,15 +36,8 @@ export namespace sopho
         BufferWrapper(BufferWrapper&&) = default;
         BufferWrapper& operator=(BufferWrapper&&) = default;
 
-        /// Upload a block of data into the GPU buffer at the given byte offset.
-        ///
-        /// This function may fail in several ways:
-        ///  - The requested upload range exceeds the buffer size.
-        ///  - The transfer buffer cannot be created or resized.
-        ///  - Mapping the transfer buffer fails.
-        ///  - Acquiring a GPU command buffer fails.
-        ///
-        /// All such failures are reported via the returned std::expected.
+        /// Upload CPU buffer into the GPU buffer at the given byte offset.
+
         [[nodiscard]] std::expected<std::monostate, GpuError> upload();
 
         /// Returns the underlying SDL_GPUBuffer pointer.

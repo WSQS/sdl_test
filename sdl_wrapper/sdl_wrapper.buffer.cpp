@@ -23,7 +23,7 @@ namespace sopho
             return;
         }
 
-        // Release vertex buffer
+        // Release gpu buffer
         if (m_gpu_buffer)
         {
             m_gpu->release_buffer(m_gpu_buffer);
