@@ -9,10 +9,10 @@ module;
 
 #include "SDL3/SDL_gpu.h"
 
-export module sdl_wrapper:buffer;
+module sdl_wrapper:buffer;
 import :decl;
 
-export namespace sopho
+namespace sopho
 {
     class BufferWrapper
     {
