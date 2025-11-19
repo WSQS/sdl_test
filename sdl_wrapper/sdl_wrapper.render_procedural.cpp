@@ -144,11 +144,14 @@ namespace sopho
     }
 
     /**
-     * @brief Ensures the GPU graphics pipeline matches the current pipeline description, creating or replacing the pipeline if changes are pending.
+     * @brief Ensures the GPU graphics pipeline matches the current pipeline description, creating or replacing the
+     * pipeline if changes are pending.
      *
-     * If no modifications are pending this function is a no-op. On success it updates the stored graphics pipeline and clears the modified flag.
+     * If no modifications are pending this function is a no-op. On success it updates the stored graphics pipeline and
+     * clears the modified flag.
      *
-     * @return std::monostate on success; `std::unexpected<GpuError>` containing the GPU error if pipeline creation fails.
+     * @return std::monostate on success; `std::unexpected<GpuError>` containing the GPU error if pipeline creation
+     * fails.
      */
     [[nodiscard]] std::expected<std::monostate, GpuError> RenderProcedural::submit()
     {
@@ -195,12 +198,12 @@ namespace sopho
     /**
      * Compile the provided GLSL vertex shader source, create a GPU vertex shader, and install it into the pipeline.
      *
-     * This updates the stored vertex shader, sets the pipeline's vertex_shader to the new shader, and marks the pipeline
-     * as modified so a new graphics pipeline will be created on the next submit.
+     * This updates the stored vertex shader, sets the pipeline's vertex_shader to the new shader, and marks the
+     * pipeline as modified so a new graphics pipeline will be created on the next submit.
      *
      * @param source GLSL source code for the vertex shader.
-     * @return std::monostate on success; `std::unexpected(GpuError::COMPILE_VERTEX_SHADER_FAILED)` if shader compilation fails,
-     *         or `std::unexpected(<other GpuError>)` if shader creation on the GPU fails.
+     * @return std::monostate on success; `std::unexpected(GpuError::COMPILE_VERTEX_SHADER_FAILED)` if shader
+     * compilation fails, or `std::unexpected(<other GpuError>)` if shader creation on the GPU fails.
      */
     [[nodiscard]] std::expected<std::monostate, GpuError> RenderProcedural::set_vertex_shader(const std::string& source)
     {
@@ -241,12 +244,13 @@ namespace sopho
     /**
      * @brief Compiles GLSL fragment shader source, creates a GPU fragment shader, and installs it into the pipeline.
      *
-     * Compiles the provided GLSL fragment source to SPIR-V, converts the result into a byte vector, and asks the GPU wrapper
-     * to create a fragment shader; on success the new shader replaces any existing fragment shader in the object,
-     * updates the pipeline's fragment shader reference, and marks the pipeline state as modified.
+     * Compiles the provided GLSL fragment source to SPIR-V, converts the result into a byte vector, and asks the GPU
+     * wrapper to create a fragment shader; on success the new shader replaces any existing fragment shader in the
+     * object, updates the pipeline's fragment shader reference, and marks the pipeline state as modified.
      *
      * @param source GLSL source code for the fragment shader.
-     * @return std::monostate on success; `std::unexpected<GpuError>` on failure (compilation error or GPU shader-creation error).
+     * @return std::monostate on success; `std::unexpected<GpuError>` on failure (compilation error or GPU
+     * shader-creation error).
      */
     [[nodiscard]] std::expected<std::monostate, GpuError>
     RenderProcedural::set_fragment_shader(const std::string& source)

@@ -198,8 +198,10 @@ public:
      *
      * Displays the ImGui demo and an "Editor" window with three modes:
      * - Node/Vertex editing: exposes per-vertex attributes for editing and uploads the vertex buffer when modified.
-     * - Vertex shader editing: allows editing the vertex GLSL source and applies it to the procedural pipeline when changed.
-     * - Fragment shader editing: allows editing the fragment GLSL source and applies it to the procedural pipeline when changed.
+     * - Vertex shader editing: allows editing the vertex GLSL source and applies it to the procedural pipeline when
+     * changed.
+     * - Fragment shader editing: allows editing the fragment GLSL source and applies it to the procedural pipeline when
+     * changed.
      *
      * Any failures to upload vertex data or update shaders are logged.
      *

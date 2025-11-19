@@ -17,7 +17,8 @@ namespace sopho
      *
      * @param flag Usage flags for the GPU buffer.
      * @param size Size in bytes of the buffer to allocate.
-     * @return std::expected<BufferWrapper, GpuError> BufferWrapper containing the created GPU buffer, its transfer buffer, and the buffer size on success; `std::unexpected` with a `GpuError` on failure.
+     * @return std::expected<BufferWrapper, GpuError> BufferWrapper containing the created GPU buffer, its transfer
+     * buffer, and the buffer size on success; `std::unexpected` with a `GpuError` on failure.
      */
     std::expected<BufferWrapper, GpuError> GpuWrapper::create_buffer(SDL_GPUBufferUsageFlags flag, uint32_t size)
     {
@@ -68,7 +69,8 @@ namespace sopho
      *
      * Queries the GPU's texture format and constructs a RenderProcedural associated with this GpuWrapper.
      *
-     * @return std::expected<RenderProcedural, GpuError> Contains the constructed RenderProcedural on success, or an unexpected holding the corresponding GpuError on failure.
+     * @return std::expected<RenderProcedural, GpuError> Contains the constructed RenderProcedural on success, or an
+     * unexpected holding the corresponding GpuError on failure.
      */
     std::expected<RenderProcedural, GpuError> GpuWrapper::create_render_procedural()
     {
