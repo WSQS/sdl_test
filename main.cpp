@@ -263,7 +263,7 @@ public:
                 if (ImGui::InputTextMultiline("##fragment editor", &fragment_source, size,
                                               ImGuiInputTextFlags_AllowTabInput))
                 {
-                    auto result = m_renderable->procedural()->set_vertex_shader(fragment_source);
+                    auto result = m_renderable->procedural()->set_fragment_shader(fragment_source);
                     if (!result)
                     {
                         SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to set fragment shader from editor, error = %d",
