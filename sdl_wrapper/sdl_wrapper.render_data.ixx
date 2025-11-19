@@ -3,6 +3,7 @@
 //
 module;
 #include <utility>
+#include <vector>
 #include <SDL3/SDL_gpu.h>
 export module sdl_wrapper:render_data;
 import :buffer;
