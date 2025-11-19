@@ -16,6 +16,12 @@ import :gpu;
 
 namespace sopho
 {
+    /**
+     * @brief Releases any owned GPU resources held by the wrapper.
+     *
+     * Ensures the associated GPU object is valid, then releases the GPU buffer and the
+     * GPU transfer buffer if they exist and clears their pointers.
+     */
     BufferWrapper::~BufferWrapper() noexcept
     {
         if (!m_gpu)
@@ -38,6 +44,18 @@ namespace sopho
         }
     }
 
+    /**
+     * @brief Uploads the internal CPU-side buffer to the GPU buffer via the transfer buffer and a GPU copy pass.
+     *
+     * Copies the contents of m_cpu_buffer into the existing transfer buffer, records a GPU copy pass that
+     * uploads that transfer buffer into m_gpu_buffer, submits the command buffer, and returns success status.
+     *
+     * @returns std::monostate on success; otherwise an unexpected `GpuError` indicating the failure:
+     *  - `GpuError::MAP_TRANSFER_BUFFER_FAILED` if mapping the transfer buffer failed.
+     *  - `GpuError::ACQUIRE_COMMAND_BUFFER_FAILED` if acquiring a GPU command buffer failed.
+     *  - `GpuError::BEGIN_COPY_PASS_FAILED` if beginning the GPU copy pass failed.
+     *  - `GpuError::SUBMIT_COMMAND_FAILED` if submitting the GPU command buffer failed.
+     */
     [[nodiscard]] std::expected<std::monostate, GpuError> BufferWrapper::upload()
     {
         auto src_data = m_cpu_buffer.data();

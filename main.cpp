@@ -70,11 +70,13 @@ void main()
 
 public:
     /**
-     * @brief Initialize application resources, GPU pipeline, vertex data, and Dear ImGui.
+     * @brief Initialize application GPU resources, shaders, vertex data, camera, and Dear ImGui.
      *
-     * Creates the GPU device, window/pipeline/buffer wrappers, compiles shaders,
-     * uploads the initial vertex data, initializes the camera to identity,
-     * and sets up Dear ImGui and its SDL3/SDLGPU backends.
+     * Performs creation of the GPU wrapper and render procedural, compiles and submits the vertex
+     * and fragment shaders, creates and uploads initial render data, sets the camera uniform to the
+     * identity matrix, and initializes Dear ImGui with SDL3 and SDLGPU backends.
+     *
+     * @return SDL_AppResult `SDL_APP_CONTINUE` on successful initialization, `SDL_APP_FAILURE` on error.
      */
     SDL_AppResult init(int argc, char** argv) override
     {
@@ -192,7 +194,16 @@ public:
     }
 
     /**
-     * @brief Advance the UI frame, present editors for triangle vertices and shader sources.
+     * @brief Advance the UI frame and present editors for vertex data and shader sources.
+     *
+     * Displays the ImGui demo and an "Editor" window with three modes:
+     * - Node/Vertex editing: exposes per-vertex attributes for editing and uploads the vertex buffer when modified.
+     * - Vertex shader editing: allows editing the vertex GLSL source and applies it to the procedural pipeline when changed.
+     * - Fragment shader editing: allows editing the fragment GLSL source and applies it to the procedural pipeline when changed.
+     *
+     * Any failures to upload vertex data or update shaders are logged.
+     *
+     * @return SDL_AppResult SDL_APP_CONTINUE to indicate the application should continue running.
      */
     SDL_AppResult tick()
     {
@@ -296,7 +307,13 @@ public:
     }
 
     /**
-     * @brief Render the triangle and ImGui UI to the GPU and present the swapchain frame.
+     * @brief Render the scene (triangle and ImGui) into the current swapchain image and present it.
+     *
+     * Performs pipeline submission if needed, prepares ImGui draw data, records GPU commands
+     * to clear and render the color target, uploads the camera uniform, binds vertex buffers
+     * and the graphics pipeline, issues the draw call, renders ImGui, and submits the command buffer.
+     *
+     * @return SDL_AppResult `SDL_APP_CONTINUE` to keep the application running.
      */
     SDL_AppResult draw()
     {
