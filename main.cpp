@@ -1,4 +1,6 @@
 // main.cpp
+// Created by wsqsy on 11/06/2025.
+//
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -19,17 +21,6 @@
 
 import sdl_wrapper;
 
-// the vertex input layout
-struct Vertex
-{
-    float x, y, z; // vec3 position
-    float r, g, b, a; // vec4 color
-
-    /// Returns a pointer to the first component of the position (x).
-    /// This can be passed to ImGui::DragFloat3 etc.
-    float* position() { return &x; }
-};
-
 struct CameraUniform
 {
     std::array<float, 16> m{};
@@ -39,21 +30,12 @@ class UserApp : public sopho::App
 {
     // GPU + resources
     std::shared_ptr<sopho::GpuWrapper> m_gpu{};
-    std::expected<sopho::BufferWrapper, sopho::GpuError> m_vertex_buffer{
-        std::unexpected(sopho::GpuError::UNINITIALIZED)};
-    std::expected<sopho::PipelineWrapper, sopho::GpuError> m_pipeline_wrapper{
-        std::unexpected(sopho::GpuError::UNINITIALIZED)};
+
+    std::shared_ptr<sopho::Renderable> m_renderable{};
 
     // camera state
     float yaw = 0.0f;
     float pitch = 0.0f;
-
-    // a list of vertices
-    std::array<Vertex, 3> vertices{
-        Vertex{0.0F, 0.5F, 0.0F, 1.0F, 0.0F, 0.0F, 1.0F}, // top vertex
-        Vertex{-0.5F, -0.5F, 0.0F, 1.0F, 1.0F, 0.0F, 1.0F}, // bottom left vertex
-        Vertex{0.5F, -0.5F, 0.0F, 1.0F, 0.0F, 1.0F, 1.0F} // bottom right vertex
-    };
 
     CameraUniform cam{};
 
@@ -72,7 +54,7 @@ layout(std140, set = 1, binding = 0) uniform Camera
 void main()
 {
   gl_Position = uView * vec4(a_position, 1.0f);
-  v_color = a_color;
+  v_color = vec4(1);
 })WSQ";
 
     std::string fragment_source =
@@ -88,11 +70,13 @@ void main()
 
 public:
     /**
-     * @brief Initialize application resources, GPU pipeline, vertex data, and Dear ImGui.
+     * @brief Initialize application GPU resources, shaders, vertex data, camera, and Dear ImGui.
      *
-     * Creates the GPU device, window/pipeline/buffer wrappers, compiles shaders,
-     * uploads the initial vertex data, initializes the camera to identity,
-     * and sets up Dear ImGui and its SDL3/SDLGPU backends.
+     * Performs creation of the GPU wrapper and render procedural, compiles and submits the vertex
+     * and fragment shaders, creates and uploads initial render data, sets the camera uniform to the
+     * identity matrix, and initializes Dear ImGui with SDL3 and SDLGPU backends.
+     *
+     * @return SDL_AppResult `SDL_APP_CONTINUE` on successful initialization, `SDL_APP_FAILURE` on error.
      */
     SDL_AppResult init(int argc, char** argv) override
     {
@@ -106,31 +90,20 @@ public:
         }
         m_gpu = std::move(gpu_result.value());
 
-        // 2. Create vertex buffer.
-        m_vertex_buffer =
-            m_gpu->create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, static_cast<std::uint32_t>(sizeof(vertices)));
-        if (!m_vertex_buffer)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
-                         static_cast<int>(m_vertex_buffer.error()));
-            return SDL_APP_FAILURE;
-        }
-
-        // 3. Create pipeline wrapper.
-        auto pw_result = m_gpu->create_pipeline_wrapper();
+        // 2. Create pipeline wrapper.
+        auto pw_result = m_gpu->create_render_procedural();
         if (!pw_result)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create pipeline wrapper, error = %d",
                          static_cast<int>(pw_result.error()));
             return SDL_APP_FAILURE;
         }
-        m_pipeline_wrapper.emplace(std::move(pw_result.value()));
 
         // 4. Compile shaders and build initial pipeline.
         auto pipeline_init =
-            m_pipeline_wrapper.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
-                .and_then([&](std::monostate) { return m_pipeline_wrapper->set_fragment_shader(fragment_source); })
-                .and_then([&](std::monostate) { return m_pipeline_wrapper->submit(); });
+            pw_result.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
+                .and_then([&](std::monostate) { return pw_result->set_fragment_shader(fragment_source); })
+                .and_then([&](std::monostate) { return pw_result->submit(); });
 
         if (!pipeline_init)
         {
@@ -139,10 +112,17 @@ public:
             return SDL_APP_FAILURE;
         }
 
+        // 3. Create vertex buffer.
+        auto render_data = std::move(m_gpu->create_data(pw_result.value(), 3));
+        if (!render_data)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
+                         static_cast<int>(render_data.error()));
+            return SDL_APP_FAILURE;
+        }
+
         // 5. Upload initial vertex data.
-        auto upload_result = m_vertex_buffer.and_then(
-            [&](auto& vertex_buffer)
-            { return vertex_buffer.upload(vertices.data(), static_cast<std::uint32_t>(sizeof(vertices)), 0); });
+        auto upload_result = render_data.and_then([&](auto& vertex_buffer) { return vertex_buffer.upload(); });
 
         if (!upload_result)
         {
@@ -150,6 +130,10 @@ public:
                          static_cast<int>(upload_result.error()));
             return SDL_APP_FAILURE;
         }
+
+        m_renderable = std::make_shared<sopho::Renderable>(sopho::Renderable{
+            .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result.value())),
+            .m_render_data = std::make_shared<sopho::RenderData>(std::move(render_data.value()))});
 
         // 6. Initialize camera matrix to identity.
         {
@@ -210,7 +194,18 @@ public:
     }
 
     /**
-     * @brief Advance the UI frame, present editors for triangle vertices and shader sources.
+     * @brief Advance the UI frame and present editors for vertex data and shader sources.
+     *
+     * Displays the ImGui demo and an "Editor" window with three modes:
+     * - Node/Vertex editing: exposes per-vertex attributes for editing and uploads the vertex buffer when modified.
+     * - Vertex shader editing: allows editing the vertex GLSL source and applies it to the procedural pipeline when
+     * changed.
+     * - Fragment shader editing: allows editing the fragment GLSL source and applies it to the procedural pipeline when
+     * changed.
+     *
+     * Any failures to upload vertex data or update shaders are logged.
+     *
+     * @return SDL_AppResult SDL_APP_CONTINUE to indicate the application should continue running.
      */
     SDL_AppResult tick()
     {
@@ -227,21 +222,36 @@ public:
 
         switch (current)
         {
-        case 0: // Vertex positions
+        case 0: // Vertex Edit
             {
                 bool changed = false;
-                changed = ImGui::DragFloat3("##node1", vertices[0].position(), 0.01f, -1.f, 1.f) || changed;
-                changed = ImGui::DragFloat3("##node2", vertices[1].position(), 0.01f, -1.f, 1.f) || changed;
-                changed = ImGui::DragFloat3("##node3", vertices[2].position(), 0.01f, -1.f, 1.f) || changed;
+                auto editor_data = m_renderable->data()->vertex_view();
+                auto ptr = editor_data.raw;
+                for (int vertex_index = 0; vertex_index < editor_data.vertex_count; ++vertex_index)
+                {
+                    for (const auto& format : editor_data.layout.get_vertex_format())
+                    {
+                        switch (format)
+                        {
+                        case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3:
+                            changed |= ImGui::DragFloat3(std::format("node{}", vertex_index).data(),
+                                                         reinterpret_cast<float*>(ptr), 0.01f, -1.f, 1.f);
+                            break;
+                        case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4:
+                            changed |= ImGui::DragFloat4(std::format("color{}", vertex_index).data(),
+                                                         reinterpret_cast<float*>(ptr), 0.01f, -1.f, 1.f);
+                            break;
+                        default:
+                            break;
+                        }
+                        auto size = sopho::get_size(format);
+                        ptr += size;
+                    }
+                }
 
                 if (changed)
                 {
-                    auto upload_result = m_vertex_buffer.and_then(
-                        [&](auto& vertex_buffer)
-                        {
-                            return vertex_buffer.upload(vertices.data(), static_cast<std::uint32_t>(sizeof(vertices)),
-                                                        0);
-                        });
+                    auto upload_result = m_renderable->data()->upload();
                     if (!upload_result)
                     {
                         SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to upload vertex buffer in tick(), error = %d",
@@ -260,8 +270,7 @@ public:
                 if (ImGui::InputTextMultiline("##vertex editor", &vertex_source, size,
                                               ImGuiInputTextFlags_AllowTabInput))
                 {
-                    auto result = m_pipeline_wrapper.and_then(
-                        [&](auto& pipeline_wrapper) { return pipeline_wrapper.set_vertex_shader(vertex_source); });
+                    auto result = m_renderable->procedural()->set_vertex_shader(vertex_source);
                     if (!result)
                     {
                         SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to set vertex shader from editor, error = %d",
@@ -280,8 +289,7 @@ public:
                 if (ImGui::InputTextMultiline("##fragment editor", &fragment_source, size,
                                               ImGuiInputTextFlags_AllowTabInput))
                 {
-                    auto result = m_pipeline_wrapper.and_then(
-                        [&](auto& pipeline_wrapper) { return pipeline_wrapper.set_fragment_shader(fragment_source); });
+                    auto result = m_renderable->procedural()->set_fragment_shader(fragment_source);
                     if (!result)
                     {
                         SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to set fragment shader from editor, error = %d",
@@ -301,7 +309,13 @@ public:
     }
 
     /**
-     * @brief Render the triangle and ImGui UI to the GPU and present the swapchain frame.
+     * @brief Render the scene (triangle and ImGui) into the current swapchain image and present it.
+     *
+     * Performs pipeline submission if needed, prepares ImGui draw data, records GPU commands
+     * to clear and render the color target, uploads the camera uniform, binds vertex buffers
+     * and the graphics pipeline, issues the draw call, renders ImGui, and submits the command buffer.
+     *
+     * @return SDL_AppResult `SDL_APP_CONTINUE` to keep the application running.
      */
     SDL_AppResult draw()
     {
@@ -309,8 +323,7 @@ public:
         ImDrawData* draw_data = ImGui::GetDrawData();
 
         // Rebuild pipeline if needed.
-        auto pipeline_submit =
-            m_pipeline_wrapper.and_then([](auto& pipeline_wrapper) { return pipeline_wrapper.submit(); });
+        auto pipeline_submit = m_renderable->procedural()->submit();
         if (!pipeline_submit)
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "Pipeline submit failed, error = %d",
@@ -370,12 +383,8 @@ public:
         SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, nullptr);
 
         // Bind pipeline if available.
-        m_pipeline_wrapper.and_then(
-            [&](auto& pipeline_wrapper) -> std::expected<std::monostate, sopho::GpuError>
-            {
-                SDL_BindGPUGraphicsPipeline(renderPass, pipeline_wrapper.data());
-                return std::monostate{};
-            });
+
+        SDL_BindGPUGraphicsPipeline(renderPass, m_renderable->procedural()->data());
 
         // Compute camera matrix and upload as a vertex uniform.
         {
@@ -407,17 +416,8 @@ public:
             SDL_PushGPUVertexUniformData(commandBuffer, 0, cam.m.data(), static_cast<std::uint32_t>(sizeof(cam.m)));
         }
 
-        // Bind vertex buffer and draw.
-        m_vertex_buffer.and_then(
-            [&](auto& vertex_buffer) -> std::expected<std::monostate, sopho::GpuError>
-            {
-                SDL_GPUBufferBinding bufferBindings[1]{};
-                bufferBindings[0].buffer = vertex_buffer.data();
-                bufferBindings[0].offset = 0;
-
-                SDL_BindGPUVertexBuffers(renderPass, 0, bufferBindings, 1);
-                return std::monostate{};
-            });
+        SDL_BindGPUVertexBuffers(renderPass, 0, m_renderable->data()->get_buffer_binding().data(),
+                                 m_renderable->data()->get_buffer_binding().size());
 
         SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
 

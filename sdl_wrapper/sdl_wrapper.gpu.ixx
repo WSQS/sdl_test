@@ -12,7 +12,7 @@ module;
 export module sdl_wrapper:gpu;
 import :decl;
 import :buffer;
-import :pipeline;
+import :render_procedural;
 export namespace sopho
 {
 
@@ -213,6 +213,8 @@ export namespace sopho
         [[nodiscard]] auto window() const { return m_ctx.window.raw; }
 
         [[nodiscard]] std::expected<BufferWrapper, GpuError> create_buffer(SDL_GPUBufferUsageFlags flag, uint32_t size);
+        [[nodiscard]] std::expected<RenderData, GpuError>
+        create_data(const RenderProcedural& render_procedural, uint32_t vertex_count);
 
         auto release_buffer(SDL_GPUBuffer* buffer)
         {
@@ -222,7 +224,7 @@ export namespace sopho
             }
         }
 
-        [[nodiscard]] std::expected<PipelineWrapper, GpuError> create_pipeline_wrapper();
+        [[nodiscard]] std::expected<RenderProcedural, GpuError> create_render_procedural();
 
         std::expected<SDL_GPUGraphicsPipeline*, GpuError>
         create_pipeline(const SDL_GPUGraphicsPipelineCreateInfo& create_info)
