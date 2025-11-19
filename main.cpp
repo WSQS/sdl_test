@@ -34,6 +34,8 @@ class UserApp : public sopho::App
         std::unexpected(sopho::GpuError::UNINITIALIZED)};
     std::expected<sopho::RenderData, sopho::GpuError> m_render_data{std::unexpected(sopho::GpuError::UNINITIALIZED)};
 
+    std::shared_ptr<sopho::Renderable> m_renderable{};
+
     // camera state
     float yaw = 0.0f;
     float pitch = 0.0f;
@@ -132,6 +134,11 @@ public:
             return SDL_APP_FAILURE;
         }
 
+        m_renderable = std::make_shared<sopho::Renderable>(sopho::Renderable{
+            .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(m_render_procedural.value())),
+            .m_render_data = std::make_shared<sopho::RenderData>(std::move(m_render_data.value()))
+        });
+
         // 6. Initialize camera matrix to identity.
         {
             cam.m.fill(0.0F);
@@ -212,18 +219,17 @@ public:
             {
                 bool changed = false;
                 changed |= ImGui::DragFloat3(
-                    "##node1", reinterpret_cast<float*>(m_render_data.value().buffer().cpu_buffer()), 0.01f, -1.f, 1.f);
+                    "##node1", reinterpret_cast<float*>(m_renderable->data()->buffer().cpu_buffer()), 0.01f, -1.f, 1.f);
                 changed |= ImGui::DragFloat3("##node2",
-                                             reinterpret_cast<float*>(m_render_data.value().buffer().cpu_buffer()) + 7,
+                                             reinterpret_cast<float*>(m_renderable->data()->buffer().cpu_buffer()) + 7,
                                              0.01f, -1.f, 1.f);
                 changed |= ImGui::DragFloat3("##node3",
-                                             reinterpret_cast<float*>(m_render_data.value().buffer().cpu_buffer()) + 14,
+                                             reinterpret_cast<float*>(m_renderable->data()->buffer().cpu_buffer()) + 14,
                                              0.01f, -1.f, 1.f);
 
                 if (changed)
                 {
-                    auto upload_result =
-                        m_render_data.and_then([&](auto& vertex_buffer) { return vertex_buffer.buffer().upload(); });
+                    auto upload_result = m_renderable->data()->buffer().upload();
                     if (!upload_result)
                     {
                         SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to upload vertex buffer in tick(), error = %d",
@@ -242,8 +248,7 @@ public:
                 if (ImGui::InputTextMultiline("##vertex editor", &vertex_source, size,
                                               ImGuiInputTextFlags_AllowTabInput))
                 {
-                    auto result = m_render_procedural.and_then(
-                        [&](auto& pipeline_wrapper) { return pipeline_wrapper.set_vertex_shader(vertex_source); });
+                    auto result = m_renderable->procedural()->set_vertex_shader(vertex_source);
                     if (!result)
                     {
                         SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to set vertex shader from editor, error = %d",
@@ -262,8 +267,7 @@ public:
                 if (ImGui::InputTextMultiline("##fragment editor", &fragment_source, size,
                                               ImGuiInputTextFlags_AllowTabInput))
                 {
-                    auto result = m_render_procedural.and_then(
-                        [&](auto& pipeline_wrapper) { return pipeline_wrapper.set_fragment_shader(fragment_source); });
+                    auto result = m_renderable->procedural()->set_vertex_shader(fragment_source);
                     if (!result)
                     {
                         SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to set fragment shader from editor, error = %d",
@@ -352,12 +356,8 @@ public:
         SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, nullptr);
 
         // Bind pipeline if available.
-        m_render_procedural.and_then(
-            [&](auto& pipeline_wrapper) -> std::expected<std::monostate, sopho::GpuError>
-            {
-                SDL_BindGPUGraphicsPipeline(renderPass, pipeline_wrapper.data());
-                return std::monostate{};
-            });
+
+        SDL_BindGPUGraphicsPipeline(renderPass, m_renderable->procedural()->data());
 
         // Compute camera matrix and upload as a vertex uniform.
         {
@@ -389,14 +389,8 @@ public:
             SDL_PushGPUVertexUniformData(commandBuffer, 0, cam.m.data(), static_cast<std::uint32_t>(sizeof(cam.m)));
         }
 
-        // Bind vertex buffer and draw.
-        m_render_data.and_then(
-            [&](sopho::RenderData& vertex_buffer) -> std::expected<std::monostate, sopho::GpuError>
-            {
-                SDL_BindGPUVertexBuffers(renderPass, 0, vertex_buffer.get_buffer_binding().data(),
-                                         vertex_buffer.get_buffer_binding().size());
-                return std::monostate{};
-            });
+        SDL_BindGPUVertexBuffers(renderPass, 0, m_renderable->data()->get_buffer_binding().data(),
+                                         m_renderable->data()->get_buffer_binding().size());
 
         SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
 

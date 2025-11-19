@@ -8,5 +8,6 @@ export import :app;
 export import :gpu;
 export import :buffer;
 export import :render_procedural;
+export import :renderable;
 export import :vertex_layout;
 export import :render_data;
