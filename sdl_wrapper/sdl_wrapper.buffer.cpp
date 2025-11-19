@@ -38,8 +38,7 @@ namespace sopho
         }
     }
 
-    [[nodiscard]] std::expected<std::monostate, GpuError>
-    BufferWrapper::upload()
+    [[nodiscard]] std::expected<std::monostate, GpuError> BufferWrapper::upload()
     {
         auto src_data = m_cpu_buffer.data();
         auto size = m_cpu_buffer.size();

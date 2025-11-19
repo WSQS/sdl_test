@@ -39,8 +39,8 @@ namespace sopho
         return bytes;
     }
 
-    RenderProcedural::RenderProcedural(std::shared_ptr<GpuWrapper> gpu, SDL_GPUTextureFormat swapchain_format) noexcept :
-        m_gpu(std::move(gpu))
+    RenderProcedural::RenderProcedural(std::shared_ptr<GpuWrapper> gpu, SDL_GPUTextureFormat swapchain_format) noexcept
+        : m_gpu(std::move(gpu))
     {
         m_vertex_layout.set_vertex_attributes({SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4});
         // Configure shaderc to target Vulkan/SPIR-V.
