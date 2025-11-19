@@ -95,6 +95,7 @@ target_include_directories(imgui PUBLIC
 target_link_libraries(imgui PUBLIC SDL3::SDL3)
 
 add_subdirectory(sdl_wrapper)
+add_subdirectory(glsl_reflector)
 
 add_executable(SDL_TEST main.cpp)
 target_link_libraries(SDL_TEST PRIVATE imgui sdl_wrapper)
