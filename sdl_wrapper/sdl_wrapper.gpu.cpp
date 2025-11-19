@@ -36,13 +36,13 @@ namespace sopho
     std::expected<RenderData, GpuError> GpuWrapper::create_data(const RenderProcedural& render_procedural,
                                                                 uint32_t vertex_count)
     {
-        auto size = render_procedural.vertex_layout().get_stride()*vertex_count;
-        auto buffer = create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX,size);
+        auto size = render_procedural.vertex_layout().get_stride() * vertex_count;
+        auto buffer = create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, size);
         if (!buffer)
         {
             return std::unexpected(buffer.error());
         }
-        return RenderData{std::move(buffer.value() )};
+        return RenderData{std::move(buffer.value()), render_procedural.vertex_layout()};
     }
     std::expected<RenderProcedural, GpuError> GpuWrapper::create_render_procedural()
     {
