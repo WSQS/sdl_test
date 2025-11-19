@@ -2,15 +2,15 @@
 // Created by wsqsy on 11/17/2025.
 //
 module;
-#include <vector>
 #include <cstdint>
+#include <vector>
 #include "SDL3/SDL_gpu.h"
 export module sdl_wrapper:vertex_layout;
 
 namespace sopho
 {
 
-    std::uint32_t get_size(SDL_GPUVertexElementFormat format)
+    export std::uint32_t get_size(SDL_GPUVertexElementFormat format)
     {
         switch (format)
         {
@@ -104,7 +104,8 @@ namespace sopho
             }
         }
 
+        const auto& get_vertex_format() { return raw; }
         const auto& get_vertex_attributes() { return attributes; }
-        auto get_stride()const { return stride; }
+        auto get_stride() const { return stride; }
     };
 } // namespace sopho

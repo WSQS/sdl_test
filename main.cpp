@@ -120,8 +120,7 @@ public:
         }
 
         // 5. Upload initial vertex data.
-        auto upload_result =
-            render_data.and_then([&](auto& vertex_buffer) { return vertex_buffer.buffer().upload(); });
+        auto upload_result = render_data.and_then([&](auto& vertex_buffer) { return vertex_buffer.buffer().upload(); });
 
         if (!upload_result)
         {
@@ -132,8 +131,7 @@ public:
 
         m_renderable = std::make_shared<sopho::Renderable>(sopho::Renderable{
             .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result.value())),
-            .m_render_data = std::make_shared<sopho::RenderData>(std::move(render_data.value()))
-        });
+            .m_render_data = std::make_shared<sopho::RenderData>(std::move(render_data.value()))});
 
         // 6. Initialize camera matrix to identity.
         {
@@ -211,17 +209,32 @@ public:
 
         switch (current)
         {
-        case 0: // Vertex positions
+        case 0: // Vertex Edit
             {
                 bool changed = false;
-                changed |= ImGui::DragFloat3(
-                    "##node1", reinterpret_cast<float*>(m_renderable->data()->buffer().cpu_buffer()), 0.01f, -1.f, 1.f);
-                changed |= ImGui::DragFloat3("##node2",
-                                             reinterpret_cast<float*>(m_renderable->data()->buffer().cpu_buffer()) + 7,
-                                             0.01f, -1.f, 1.f);
-                changed |= ImGui::DragFloat3("##node3",
-                                             reinterpret_cast<float*>(m_renderable->data()->buffer().cpu_buffer()) + 14,
-                                             0.01f, -1.f, 1.f);
+                auto editor_data = m_renderable->data()->vertex_view();
+                auto ptr = editor_data.raw;
+                for (int vertex_index = 0; vertex_index < editor_data.vertex_count; ++vertex_index)
+                {
+                    for (const auto& format : editor_data.layout.get_vertex_format())
+                    {
+                        switch (format)
+                        {
+                        case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3:
+                            changed |= ImGui::DragFloat3(std::format("node{}", vertex_index).data(),
+                                                         reinterpret_cast<float*>(ptr), 0.01f, -1.f, 1.f);
+                            break;
+                        case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4:
+                            changed |= ImGui::DragFloat4(std::format("color{}", vertex_index).data(),
+                                                         reinterpret_cast<float*>(ptr), 0.01f, -1.f, 1.f);
+                            break;
+                        default:
+                            break;
+                        }
+                        auto size = sopho::get_size(format);
+                        ptr += size;
+                    }
+                }
 
                 if (changed)
                 {
@@ -385,7 +398,7 @@ public:
         }
 
         SDL_BindGPUVertexBuffers(renderPass, 0, m_renderable->data()->get_buffer_binding().data(),
-                                         m_renderable->data()->get_buffer_binding().size());
+                                 m_renderable->data()->get_buffer_binding().size());
 
         SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
 

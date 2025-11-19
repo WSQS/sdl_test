@@ -42,7 +42,7 @@ namespace sopho
         {
             return std::unexpected(buffer.error());
         }
-        return RenderData{std::move(buffer.value()), render_procedural.vertex_layout()};
+        return RenderData{std::move(buffer.value()), render_procedural.vertex_layout(), vertex_count};
     }
     std::expected<RenderProcedural, GpuError> GpuWrapper::create_render_procedural()
     {
