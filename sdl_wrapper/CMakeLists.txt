@@ -10,12 +10,15 @@ target_sources(sdl_wrapper
         sdl_wrapper.ixx
         sdl_wrapper.buffer.ixx
         sdl_wrapper.app.ixx
-        sdl_wrapper.pipeline.ixx
+        sdl_wrapper.render_procedural.ixx
+        sdl_wrapper.render_data.ixx
+        sdl_wrapper.renderable.ixx
         sdl_wrapper.gpu.ixx
         sdl_wrapper.decl.ixx
+        sdl_wrapper.vertex_layout.ixx
         PRIVATE
         sdl_wrapper.buffer.cpp
-        sdl_wrapper.pipeline.cpp
+        sdl_wrapper.render_procedural.cpp
         sdl_wrapper.gpu.cpp
         sdl_callback_implement.cpp
 )

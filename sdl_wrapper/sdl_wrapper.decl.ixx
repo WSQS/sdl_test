@@ -12,7 +12,7 @@ export namespace sopho
         CREATE_DEVICE_FAILED,
         CREATE_WINDOW_FAILED,
         CLAIM_WINDOW_FAILED,
-        CREATE_BUFFER_FAILED,
+        CREATE_GPU_BUFFER_FAILED,
         CREATE_TRANSFER_BUFFER_FAILED,
         CREATE_SHADER_FAILED,
         CREATE_PIPELINE_FAILED,
@@ -30,5 +30,6 @@ export namespace sopho
     class App;
     class GpuWrapper;
     class BufferWrapper;
-    class PipelineWrapper;
+    class RenderProcedural;
+    class RenderData;
 }

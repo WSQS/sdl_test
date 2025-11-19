@@ -16,6 +16,12 @@ import :gpu;
 
 namespace sopho
 {
+    /**
+     * @brief Releases any owned GPU resources held by the wrapper.
+     *
+     * Ensures the associated GPU object is valid, then releases the GPU buffer and the
+     * GPU transfer buffer if they exist and clears their pointers.
+     */
     BufferWrapper::~BufferWrapper() noexcept
     {
         if (!m_gpu)
@@ -23,11 +29,11 @@ namespace sopho
             return;
         }
 
-        // Release vertex buffer
-        if (m_vertex_buffer)
+        // Release gpu buffer
+        if (m_gpu_buffer)
         {
-            m_gpu->release_buffer(m_vertex_buffer);
-            m_vertex_buffer = nullptr;
+            m_gpu->release_buffer(m_gpu_buffer);
+            m_gpu_buffer = nullptr;
         }
 
         // Release transfer buffer
@@ -35,50 +41,27 @@ namespace sopho
         {
             SDL_ReleaseGPUTransferBuffer(m_gpu->device(), m_transfer_buffer);
             m_transfer_buffer = nullptr;
-            m_transfer_buffer_size = 0;
         }
     }
 
-    [[nodiscard]] std::expected<std::monostate, GpuError>
-    BufferWrapper::upload(const void* src_data, std::uint32_t size, std::uint32_t offset)
+    /**
+     * @brief Uploads the internal CPU-side buffer to the GPU buffer via the transfer buffer and a GPU copy pass.
+     *
+     * Copies the contents of m_cpu_buffer into the existing transfer buffer, records a GPU copy pass that
+     * uploads that transfer buffer into m_gpu_buffer, submits the command buffer, and returns success status.
+     *
+     * @returns std::monostate on success; otherwise an unexpected `GpuError` indicating the failure:
+     *  - `GpuError::MAP_TRANSFER_BUFFER_FAILED` if mapping the transfer buffer failed.
+     *  - `GpuError::ACQUIRE_COMMAND_BUFFER_FAILED` if acquiring a GPU command buffer failed.
+     *  - `GpuError::BEGIN_COPY_PASS_FAILED` if beginning the GPU copy pass failed.
+     *  - `GpuError::SUBMIT_COMMAND_FAILED` if submitting the GPU command buffer failed.
+     */
+    [[nodiscard]] std::expected<std::monostate, GpuError> BufferWrapper::upload()
     {
-        // Bounds check to avoid writing past the end of the GPU buffer.
-        if (offset + size > m_vertex_buffer_size)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d buffer overflow: size=%u, offset=%u, buffer_size=%u", __FILE__,
-                         __LINE__, size, offset, m_vertex_buffer_size);
-
-            return std::unexpected(GpuError::BUFFER_OVERFLOW);
-        }
+        auto src_data = m_cpu_buffer.data();
+        auto size = m_cpu_buffer.size();
 
         auto* device = m_gpu->device();
-
-        // 1. Ensure the transfer buffer capacity is sufficient.
-        if (size > m_transfer_buffer_size)
-        {
-            if (m_transfer_buffer != nullptr)
-            {
-                SDL_ReleaseGPUTransferBuffer(device, m_transfer_buffer);
-                m_transfer_buffer = nullptr;
-                m_transfer_buffer_size = 0;
-            }
-
-            SDL_GPUTransferBufferCreateInfo transfer_info{};
-            transfer_info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-            transfer_info.size = size;
-            transfer_info.props = 0;
-
-            m_transfer_buffer = SDL_CreateGPUTransferBuffer(device, &transfer_info);
-            if (!m_transfer_buffer)
-            {
-                SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to create transfer buffer: %s", __FILE__, __LINE__,
-                             SDL_GetError());
-
-                return std::unexpected(GpuError::CREATE_TRANSFER_BUFFER_FAILED);
-            }
-
-            m_transfer_buffer_size = transfer_info.size;
-        }
 
         // 2. Map the transfer buffer and copy data into it.
         void* dst = SDL_MapGPUTransferBuffer(device, m_transfer_buffer, false);
@@ -118,9 +101,9 @@ namespace sopho
         location.offset = 0;
 
         SDL_GPUBufferRegion region{};
-        region.buffer = m_vertex_buffer;
+        region.buffer = m_gpu_buffer;
         region.size = size;
-        region.offset = offset;
+        region.offset = 0;
 
         SDL_UploadToGPUBuffer(copy_pass, &location, &region, false);
 

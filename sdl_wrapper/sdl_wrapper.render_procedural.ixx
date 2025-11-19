@@ -10,12 +10,12 @@ module;
 
 #include "SDL3/SDL_gpu.h"
 #include "shaderc/shaderc.hpp"
-export module sdl_wrapper:pipeline;
+export module sdl_wrapper:render_procedural;
 import :decl; // GpuError, forward declarations, etc.
-
+import :vertex_layout;
 export namespace sopho
 {
-    class PipelineWrapper
+    class RenderProcedural
     {
         std::shared_ptr<GpuWrapper> m_gpu{};
 
@@ -24,24 +24,24 @@ export namespace sopho
         SDL_GPUShader* m_fragment_shader{};
 
         std::vector<SDL_GPUVertexBufferDescription> m_vertex_buffer_descriptions{};
-        std::vector<SDL_GPUVertexAttribute> m_vertex_attributes{};
         std::vector<SDL_GPUColorTargetDescription> m_color_target_descriptions{};
         SDL_GPUGraphicsPipelineCreateInfo m_pipeline_info{};
 
         shaderc::Compiler m_compiler{};
         shaderc::CompileOptions m_options{};
 
+        VertexLayout m_vertex_layout{};
         bool m_modified{false};
 
         // Internal constructor: assumes texture format is already known and valid.
-        PipelineWrapper(std::shared_ptr<GpuWrapper> gpu, SDL_GPUTextureFormat swapchain_format) noexcept;
+        RenderProcedural(std::shared_ptr<GpuWrapper> gpu, SDL_GPUTextureFormat swapchain_format) noexcept;
 
     public:
-        PipelineWrapper(const PipelineWrapper&) = delete;
-        PipelineWrapper& operator=(const PipelineWrapper&) = delete;
-        PipelineWrapper(PipelineWrapper&&)  noexcept = default;
-        PipelineWrapper& operator=(PipelineWrapper&&) = delete;
-        ~PipelineWrapper() noexcept;
+        RenderProcedural(const RenderProcedural&) = delete;
+        RenderProcedural& operator=(const RenderProcedural&) = delete;
+        RenderProcedural(RenderProcedural&&) noexcept = default;
+        RenderProcedural& operator=(RenderProcedural&&) = delete;
+        ~RenderProcedural() noexcept;
 
         /// Returns the underlying SDL_GPUGraphicsPipeline*.
         [[nodiscard]] SDL_GPUGraphicsPipeline* data() const noexcept { return m_graphics_pipeline; }
@@ -65,6 +65,14 @@ export namespace sopho
         /// pipeline create info, and marks the pipeline as modified.
         /// On failure, a compile or creation error is returned.
         [[nodiscard]] std::expected<std::monostate, GpuError> set_fragment_shader(const std::string& source);
+
+        auto set_vertex_attributes(std::vector<SDL_GPUVertexElementFormat> vertex_attributes)
+        {
+            m_vertex_layout.set_vertex_attributes(std::move(vertex_attributes));
+            m_modified = true;
+        }
+
+        auto& vertex_layout() const { return m_vertex_layout; }
 
         friend class GpuWrapper;
     };

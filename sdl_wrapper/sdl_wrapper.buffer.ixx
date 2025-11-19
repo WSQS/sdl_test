@@ -1,12 +1,11 @@
 // sdl_wrapper.buffer.ixx
 // Created by sophomore on 11/8/25.
 //
-
 module;
-
 #include <expected>
 #include <memory>
 #include <variant>
+#include <vector>
 
 #include "SDL3/SDL_gpu.h"
 
@@ -18,15 +17,17 @@ export namespace sopho
     class BufferWrapper
     {
         std::shared_ptr<GpuWrapper> m_gpu{}; // Owns the device lifetime
-        SDL_GPUBuffer* m_vertex_buffer{}; // Target GPU buffer
+        SDL_GPUBuffer* m_gpu_buffer{}; // Target GPU buffer
         SDL_GPUTransferBuffer* m_transfer_buffer{}; // Staging/transfer buffer
-        std::uint32_t m_vertex_buffer_size{}; // Total size of the GPU buffer
-        std::uint32_t m_transfer_buffer_size{}; // Current capacity of the transfer buffer
+        std::uint32_t m_buffer_size{}; // Total size of the GPU buffer
+        std::vector<std::byte> m_cpu_buffer{};
 
         // Only GpuWrapper is allowed to construct this type.
-        BufferWrapper(std::shared_ptr<GpuWrapper> gpu, SDL_GPUBuffer* buffer, std::uint32_t size) noexcept :
-            m_gpu(std::move(gpu)), m_vertex_buffer(buffer), m_vertex_buffer_size(size)
+        BufferWrapper(std::shared_ptr<GpuWrapper> gpu, SDL_GPUBuffer* gpu_buffer,
+                      SDL_GPUTransferBuffer* transfer_buffer, std::uint32_t size) noexcept :
+            m_gpu(std::move(gpu)), m_gpu_buffer(gpu_buffer), m_transfer_buffer(transfer_buffer), m_buffer_size(size)
         {
+            m_cpu_buffer.resize(m_buffer_size);
         }
 
     public:
@@ -35,20 +36,13 @@ export namespace sopho
         BufferWrapper(BufferWrapper&&) = default;
         BufferWrapper& operator=(BufferWrapper&&) = default;
 
-        /// Upload a block of data into the GPU buffer at the given byte offset.
-        ///
-        /// This function may fail in several ways:
-        ///  - The requested upload range exceeds the buffer size.
-        ///  - The transfer buffer cannot be created or resized.
-        ///  - Mapping the transfer buffer fails.
-        ///  - Acquiring a GPU command buffer fails.
-        ///
-        /// All such failures are reported via the returned std::expected.
-        [[nodiscard]] std::expected<std::monostate, GpuError> upload(const void* data, std::uint32_t size,
-                                                                     std::uint32_t offset);
+        /// Upload CPU buffer into the GPU buffer at the given byte offset.
+
+        [[nodiscard]] std::expected<std::monostate, GpuError> upload();
 
         /// Returns the underlying SDL_GPUBuffer pointer.
-        [[nodiscard]] SDL_GPUBuffer* data() const noexcept { return m_vertex_buffer; }
+        [[nodiscard]] SDL_GPUBuffer* gpu_buffer() const noexcept { return m_gpu_buffer; }
+        [[nodiscard]] auto cpu_buffer() noexcept { return m_cpu_buffer.data(); }
 
         ~BufferWrapper() noexcept;
 
