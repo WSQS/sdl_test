@@ -30,9 +30,6 @@ class UserApp : public sopho::App
 {
     // GPU + resources
     std::shared_ptr<sopho::GpuWrapper> m_gpu{};
-    std::expected<sopho::RenderProcedural, sopho::GpuError> m_render_procedural{
-        std::unexpected(sopho::GpuError::UNINITIALIZED)};
-    std::expected<sopho::RenderData, sopho::GpuError> m_render_data{std::unexpected(sopho::GpuError::UNINITIALIZED)};
 
     std::shared_ptr<sopho::Renderable> m_renderable{};
 
@@ -99,13 +96,12 @@ public:
                          static_cast<int>(pw_result.error()));
             return SDL_APP_FAILURE;
         }
-        m_render_procedural.emplace(std::move(pw_result.value()));
 
         // 4. Compile shaders and build initial pipeline.
         auto pipeline_init =
-            m_render_procedural.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
-                .and_then([&](std::monostate) { return m_render_procedural->set_fragment_shader(fragment_source); })
-                .and_then([&](std::monostate) { return m_render_procedural->submit(); });
+            pw_result.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
+                .and_then([&](std::monostate) { return pw_result->set_fragment_shader(fragment_source); })
+                .and_then([&](std::monostate) { return pw_result->submit(); });
 
         if (!pipeline_init)
         {
@@ -115,17 +111,17 @@ public:
         }
 
         // 3. Create vertex buffer.
-        m_render_data = std::move(m_gpu->create_data(m_render_procedural.value(), 3));
-        if (!m_render_data)
+        auto render_data = std::move(m_gpu->create_data(pw_result.value(), 3));
+        if (!render_data)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
-                         static_cast<int>(m_render_data.error()));
+                         static_cast<int>(render_data.error()));
             return SDL_APP_FAILURE;
         }
 
         // 5. Upload initial vertex data.
         auto upload_result =
-            m_render_data.and_then([&](auto& vertex_buffer) { return vertex_buffer.buffer().upload(); });
+            render_data.and_then([&](auto& vertex_buffer) { return vertex_buffer.buffer().upload(); });
 
         if (!upload_result)
         {
@@ -135,8 +131,8 @@ public:
         }
 
         m_renderable = std::make_shared<sopho::Renderable>(sopho::Renderable{
-            .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(m_render_procedural.value())),
-            .m_render_data = std::make_shared<sopho::RenderData>(std::move(m_render_data.value()))
+            .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result.value())),
+            .m_render_data = std::make_shared<sopho::RenderData>(std::move(render_data.value()))
         });
 
         // 6. Initialize camera matrix to identity.
@@ -295,8 +291,7 @@ public:
         ImDrawData* draw_data = ImGui::GetDrawData();
 
         // Rebuild pipeline if needed.
-        auto pipeline_submit =
-            m_render_procedural.and_then([](auto& pipeline_wrapper) { return pipeline_wrapper.submit(); });
+        auto pipeline_submit = m_renderable->procedural()->submit();
         if (!pipeline_submit)
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "Pipeline submit failed, error = %d",
