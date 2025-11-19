@@ -120,7 +120,7 @@ public:
         }
 
         // 5. Upload initial vertex data.
-        auto upload_result = render_data.and_then([&](auto& vertex_buffer) { return vertex_buffer.buffer().upload(); });
+        auto upload_result = render_data.and_then([&](auto& vertex_buffer) { return vertex_buffer.upload(); });
 
         if (!upload_result)
         {
@@ -238,7 +238,7 @@ public:
 
                 if (changed)
                 {
-                    auto upload_result = m_renderable->data()->buffer().upload();
+                    auto upload_result = m_renderable->data()->upload();
                     if (!upload_result)
                     {
                         SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to upload vertex buffer in tick(), error = %d",

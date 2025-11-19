@@ -41,5 +41,9 @@ namespace sopho
         {
             return VertexView{.layout = m_layouts, .vertex_count = m_vertex_count, .raw = m_buffer.cpu_buffer()};
         }
+        auto upload()
+        {
+            return m_buffer.upload();
+        }
     };
 } // namespace sopho
