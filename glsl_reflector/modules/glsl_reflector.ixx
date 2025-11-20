@@ -3,6 +3,8 @@
 //
 module;
 #include <iostream>
+#include <string>
+#include <vector>
 #include "glslang/Include/intermediate.h"
 #include "glslang/MachineIndependent/localintermediate.h"
 #include "glslang/Public/ResourceLimits.h"

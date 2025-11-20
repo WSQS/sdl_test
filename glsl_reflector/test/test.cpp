@@ -1,15 +1,8 @@
 // test.cpp
 // Created by wsqsy on 11/19/2025.
 //
-#include <format>
-#include <iostream>
 #include <string>
 #include <vector>
-
-#include "glslang/Include/intermediate.h"
-#include "glslang/MachineIndependent/localintermediate.h"
-#include "glslang/Public/ResourceLimits.h"
-#include "glslang/Public/ShaderLang.h"
 
 #include <gtest/gtest.h>
 
