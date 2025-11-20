@@ -54,7 +54,7 @@ layout(std140, set = 1, binding = 0) uniform Camera
 void main()
 {
   gl_Position = uView * vec4(a_position, 1.0f);
-  v_color = vec4(1);
+  v_color = a_color;
 })WSQ";
 
     std::string fragment_source =
@@ -229,22 +229,28 @@ public:
                 auto ptr = editor_data.raw;
                 for (int vertex_index = 0; vertex_index < editor_data.vertex_count; ++vertex_index)
                 {
-                    for (const auto& format : editor_data.layout.get_vertex_format())
+                    for (const auto& format : editor_data.layout.get_vertex_reflection().inputs)
                     {
-                        switch (format)
+                        switch (format.basic_type)
                         {
-                        case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3:
-                            changed |= ImGui::DragFloat3(std::format("node{}", vertex_index).data(),
-                                                         reinterpret_cast<float*>(ptr), 0.01f, -1.f, 1.f);
-                            break;
-                        case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4:
-                            changed |= ImGui::DragFloat4(std::format("color{}", vertex_index).data(),
-                                                         reinterpret_cast<float*>(ptr), 0.01f, -1.f, 1.f);
+                        case sopho::BasicType::FLOAT:
+                            {
+                                switch (format.vector_size)
+                                {
+                                case 3:
+                                    changed |= ImGui::DragFloat3(std::format("{}{}", format.name, vertex_index).data(),
+                                                                 reinterpret_cast<float*>(ptr), 0.01f, -1.f, 1.f);
+                                    break;
+                                case 4:
+                                    changed |= ImGui::DragFloat4(std::format("{}{}", format.name, vertex_index).data(),
+                                                                 reinterpret_cast<float*>(ptr), 0.01f, -1.f, 1.f);
+                                }
+                            }
                             break;
                         default:
                             break;
                         }
-                        auto size = sopho::get_size(format);
+                        auto size = sopho::get_size(sopho::to_sdl_format(format.basic_type, format.vector_size));
                         ptr += size;
                     }
                 }

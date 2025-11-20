@@ -22,7 +22,7 @@ export namespace sopho
         int vector_size{};
     };
 
-    export struct VertexReflection
+    struct VertexReflection
     {
         std::vector<VertexInfo> inputs{};
     };

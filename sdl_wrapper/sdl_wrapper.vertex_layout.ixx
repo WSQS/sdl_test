@@ -6,7 +6,7 @@ module;
 #include <vector>
 #include "SDL3/SDL_gpu.h"
 export module sdl_wrapper:vertex_layout;
-
+import glsl_reflector;
 namespace sopho
 {
 
@@ -80,31 +80,52 @@ namespace sopho
         }
     }
 
+    export auto to_sdl_format(BasicType basic_type, int vector_size)
+    {
+        switch (basic_type)
+        {
+        case BasicType::FLOAT:
+            {
+                switch (vector_size)
+                {
+                case 3:
+                    return SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
+                case 4:
+                    return SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4;
+                default:
+                    return SDL_GPU_VERTEXELEMENTFORMAT_INVALID;
+                }
+            }
+        default:
+            return SDL_GPU_VERTEXELEMENTFORMAT_INVALID;
+        }
+    }
+
     class VertexLayout
     {
+        VertexReflection m_vertex_reflection{};
         std::vector<SDL_GPUVertexElementFormat> raw{};
         std::vector<SDL_GPUVertexAttribute> attributes{};
         uint32_t stride = 0;
 
     public:
-        auto set_vertex_attributes(std::vector<SDL_GPUVertexElementFormat> vertex_attributes)
+        auto set_vertex_reflection(const VertexReflection& vertex_reflection)
         {
-            raw.swap(vertex_attributes);
+            m_vertex_reflection = vertex_reflection;
             stride = 0;
             attributes.clear();
-            for (int i = 0; i < raw.size(); ++i)
+            for (const auto& input : vertex_reflection.inputs)
             {
                 SDL_GPUVertexAttribute vertex_attribute{};
-                vertex_attribute.location = i;
+                vertex_attribute.location = input.location;
                 vertex_attribute.buffer_slot = 0;
-                vertex_attribute.format = raw[i];
+                vertex_attribute.format = to_sdl_format(input.basic_type, input.vector_size);
                 vertex_attribute.offset = stride;
                 stride += get_size(vertex_attribute.format);
                 attributes.push_back(vertex_attribute);
             }
         }
-
-        const auto& get_vertex_format() { return raw; }
+        const auto& get_vertex_reflection() { return m_vertex_reflection; }
         const auto& get_vertex_attributes() { return attributes; }
         auto get_stride() const { return stride; }
     };
