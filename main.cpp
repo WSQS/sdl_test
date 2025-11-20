@@ -282,6 +282,12 @@ public:
                         SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to set vertex shader from editor, error = %d",
                                      static_cast<int>(result.error()));
                     }
+                    else
+                    {
+                        auto new_data = m_gpu->create_data(*m_renderable->procedural(), 3);
+                        m_renderable->data() = std::make_shared<sopho::RenderData>(std::move(new_data.value()));
+                        m_renderable->data()->upload();
+                    }
                 }
             }
             break;
