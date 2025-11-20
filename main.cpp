@@ -55,7 +55,7 @@ layout(std140, set = 1, binding = 0) uniform Camera
 void main()
 {
   gl_Position = uView * vec4(a_position, 1.0f);
-  v_color = a_color;
+  v_color = vec4(1);
 })WSQ";
 
     std::string fragment_source =
