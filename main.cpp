@@ -5,12 +5,12 @@
 #include <array>
 #include <cmath>
 #include <expected>
+#include <format>
 #include <iostream>
 #include <memory>
 #include <numbers>
 #include <string>
 #include <variant>
-#include <format>
 
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
