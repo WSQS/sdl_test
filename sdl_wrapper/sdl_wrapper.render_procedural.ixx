@@ -66,9 +66,23 @@ export namespace sopho
         /// On failure, a compile or creation error is returned.
         [[nodiscard]] std::expected<std::monostate, GpuError> set_fragment_shader(const std::string& source);
 
-        auto set_vertex_attributes(std::vector<SDL_GPUVertexElementFormat> vertex_attributes)
+        auto set_vertex_reflection(const VertexReflection& vertex_attributes)
         {
-            m_vertex_layout.set_vertex_attributes(std::move(vertex_attributes));
+            m_vertex_layout.set_vertex_reflection(vertex_attributes);
+
+            // Setup vertex buffer description.
+            m_vertex_buffer_descriptions.clear();
+            SDL_GPUVertexBufferDescription vb_desc{};
+            vb_desc.slot = 0;
+            vb_desc.pitch = m_vertex_layout.get_stride();
+            vb_desc.input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
+            vb_desc.instance_step_rate = 0;
+            m_vertex_buffer_descriptions.push_back(vb_desc);
+
+            m_pipeline_info.vertex_input_state.vertex_attributes = m_vertex_layout.get_vertex_attributes().data();
+            m_pipeline_info.vertex_input_state.num_vertex_attributes =
+                static_cast<std::uint32_t>(m_vertex_layout.get_vertex_attributes().size());
+
             m_modified = true;
         }
 

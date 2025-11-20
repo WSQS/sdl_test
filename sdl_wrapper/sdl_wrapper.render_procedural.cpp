@@ -14,7 +14,7 @@ module;
 module sdl_wrapper;
 import :render_procedural;
 import :gpu;
-
+import glsl_reflector;
 namespace sopho
 {
     /**
@@ -60,7 +60,6 @@ namespace sopho
     RenderProcedural::RenderProcedural(std::shared_ptr<GpuWrapper> gpu, SDL_GPUTextureFormat swapchain_format) noexcept
         : m_gpu(std::move(gpu))
     {
-        m_vertex_layout.set_vertex_attributes({SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4});
         // Configure shaderc to target Vulkan/SPIR-V.
         m_options.SetTargetEnvironment(shaderc_target_env_vulkan, 0);
 
@@ -237,6 +236,9 @@ namespace sopho
         m_vertex_shader = new_shader;
         m_pipeline_info.vertex_shader = new_shader;
         m_modified = true;
+
+        auto reflect_result = reflect_vertex(source);
+        set_vertex_reflection(reflect_result);
 
         return std::monostate{};
     }

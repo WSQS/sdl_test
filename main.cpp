@@ -5,10 +5,12 @@
 #include <array>
 #include <cmath>
 #include <expected>
+#include <format>
 #include <iostream>
 #include <memory>
 #include <numbers>
 #include <string>
+#include <variant>
 
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
@@ -19,6 +21,7 @@
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_keycode.h"
 
+import glsl_reflector;
 import sdl_wrapper;
 
 struct CameraUniform
@@ -229,22 +232,28 @@ public:
                 auto ptr = editor_data.raw;
                 for (int vertex_index = 0; vertex_index < editor_data.vertex_count; ++vertex_index)
                 {
-                    for (const auto& format : editor_data.layout.get_vertex_format())
+                    for (const auto& format : editor_data.layout.get_vertex_reflection().inputs)
                     {
-                        switch (format)
+                        switch (format.basic_type)
                         {
-                        case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3:
-                            changed |= ImGui::DragFloat3(std::format("node{}", vertex_index).data(),
-                                                         reinterpret_cast<float*>(ptr), 0.01f, -1.f, 1.f);
-                            break;
-                        case SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4:
-                            changed |= ImGui::DragFloat4(std::format("color{}", vertex_index).data(),
-                                                         reinterpret_cast<float*>(ptr), 0.01f, -1.f, 1.f);
+                        case sopho::BasicType::FLOAT:
+                            {
+                                switch (format.vector_size)
+                                {
+                                case 3:
+                                    changed |= ImGui::DragFloat3(std::format("{}{}", format.name, vertex_index).data(),
+                                                                 reinterpret_cast<float*>(ptr), 0.01f, -1.f, 1.f);
+                                    break;
+                                case 4:
+                                    changed |= ImGui::DragFloat4(std::format("{}{}", format.name, vertex_index).data(),
+                                                                 reinterpret_cast<float*>(ptr), 0.01f, -1.f, 1.f);
+                                }
+                            }
                             break;
                         default:
                             break;
                         }
-                        auto size = sopho::get_size(format);
+                        auto size = sopho::get_size(sopho::to_sdl_format(format.basic_type, format.vector_size));
                         ptr += size;
                     }
                 }
@@ -275,6 +284,12 @@ public:
                     {
                         SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to set vertex shader from editor, error = %d",
                                      static_cast<int>(result.error()));
+                    }
+                    else
+                    {
+                        auto new_data = m_gpu->create_data(*m_renderable->procedural(), 3);
+                        m_renderable->data() = std::make_shared<sopho::RenderData>(std::move(new_data.value()));
+                        m_renderable->data()->upload();
                     }
                 }
             }
