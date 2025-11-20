@@ -2,6 +2,7 @@
 // Created by wsqsy on 11/20/2025.
 //
 module;
+#include <cstdint>
 #include <string>
 #include <vector>
 export module glsl_reflector:type;
