@@ -18,4 +18,5 @@ add_executable(glslr test/test.cpp)
 target_link_libraries(glslr PUBLIC glsl_reflector gtest gtest_main)
 
 add_test(NAME unit_tests COMMAND glslr)
-gtest_discover_tests(glslr)
+gtest_discover_tests(glslr
+        DISCOVERY_TIMEOUT 60)
