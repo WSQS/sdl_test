@@ -19,6 +19,7 @@
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_keycode.h"
 
+import glsl_reflector;
 import sdl_wrapper;
 
 struct CameraUniform
