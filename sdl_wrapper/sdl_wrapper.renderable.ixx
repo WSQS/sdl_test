@@ -16,7 +16,7 @@ namespace sopho
         {
             return m_render_procedural;
         }
-        auto & data()
+        std::shared_ptr<RenderData> & data()
         {
             return m_render_data;
         }
