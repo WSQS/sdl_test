@@ -12,7 +12,7 @@ module;
 export module sdl_wrapper:buffer;
 import :decl;
 
-namespace sopho
+export namespace sopho
 {
     class BufferWrapper
     {

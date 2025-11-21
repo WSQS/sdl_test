@@ -46,6 +46,7 @@ namespace sopho
         RenderData& operator=(const RenderData&) = delete;
         RenderData(RenderData&&) = default;
         RenderData& operator=(RenderData&&) = default;
+        auto& buffer() { return m_vertex_buffer; }
         auto& get_vertex_buffer_binding() { return m_bindings; }
         auto& get_index_buffer_binding() { return m_index_binding; }
         auto vertex_view()
