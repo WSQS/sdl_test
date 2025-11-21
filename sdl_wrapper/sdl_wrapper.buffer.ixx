@@ -42,7 +42,7 @@ export namespace sopho
 
         /// Returns the underlying SDL_GPUBuffer pointer.
         [[nodiscard]] SDL_GPUBuffer* gpu_buffer() const noexcept { return m_gpu_buffer; }
-        [[nodiscard]] auto cpu_buffer() noexcept { return m_cpu_buffer.data(); }
+        [[nodiscard]] std::byte* cpu_buffer() noexcept { return m_cpu_buffer.data(); }
 
         ~BufferWrapper() noexcept;
 
