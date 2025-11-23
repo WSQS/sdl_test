@@ -122,8 +122,20 @@ add_subdirectory(sdl_wrapper)
 add_subdirectory(glsl_reflector)
 
 add_executable(SDL_TEST main.cpp)
-target_link_libraries(SDL_TEST PRIVATE imgui sdl_wrapper)
+target_link_libraries(SDL_TEST PRIVATE imgui sdl_wrapper stb)
 
+set(ASSETS_DST_DIR ${CMAKE_BINARY_DIR}/assets)
+file(MAKE_DIRECTORY ${ASSETS_DST_DIR})
+
+set(TEST_TEXTURE_PATH ${ASSETS_DST_DIR}/test_texture.png)
+
+if (NOT EXISTS ${TEST_TEXTURE_PATH})
+    file(DOWNLOAD
+            "https://opengameart.org/sites/default/files/slime_25.png"
+            "${TEST_TEXTURE_PATH}"
+            SHOW_PROGRESS
+    )
+endif()
 
 include(GNUInstallDirs)
 install(TARGETS SDL_TEST
