@@ -33,6 +33,27 @@ struct CameraUniform
     std::array<float, 16> m{};
 };
 
+auto load_image()
+{
+    sopho::ImageData result;
+    auto data = stbi_load("assets/test_texture.png", &result.width, &result.height, &result.channels, 4);
+
+    if (!data)
+    {
+        SDL_Log("stbi_load failed for %s: %s", "test.png", stbi_failure_reason());
+    }
+    else
+    {
+        result.pixels.assign(reinterpret_cast<std::byte*>(data),
+                             reinterpret_cast<std::byte*>(data) + result.width * result.height * result.channels);
+        stbi_image_free(data);
+        SDL_Log("stbi_load succeeded, w: %d h:%d ch:%d", result.width, result.height, result.channels);
+    }
+
+
+    return result;
+}
+
 class UserApp : public sopho::App
 {
     // GPU + resources
@@ -196,19 +217,7 @@ public:
         init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
 
         ImGui_ImplSDLGPU3_Init(&init_info);
-
-        int w{}, h{}, ch{};
-        auto data = stbi_load("assets/test_texture.png", &w, &h, &ch, 4);
-
-        if (!data)
-        {
-            SDL_Log("stbi_load failed for %s: %s", "test.png", stbi_failure_reason());
-        }
-        else
-        {
-            SDL_Log("stbi_load succeeded, w: %d h:%d ch:%d", w, h, ch);
-        }
-
+        load_image();
         return SDL_APP_CONTINUE;
     }
 
