@@ -61,6 +61,8 @@ class UserApp : public sopho::App
 
     std::shared_ptr<sopho::Renderable> m_renderable{};
 
+    sopho::ImageData m_image_data;
+
     // camera state
     float yaw = 0.0f;
     float pitch = 0.0f;
@@ -217,7 +219,7 @@ public:
         init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
 
         ImGui_ImplSDLGPU3_Init(&init_info);
-        load_image();
+        m_image_data = load_image();
         return SDL_APP_CONTINUE;
     }
 
