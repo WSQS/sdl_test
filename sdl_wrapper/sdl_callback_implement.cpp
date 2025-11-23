@@ -2,11 +2,12 @@
 // Created by sophomore on 11/9/25.
 //
 #define SDL_MAIN_USE_CALLBACKS
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
+#include "SDL3/SDL.h"
+#include "SDL3/SDL_main.h"
 import sdl_wrapper;
+import data_type;
 
-extern sopho::App* create_app(int argc, char** argv);
+extern sopho::expected<sopho::App*> create_app(int argc, char** argv);
 
 /**
  * @brief Initializes the SDL video subsystem, constructs the application, and invokes its initialization.
@@ -26,8 +27,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv)
     auto app = create_app(argc, argv);
     if (!app)
         return SDL_APP_FAILURE;
-    *appstate = app;
-    return app->init(argc, argv);
+    *appstate = app.value();
+    return app.value()->init(argc, argv);
 }
 
 /**

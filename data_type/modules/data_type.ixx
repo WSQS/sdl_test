@@ -1,7 +1,8 @@
 // data_type.ixx
 // Created by sophomore on 11/23/25.
 //
-
+module;
+#include<expected>
 export module data_type;
 
 export namespace sopho {
@@ -23,4 +24,8 @@ export namespace sopho {
         COMPILE_VERTEX_SHADER_FAILED,
         COMPILE_FRAGMENT_SHADER_FAILED,
     };
+
+    using TError = GpuError;
+    template<typename T>
+    using expected = std::expected<T, TError>;
 }

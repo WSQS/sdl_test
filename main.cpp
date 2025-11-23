@@ -20,7 +20,7 @@
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_keycode.h"
-
+import data_type;
 import glsl_reflector;
 import sdl_wrapper;
 
@@ -515,4 +515,4 @@ public:
  * @return sopho::App* Pointer to a heap-allocated application object; the caller takes ownership and is responsible for
  * deleting it.
  */
-sopho::App* create_app(int argc, char** argv) { return new UserApp(); }
+sopho::expected<sopho::App*> create_app(int argc, char** argv) { return new UserApp(); }
