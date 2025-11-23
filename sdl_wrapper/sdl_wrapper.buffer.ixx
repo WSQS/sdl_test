@@ -10,6 +10,7 @@ module;
 #include "SDL3/SDL_gpu.h"
 
 export module sdl_wrapper:buffer;
+import data_type;
 import :decl;
 
 namespace sopho

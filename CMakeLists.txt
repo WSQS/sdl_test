@@ -106,6 +106,7 @@ FetchContent_MakeAvailable(googletest)
 include(CTest)
 include(GoogleTest)
 
+add_subdirectory(data_type)
 add_subdirectory(sdl_wrapper)
 add_subdirectory(glsl_reflector)
 

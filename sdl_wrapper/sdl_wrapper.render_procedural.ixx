@@ -11,6 +11,7 @@ module;
 #include "SDL3/SDL_gpu.h"
 #include "shaderc/shaderc.hpp"
 export module sdl_wrapper:render_procedural;
+import data_type;
 import :decl; // GpuError, forward declarations, etc.
 import :vertex_layout;
 export namespace sopho
