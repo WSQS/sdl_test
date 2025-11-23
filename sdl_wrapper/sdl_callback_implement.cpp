@@ -7,7 +7,7 @@
 import sdl_wrapper;
 import data_type;
 
-extern sopho::expected<sopho::App*> create_app(int argc, char** argv);
+extern sopho::checkable<sopho::App*> create_app(int argc, char** argv);
 
 /**
  * @brief Initializes the SDL video subsystem, constructs the application, and invokes its initialization.

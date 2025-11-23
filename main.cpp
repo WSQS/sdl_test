@@ -515,4 +515,4 @@ public:
  * @return sopho::App* Pointer to a heap-allocated application object; the caller takes ownership and is responsible for
  * deleting it.
  */
-sopho::expected<sopho::App*> create_app(int argc, char** argv) { return new UserApp(); }
+sopho::checkable<sopho::App*> create_app(int argc, char** argv) { return new UserApp(); }

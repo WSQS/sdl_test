@@ -27,5 +27,5 @@ export namespace sopho {
 
     using TError = GpuError;
     template<typename T>
-    using expected = std::expected<T, TError>;
+    using checkable = std::expected<T, TError>;
 }
