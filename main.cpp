@@ -37,6 +37,7 @@ auto load_image()
 {
     sopho::ImageData result;
     auto data = stbi_load("assets/test_texture.png", &result.width, &result.height, &result.channels, 4);
+    result.channels = 4;
 
     if (!data)
     {
@@ -49,9 +50,21 @@ auto load_image()
         stbi_image_free(data);
         SDL_Log("stbi_load succeeded, w: %d h:%d ch:%d", result.width, result.height, result.channels);
     }
-
-
     return result;
+}
+
+SDL_GPUTexture* create_texture_from_image(SDL_GPUDevice* device, const sopho::ImageData& img)
+{
+    SDL_GPUTextureCreateInfo create_info{.type = SDL_GPU_TEXTURETYPE_2D,
+                                         .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+                                         .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER,
+                                         .width = static_cast<std::uint32_t>(img.width),
+                                         .height = static_cast<std::uint32_t>(img.height),
+                                         .layer_count_or_depth = 1,
+                                         .num_levels = 1,
+                                         .sample_count = SDL_GPU_SAMPLECOUNT_1,
+                                         .props = 0};
+    return SDL_CreateGPUTexture(device, &create_info);
 }
 
 class UserApp : public sopho::App
@@ -220,6 +233,7 @@ public:
 
         ImGui_ImplSDLGPU3_Init(&init_info);
         m_image_data = load_image();
+        create_texture_from_image(m_gpu->device(),m_image_data);
         return SDL_APP_CONTINUE;
     }
 
