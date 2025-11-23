@@ -20,6 +20,10 @@
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_keycode.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 import data_type;
 import glsl_reflector;
 import sdl_wrapper;
@@ -192,6 +196,18 @@ public:
         init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
 
         ImGui_ImplSDLGPU3_Init(&init_info);
+
+        int w{}, h{}, ch{};
+        auto data = stbi_load("assets/test_texture.png", &w, &h, &ch, 4);
+
+        if (!data)
+        {
+            SDL_Log("stbi_load failed for %s: %s", "test.png", stbi_failure_reason());
+        }
+        else
+        {
+            SDL_Log("stbi_load succeeded, w: %d h:%d ch:%d", w, h, ch);
+        }
 
         return SDL_APP_CONTINUE;
     }
