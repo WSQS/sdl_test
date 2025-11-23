@@ -124,6 +124,11 @@ add_subdirectory(glsl_reflector)
 add_executable(SDL_TEST main.cpp)
 target_link_libraries(SDL_TEST PRIVATE imgui sdl_wrapper stb)
 
+include(GNUInstallDirs)
+install(TARGETS SDL_TEST
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
 set(ASSETS_DST_DIR ${CMAKE_BINARY_DIR}/assets)
 file(MAKE_DIRECTORY ${ASSETS_DST_DIR})
 
@@ -137,7 +142,6 @@ if (NOT EXISTS ${TEST_TEXTURE_PATH})
     )
 endif()
 
-include(GNUInstallDirs)
-install(TARGETS SDL_TEST
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+install(DIRECTORY ${ASSETS_DST_DIR}/
+        DESTINATION ${CMAKE_INSTALL_BINDIR}/assets
 )
