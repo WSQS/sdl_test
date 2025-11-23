@@ -67,6 +67,79 @@ SDL_GPUTexture* create_texture_from_image(SDL_GPUDevice* device, const sopho::Im
     return SDL_CreateGPUTexture(device, &create_info);
 }
 
+SDL_GPUTransferBuffer* create_texture_transfer_buffer(SDL_GPUDevice* device, const sopho::ImageData& img)
+{
+    const Uint32 bytes_per_pixel = 4;
+    const Uint32 size_in_bytes = static_cast<Uint32>(img.width) * static_cast<Uint32>(img.height) * bytes_per_pixel;
+
+    SDL_GPUTransferBufferCreateInfo info{
+        .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, .size = size_in_bytes, .props = 0};
+
+    SDL_GPUTransferBuffer* transfer = SDL_CreateGPUTransferBuffer(device, &info);
+    if (!transfer)
+    {
+        SDL_Log("Failed to create transfer buffer: %s", SDL_GetError());
+        return nullptr;
+    }
+
+    void* ptr = SDL_MapGPUTransferBuffer(device, transfer, false);
+    if (!ptr)
+    {
+        SDL_Log("Failed to map transfer buffer: %s", SDL_GetError());
+        SDL_ReleaseGPUTransferBuffer(device, transfer);
+        return nullptr;
+    }
+
+    // SDL_memcpy(ptr, img.pixels.data(), size_in_bytes);
+    SDL_memset(ptr, 0xFF, size_in_bytes); // RGBA 全是 255 → 纯白
+    SDL_UnmapGPUTransferBuffer(device, transfer);
+
+    return transfer;
+}
+
+void upload_texture_full(SDL_GPUDevice* device, SDL_GPUTexture* texture, SDL_GPUTransferBuffer* transfer, int width,
+                         int height)
+{
+    SDL_GPUCommandBuffer* cmd = SDL_AcquireGPUCommandBuffer(device);
+    if (!cmd)
+    {
+        SDL_Log("SDL_AcquireGPUCommandBuffer failed: %s", SDL_GetError());
+        return;
+    }
+
+    SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(cmd);
+    if (!copy_pass)
+    {
+        SDL_Log("SDL_BeginGPUCopyPass failed: %s", SDL_GetError());
+        return;
+    }
+
+    const Uint32 bytes_per_pixel = 4; // RGBA8
+    const Uint32 row_bytes = static_cast<Uint32>(width) * bytes_per_pixel;
+
+    SDL_GPUTextureTransferInfo src{};
+    src.transfer_buffer = transfer;
+    src.offset = 0;
+    src.pixels_per_row = 0;
+    src.rows_per_layer = 0;
+
+    SDL_GPUTextureRegion dst{};
+    dst.texture = texture;
+    dst.mip_level = 0;
+    dst.layer = 0;
+    dst.x = 0;
+    dst.y = 0;
+    dst.z = 0;
+    dst.w = static_cast<Uint32>(width);
+    dst.h = static_cast<Uint32>(height);
+    dst.d = 1;
+
+    SDL_UploadToGPUTexture(copy_pass, &src, &dst, false);
+
+    SDL_EndGPUCopyPass(copy_pass);
+    SDL_SubmitGPUCommandBuffer(cmd);
+}
+
 class UserApp : public sopho::App
 {
     // GPU + resources
@@ -75,6 +148,8 @@ class UserApp : public sopho::App
     std::shared_ptr<sopho::Renderable> m_renderable{};
 
     sopho::ImageData m_image_data;
+    SDL_GPUSampler* m_sampler;
+    SDL_GPUTexture* m_texture;
 
     // camera state
     float yaw = 0.0f;
@@ -106,9 +181,13 @@ void main()
 layout (location = 0) in vec4 v_color;
 layout (location = 0) out vec4 FragColor;
 
+layout(set = 2, binding = 0) uniform sampler2D uTexture;
+
 void main()
 {
-    FragColor = v_color;
+    FragColor = texture(uTexture, vec2(0.5, 0.5));
+    //FragColor = vec4(v_color.xy,0,0);
+    FragColor.a = 1;
 })WSQ";
 
 public:
@@ -233,7 +312,23 @@ public:
 
         ImGui_ImplSDLGPU3_Init(&init_info);
         m_image_data = load_image();
-        create_texture_from_image(m_gpu->device(),m_image_data);
+        m_texture = create_texture_from_image(m_gpu->device(), m_image_data);
+        auto transfer_buffer = create_texture_transfer_buffer(m_gpu->device(), m_image_data);
+        upload_texture_full(m_gpu->device(), m_texture, transfer_buffer, m_image_data.width, m_image_data.height);
+        SDL_ReleaseGPUTransferBuffer(m_gpu->device(), transfer_buffer);
+        SDL_GPUSamplerCreateInfo info{};
+        info.min_filter = SDL_GPU_FILTER_LINEAR;
+        info.mag_filter = SDL_GPU_FILTER_LINEAR;
+        info.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
+        info.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+        info.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+        info.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+        info.enable_anisotropy = true;
+        info.enable_compare = false;
+        info.compare_op = SDL_GPU_COMPAREOP_ALWAYS;
+        info.props = 0;
+
+        m_sampler = SDL_CreateGPUSampler(m_gpu->device(), &info);
         return SDL_APP_CONTINUE;
     }
 
@@ -484,6 +579,12 @@ public:
 
         SDL_BindGPUIndexBuffer(renderPass, &m_renderable->data()->get_index_buffer_binding(),
                                SDL_GPU_INDEXELEMENTSIZE_32BIT);
+
+        SDL_GPUTextureSamplerBinding tex_binding{};
+        tex_binding.texture = m_texture;
+        tex_binding.sampler = m_sampler;
+
+        SDL_BindGPUFragmentSamplers(renderPass, 0, &tex_binding, 1);
 
         SDL_DrawGPUIndexedPrimitives(renderPass, 6, 1, 0, 0, 0);
 
