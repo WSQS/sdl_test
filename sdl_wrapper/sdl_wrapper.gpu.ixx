@@ -210,7 +210,7 @@ export namespace sopho
         GpuWrapper& operator=(GpuWrapper&&) = delete;
 
         [[nodiscard]] auto device() const { return m_ctx.device.raw; }
-        [[nodiscard]] auto window() const { return m_ctx.window.raw; }
+        [[nodiscard]] SDL_Window *window() const { return m_ctx.window.raw; }
 
         [[nodiscard]] std::expected<BufferWrapper, GpuError> create_buffer(SDL_GPUBufferUsageFlags flag, uint32_t size);
         [[nodiscard]] std::expected<RenderData, GpuError>
