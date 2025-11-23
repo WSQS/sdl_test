@@ -57,12 +57,18 @@ namespace sopho
                                                                 uint32_t vertex_count)
     {
         auto size = render_procedural.vertex_layout().get_stride() * vertex_count;
-        auto buffer = create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, size);
-        if (!buffer)
+        auto vertex_buffer = create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, size);
+        auto index_buffer = create_buffer(SDL_GPU_BUFFERUSAGE_INDEX, 6 * sizeof(int));
+        if (!vertex_buffer)
         {
-            return std::unexpected(buffer.error());
+            return std::unexpected(vertex_buffer.error());
         }
-        return RenderData{std::move(buffer.value()), render_procedural.vertex_layout(), vertex_count};
+        if (!index_buffer)
+        {
+            return std::unexpected(index_buffer.error());
+        }
+        return RenderData{std::move(vertex_buffer.value()), std::move(index_buffer.value()),
+                          render_procedural.vertex_layout(), vertex_count};
     }
     /**
      * @brief Create a RenderProcedural configured for the device's texture format.

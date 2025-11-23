@@ -20,7 +20,7 @@
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_keycode.h"
-
+import data_type;
 import glsl_reflector;
 import sdl_wrapper;
 
@@ -57,7 +57,7 @@ layout(std140, set = 1, binding = 0) uniform Camera
 void main()
 {
   gl_Position = uView * vec4(a_position, 1.0f);
-  v_color = vec4(1);
+  v_color = a_color;
 })WSQ";
 
     std::string fragment_source =
@@ -116,7 +116,7 @@ public:
         }
 
         // 3. Create vertex buffer.
-        auto render_data = std::move(m_gpu->create_data(pw_result.value(), 3));
+        auto render_data = std::move(m_gpu->create_data(pw_result.value(), 4));
         if (!render_data)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
@@ -229,7 +229,7 @@ public:
             {
                 bool changed = false;
                 auto editor_data = m_renderable->data()->vertex_view();
-                auto ptr = editor_data.raw;
+                auto raw_ptr = editor_data.raw;
                 for (int vertex_index = 0; vertex_index < editor_data.vertex_count; ++vertex_index)
                 {
                     for (const auto& format : editor_data.layout.get_vertex_reflection().inputs)
@@ -242,11 +242,11 @@ public:
                                 {
                                 case 3:
                                     changed |= ImGui::DragFloat3(std::format("{}{}", format.name, vertex_index).data(),
-                                                                 reinterpret_cast<float*>(ptr), 0.01f, -1.f, 1.f);
+                                                                 reinterpret_cast<float*>(raw_ptr), 0.01f, -1.f, 1.f);
                                     break;
                                 case 4:
                                     changed |= ImGui::DragFloat4(std::format("{}{}", format.name, vertex_index).data(),
-                                                                 reinterpret_cast<float*>(ptr), 0.01f, -1.f, 1.f);
+                                                                 reinterpret_cast<float*>(raw_ptr), 0.01f, -1.f, 1.f);
                                 }
                             }
                             break;
@@ -254,10 +254,17 @@ public:
                             break;
                         }
                         auto size = sopho::get_size(sopho::to_sdl_format(format.basic_type, format.vector_size));
-                        ptr += size;
+                        raw_ptr += size;
                     }
                 }
-
+                auto index_view = m_renderable->data()->index_view();
+                auto index_ptr = index_view.raw;
+                for (int index_index = 0; index_index < 2; ++index_index)
+                {
+                    changed |= ImGui::InputInt3(std::format("index_{}", index_index).data(),
+                                                reinterpret_cast<int*>(index_ptr));
+                    index_ptr += 3 * sizeof(int);
+                }
                 if (changed)
                 {
                     auto upload_result = m_renderable->data()->upload();
@@ -431,10 +438,13 @@ public:
             SDL_PushGPUVertexUniformData(commandBuffer, 0, cam.m.data(), static_cast<std::uint32_t>(sizeof(cam.m)));
         }
 
-        SDL_BindGPUVertexBuffers(renderPass, 0, m_renderable->data()->get_buffer_binding().data(),
-                                 m_renderable->data()->get_buffer_binding().size());
+        SDL_BindGPUVertexBuffers(renderPass, 0, m_renderable->data()->get_vertex_buffer_binding().data(),
+                                 m_renderable->data()->get_vertex_buffer_binding().size());
 
-        SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
+        SDL_BindGPUIndexBuffer(renderPass, &m_renderable->data()->get_index_buffer_binding(),
+                               SDL_GPU_INDEXELEMENTSIZE_32BIT);
+
+        SDL_DrawGPUIndexedPrimitives(renderPass, 6, 1, 0, 0, 0);
 
         ImGui_ImplSDLGPU3_RenderDrawData(draw_data, commandBuffer, renderPass);
 
@@ -505,4 +515,4 @@ public:
  * @return sopho::App* Pointer to a heap-allocated application object; the caller takes ownership and is responsible for
  * deleting it.
  */
-sopho::App* create_app(int argc, char** argv) { return new UserApp(); }
+sopho::checkable<sopho::App*> create_app(int argc, char** argv) { return new UserApp(); }
