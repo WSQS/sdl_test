@@ -2,11 +2,14 @@
 // Created by sophomore on 11/23/25.
 //
 module;
-#include<expected>
+#include <expected>
+#include <vector>
 export module data_type;
 
-export namespace sopho {
-    enum class GpuError {
+export namespace sopho
+{
+    enum class GpuError
+    {
         UNINITIALIZED,
         CREATE_DEVICE_FAILED,
         CREATE_WINDOW_FAILED,
@@ -26,6 +29,15 @@ export namespace sopho {
     };
 
     using TError = GpuError;
-    template<typename T>
+    template <typename T>
     using checkable = std::expected<T, TError>;
-}
+
+    struct ImageData
+    {
+        int width{};
+        int height{};
+        int channels{};
+        std::vector<std::byte> pixels{};
+    };
+
+} // namespace sopho
