@@ -61,4 +61,9 @@ export namespace sopho
         std::vector<VertexInfo> inputs{};
     };
 
+    struct FragmentReflection
+    {
+        std::uint32_t sampler_count;
+    };
+
 } // namespace sopho
