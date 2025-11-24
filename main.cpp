@@ -90,8 +90,7 @@ SDL_GPUTransferBuffer* create_texture_transfer_buffer(SDL_GPUDevice* device, con
         return nullptr;
     }
 
-    // SDL_memcpy(ptr, img.pixels.data(), size_in_bytes);
-    SDL_memset(ptr, 0xFF, size_in_bytes); // RGBA 全是 255 → 纯白
+    SDL_memcpy(ptr, img.pixels.data(), size_in_bytes);
     SDL_UnmapGPUTransferBuffer(device, transfer);
 
     return transfer;
@@ -185,7 +184,7 @@ layout(set = 2, binding = 0) uniform sampler2D uTexture;
 
 void main()
 {
-    FragColor = texture(uTexture, vec2(0.5, 0.5));
+    FragColor = texture(uTexture, v_color.xy);
     //FragColor = vec4(v_color.xy,0,0);
     FragColor.a = 1;
 })WSQ";
@@ -319,6 +318,7 @@ public:
         SDL_GPUSamplerCreateInfo info{};
         info.min_filter = SDL_GPU_FILTER_LINEAR;
         info.mag_filter = SDL_GPU_FILTER_LINEAR;
+        info.max_anisotropy = 1.f;
         info.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
         info.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
         info.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
