@@ -27,11 +27,25 @@ import data_type;
 import glsl_reflector;
 import sdl_wrapper;
 
+/**
+ * @brief Structure to hold camera transformation matrix data.
+ * 
+ * Contains a 4x4 matrix (16 elements) representing the camera's view transformation.
+ */
 struct CameraUniform
 {
-    std::array<float, 16> m{};
+    std::array<float, 16> m{};  ///< 4x4 transformation matrix as a flat array
 };
 
+/**
+ * @brief Loads image data from the test texture file.
+ *
+ * Uses stb_image library to load a PNG file (assets/test_texture.png) into an ImageData structure.
+ * The image is flipped vertically on load and the pixel data is stored as a vector of bytes.
+ *
+ * @return sopho::ImageData Structure containing the loaded image dimensions, channels, and pixel data.
+ * Returns an empty structure if loading fails.
+ */
 auto load_image()
 {
     stbi_set_flip_vertically_on_load(true);
@@ -53,6 +67,15 @@ auto load_image()
     return result;
 }
 
+/**
+ * @brief Creates a GPU texture from image data.
+ *
+ * Creates a 2D RGBA8 texture with sampler usage based on the provided image data.
+ *
+ * @param device Pointer to the SDL GPU device.
+ * @param img Reference to the ImageData structure containing image information.
+ * @return SDL_GPUTexture* Pointer to the created GPU texture, or nullptr on failure.
+ */
 SDL_GPUTexture* create_texture_from_image(SDL_GPUDevice* device, const sopho::ImageData& img)
 {
     SDL_GPUTextureCreateInfo create_info{.type = SDL_GPU_TEXTURETYPE_2D,
@@ -67,6 +90,15 @@ SDL_GPUTexture* create_texture_from_image(SDL_GPUDevice* device, const sopho::Im
     return SDL_CreateGPUTexture(device, &create_info);
 }
 
+/**
+ * @brief Creates a GPU transfer buffer for texture data upload.
+ *
+ * Creates an upload transfer buffer containing the image data for efficient GPU upload.
+ *
+ * @param device Pointer to the SDL GPU device.
+ * @param img Reference to the ImageData structure containing image information.
+ * @return SDL_GPUTransferBuffer* Pointer to the created GPU transfer buffer, or nullptr on failure.
+ */
 SDL_GPUTransferBuffer* create_texture_transfer_buffer(SDL_GPUDevice* device, const sopho::ImageData& img)
 {
     const Uint32 bytes_per_pixel = 4;
@@ -96,6 +128,17 @@ SDL_GPUTransferBuffer* create_texture_transfer_buffer(SDL_GPUDevice* device, con
     return transfer;
 }
 
+/**
+ * @brief Uploads texture data from transfer buffer to GPU texture.
+ *
+ * Performs a GPU copy operation to upload texture data from the provided transfer buffer to the target texture.
+ *
+ * @param device Pointer to the SDL GPU device.
+ * @param texture Pointer to the target GPU texture.
+ * @param transfer Pointer to the source GPU transfer buffer containing texture data.
+ * @param width Width of the texture in pixels.
+ * @param height Height of the texture in pixels.
+ */
 void upload_texture_full(SDL_GPUDevice* device, SDL_GPUTexture* texture, SDL_GPUTransferBuffer* transfer, int width,
                          int height)
 {
