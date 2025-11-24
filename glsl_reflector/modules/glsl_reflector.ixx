@@ -82,6 +82,11 @@ namespace sopho
                                                   .basic_type = to_basic_type(type->getBasicType()),
                                                   .vector_size = type->getVectorSize()});
         }
+        count = program.getNumUniformVariables();
+        for (auto i = 0; i < count; i++)
+        {
+            auto var = program.getUniform(i);
+        }
         return result;
     }
 } // namespace sopho
