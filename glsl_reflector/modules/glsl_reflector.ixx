@@ -89,4 +89,52 @@ namespace sopho
         }
         return result;
     }
+
+    export auto reflect_fragment(const std::string& fragment_source)
+    {
+        GlslangProcessGuard glslang_initializer{};
+        FragmentReflection result{};
+        glslang::TShader shader(EShLangFragment);
+        std::vector sources{fragment_source.data()};
+        shader.setStrings(sources.data(), sources.size());
+
+        int clientInputSemanticsVersion = 100; // not used for desktop GL
+        glslang::EShTargetClientVersion clientVersion = glslang::EShTargetOpenGL_450;
+        glslang::EShTargetLanguageVersion targetVersion = glslang::EShTargetSpv_1_0;
+
+        shader.setEnvInput(glslang::EShSourceGlsl, EShLangFragment, glslang::EShClientOpenGL,
+                           clientInputSemanticsVersion);
+        shader.setEnvClient(glslang::EShClientOpenGL, clientVersion);
+        shader.setEnvTarget(glslang::EShTargetSpv, targetVersion);
+
+        EShMessages messages = (EShMessages)(EShMsgDefault | EShMsgSpvRules | EShMsgVulkanRules);
+
+        if (!shader.parse(GetDefaultResources(), 450, ENoProfile, false, false, messages))
+        {
+            std::cerr << "Parse failed:\n" << shader.getInfoLog() << std::endl;
+            return result;
+        }
+
+        glslang::TProgram program;
+        program.addShader(&shader);
+        if (!program.link(messages))
+        {
+            std::cerr << "Link failed:\n" << program.getInfoLog() << std::endl;
+            return result;
+        }
+        program.buildReflection();
+        auto count = program.getNumUniformVariables();
+        for (auto i = 0; i < count; i++)
+        {
+            auto var = program.getUniform(i);
+            auto type = var.getType();
+            auto basic_type = type->getBasicType();
+            if (basic_type == glslang::EbtSampler)
+            {
+                result.sampler_count++;
+            }
+        }
+        return result;
+    }
+
 } // namespace sopho
