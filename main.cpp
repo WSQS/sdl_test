@@ -185,8 +185,6 @@ layout(set = 2, binding = 0) uniform sampler2D uTexture;
 void main()
 {
     FragColor = texture(uTexture, v_color.xy);
-    //FragColor = vec4(v_color.xy,0,0);
-    FragColor.a = 1;
 })WSQ";
 
 public:
