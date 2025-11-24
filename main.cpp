@@ -646,6 +646,8 @@ public:
         ImGui_ImplSDL3_Shutdown();
         ImGui_ImplSDLGPU3_Shutdown();
         ImGui::DestroyContext();
+        SDL_ReleaseGPUTexture(m_gpu->device(),m_texture);
+        SDL_ReleaseGPUSampler(m_gpu->device(),m_sampler);
     }
 };
 
