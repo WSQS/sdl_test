@@ -8,10 +8,9 @@ target_sources(glsl_reflector
         PUBLIC
         FILE_SET cxx_modules TYPE CXX_MODULES FILES
         modules/glsl_reflector.ixx
-        modules/glsl_reflector.type.ixx
 )
 
-target_link_libraries(glsl_reflector PUBLIC glslang glslang::glslang-default-resource-limits)
+target_link_libraries(glsl_reflector PUBLIC glslang glslang::glslang-default-resource-limits data_type)
 
 add_executable(glslr test/test.cpp)
 

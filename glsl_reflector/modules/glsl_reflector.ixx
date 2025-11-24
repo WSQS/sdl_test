@@ -10,7 +10,7 @@ module;
 #include "glslang/Public/ResourceLimits.h"
 #include "glslang/Public/ShaderLang.h"
 export module glsl_reflector;
-export import :type;
+export import data_type;
 
 namespace sopho
 {
