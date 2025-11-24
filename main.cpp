@@ -34,6 +34,7 @@ struct CameraUniform
 
 auto load_image()
 {
+    stbi_set_flip_vertically_on_load(true);
     sopho::ImageData result;
     auto data = stbi_load("assets/test_texture.png", &result.width, &result.height, &result.channels, 4);
     result.channels = 4;
@@ -645,8 +646,8 @@ public:
         ImGui_ImplSDL3_Shutdown();
         ImGui_ImplSDLGPU3_Shutdown();
         ImGui::DestroyContext();
-        SDL_ReleaseGPUTexture(m_gpu->device(),m_texture);
-        SDL_ReleaseGPUSampler(m_gpu->device(),m_sampler);
+        SDL_ReleaseGPUTexture(m_gpu->device(), m_texture);
+        SDL_ReleaseGPUSampler(m_gpu->device(), m_sampler);
     }
 };
 
