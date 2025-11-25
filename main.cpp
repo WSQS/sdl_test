@@ -46,7 +46,7 @@ struct CameraUniform
  * @return sopho::ImageData Structure containing the loaded image dimensions, channels, and pixel data.
  * Returns an empty structure if loading fails.
  */
-auto load_image()
+sopho::ImageData load_image()
 {
     stbi_set_flip_vertically_on_load(true);
     sopho::ImageData result;

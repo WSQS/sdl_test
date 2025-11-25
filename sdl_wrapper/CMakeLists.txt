@@ -18,6 +18,7 @@ target_sources(sdl_wrapper
         modules/sdl_wrapper.decl.ixx
         modules/sdl_wrapper.vertex_layout.ixx
         modules/sdl_wrapper.transfer_buffer.ixx
+        modules/sdl_wrapper.texture.ixx
         PRIVATE
         src/sdl_wrapper.buffer.cpp
         src/sdl_wrapper.render_procedural.cpp
