@@ -25,9 +25,10 @@ namespace sopho
         std::vector<std::byte> m_cpu_buffer{};
 
         // Only GpuWrapper is allowed to construct this type.
-        BufferWrapper(std::shared_ptr<GpuWrapper> gpu, SDL_GPUBuffer* gpu_buffer,
-                      TransferBufferWrapper transfer_buffer, std::uint32_t size) noexcept :
-            m_gpu(std::move(gpu)), m_gpu_buffer(gpu_buffer), m_transfer_buffer(std::move(transfer_buffer)), m_buffer_size(size)
+        BufferWrapper(std::shared_ptr<GpuWrapper> gpu, SDL_GPUBuffer* gpu_buffer, TransferBufferWrapper transfer_buffer,
+                      std::uint32_t size) noexcept :
+            m_gpu(std::move(gpu)), m_gpu_buffer(gpu_buffer), m_transfer_buffer(std::move(transfer_buffer)),
+            m_buffer_size(size)
         {
             m_cpu_buffer.resize(m_buffer_size);
         }
@@ -50,27 +51,7 @@ namespace sopho
                 return *this;
             }
 
-            checkable<BufferWrapper> build(GpuWrapper& gpu)
-            {
-                SDL_GPUBufferCreateInfo create_info{.usage = flag, .size = size};
-                auto gpu_buffer = SDL_CreateGPUBuffer(gpu.device(), &create_info);
-                if (!gpu_buffer)
-                {
-                    SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
-                    return std::unexpected(GpuError::CREATE_GPU_BUFFER_FAILED);
-                }
-                auto transfer_buffer = TransferBufferWrapper::Builder{}
-                                           .set_size(size)
-                                           .set_usage(SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD)
-                                           .set_usage_limit(-1)
-                                           .build(gpu);
-                if (!transfer_buffer)
-                {
-                    SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
-                    return std::unexpected(transfer_buffer.error());
-                }
-                return BufferWrapper{gpu.shared_from_this(), gpu_buffer, (std::move(transfer_buffer.value())), size};
-            }
+            checkable<BufferWrapper> build(GpuWrapper& gpu);
         };
 
         BufferWrapper(const BufferWrapper&) = delete;

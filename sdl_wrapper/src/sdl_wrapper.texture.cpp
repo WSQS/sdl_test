@@ -3,6 +3,7 @@
 //
 module;
 #include <cstdint>
+#include <expected>
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_log.h"
 module sdl_wrapper;
@@ -52,7 +53,7 @@ namespace sopho
                 .set_usage(SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD)
                 .build(gpu);
 
-        auto submit_result = c_tb.and_then([&](auto tb) { return tb.submit(img_data.pixels.data()); });
+        auto submit_result = c_tb.and_then([&](auto& tb) { return tb.submit(img_data.pixels.data()); });
         if (!submit_result)
         {
             return std::unexpected{submit_result.error()};

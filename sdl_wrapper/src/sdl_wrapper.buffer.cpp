@@ -105,4 +105,26 @@ namespace sopho
         return std::monostate{};
     }
 
+    checkable<BufferWrapper> BufferWrapper::Builder::build(GpuWrapper& gpu)
+    {
+        SDL_GPUBufferCreateInfo create_info{.usage = flag, .size = size};
+        auto gpu_buffer = SDL_CreateGPUBuffer(gpu.device(), &create_info);
+        if (!gpu_buffer)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
+            return std::unexpected(GpuError::CREATE_GPU_BUFFER_FAILED);
+        }
+        auto transfer_buffer = TransferBufferWrapper::Builder{}
+                                   .set_size(size)
+                                   .set_usage(SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD)
+                                   .set_usage_limit(-1)
+                                   .build(gpu);
+        if (!transfer_buffer)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
+            return std::unexpected(transfer_buffer.error());
+        }
+        return BufferWrapper{gpu.shared_from_this(), gpu_buffer, (std::move(transfer_buffer.value())), size};
+    }
+
 } // namespace sopho

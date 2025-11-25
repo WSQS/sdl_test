@@ -25,7 +25,7 @@ namespace sopho
     /*
      * @brief Wrapper class for SDL GPU transfer buffer operations.
      */
-    export class TransferBufferWrapper
+    class TransferBufferWrapper
     {
     private:
         std::shared_ptr<GpuWrapper> m_gpu{}; // Owns the device lifetime

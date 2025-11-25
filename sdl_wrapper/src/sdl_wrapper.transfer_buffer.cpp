@@ -3,7 +3,9 @@
 //
 module;
 #include <cassert>
-
+#include <expected>
+#include <utility>
+#include <variant>
 
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_log.h"

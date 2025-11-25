@@ -2,7 +2,13 @@
 // Created by wsqsy on 11/25/2025.
 //
 module;
+#include <cstddef>
+#include <vector>
+#include <expected>
 #include <utility>
+#include <variant>
+
+#include "SDL3/SDL_gpu.h"
 export module sdl_wrapper:render_data_impl;
 import :render_data;
 import :buffer;
