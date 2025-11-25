@@ -88,7 +88,7 @@ add_library(imgui STATIC
         ${IMGUI_DIR}/backends/imgui_impl_sdlgpu3.cpp
         ${IMGUI_DIR}/misc/cpp/imgui_stdlib.cpp
 )
-target_include_directories(imgui PUBLIC
+target_include_directories(imgui SYSTEM PUBLIC
         ${IMGUI_DIR}
         ${IMGUI_DIR}/backends
 )
@@ -103,7 +103,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(stb)
 add_library(stb INTERFACE)
-target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
+target_include_directories(stb SYSTEM INTERFACE ${stb_SOURCE_DIR})
 
 FetchContent_Declare(
         googletest
