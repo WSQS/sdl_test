@@ -12,6 +12,7 @@ target_sources(sdl_wrapper
         modules/sdl_wrapper.app.ixx
         modules/sdl_wrapper.render_procedural.ixx
         modules/sdl_wrapper.render_data.ixx
+        modules/sdl_wrapper.render_data_impl.ixx
         modules/sdl_wrapper.renderable.ixx
         modules/sdl_wrapper.gpu.ixx
         modules/sdl_wrapper.decl.ixx
