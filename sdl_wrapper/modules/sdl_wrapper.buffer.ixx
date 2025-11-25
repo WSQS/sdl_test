@@ -11,7 +11,7 @@ module;
 
 export module sdl_wrapper:buffer;
 import data_type;
-import :gpu;
+import :decl;
 import :transfer_buffer;
 
 namespace sopho
