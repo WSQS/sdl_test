@@ -190,6 +190,7 @@ class UserApp : public sopho::App
     std::shared_ptr<sopho::Renderable> m_renderable{};
 
     sopho::ImageData m_image_data;
+    std::shared_ptr<sopho::TextureWrapper> m_texture_wrapper{};
     SDL_GPUSampler* m_sampler;
     SDL_GPUTexture* m_texture;
 
@@ -370,7 +371,12 @@ public:
         info.props = 0;
 
         m_sampler = SDL_CreateGPUSampler(m_gpu->device(), &info);
-        sopho::TextureWrapper::Builder{}.set_image_data(m_image_data).build(*m_gpu.get());
+
+        auto texture = sopho::TextureWrapper::Builder{}.set_image_data(m_image_data).build(*m_gpu.get());
+        if (texture)
+        {
+            m_texture_wrapper =std::make_shared<sopho::TextureWrapper>(std::move(texture.value()));
+        }
         return SDL_APP_CONTINUE;
     }
 
@@ -622,11 +628,7 @@ public:
         SDL_BindGPUIndexBuffer(renderPass, &m_renderable->data()->get_index_buffer_binding(),
                                SDL_GPU_INDEXELEMENTSIZE_32BIT);
 
-        SDL_GPUTextureSamplerBinding tex_binding{};
-        tex_binding.texture = m_texture;
-        tex_binding.sampler = m_sampler;
-
-        SDL_BindGPUFragmentSamplers(renderPass, 0, &tex_binding, 1);
+        SDL_BindGPUFragmentSamplers(renderPass, 0, m_texture_wrapper->get(), 1);
 
         SDL_DrawGPUIndexedPrimitives(renderPass, 6, 1, 0, 0, 0);
 

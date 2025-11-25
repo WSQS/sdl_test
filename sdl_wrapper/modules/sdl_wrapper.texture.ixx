@@ -17,19 +17,23 @@ namespace sopho
         std::shared_ptr<GpuWrapper> m_gpu{};
         SDL_GPUTexture* m_texture{};
         SDL_GPUSampler* m_sampler{};
+        SDL_GPUTextureSamplerBinding m_tex_binding{};
 
         TextureWrapper(std::shared_ptr<GpuWrapper> gpu, SDL_GPUTexture* texture, SDL_GPUSampler* sampler) noexcept :
             m_gpu(std::move(gpu)), m_texture(texture), m_sampler(sampler)
         {
+            m_tex_binding.texture = m_texture;
+            m_tex_binding.sampler = m_sampler;
         }
 
     public:
         TextureWrapper(const TextureWrapper&) = delete;
         TextureWrapper& operator=(const TextureWrapper&) = delete;
-        TextureWrapper(TextureWrapper&& other) noexcept : m_gpu(std::move(other.m_gpu)), m_texture(other.m_texture), m_sampler(other.m_sampler)
+        TextureWrapper(TextureWrapper&& other) noexcept : m_gpu(std::move(other.m_gpu)), m_texture(other.m_texture), m_sampler(other.m_sampler),m_tex_binding(other.m_tex_binding)
         {
             other.m_texture = nullptr;
             other.m_sampler = nullptr;
+            other.m_tex_binding = {};
         }
 
         TextureWrapper& operator=(TextureWrapper&& other) noexcept
@@ -42,11 +46,17 @@ namespace sopho
                 other.m_texture = nullptr;
                 m_sampler = other.m_sampler;
                 other.m_sampler = nullptr;
+                other.m_tex_binding = {};
+                m_tex_binding.texture = m_texture;
+                m_tex_binding.sampler = m_sampler;
             }
             return *this;
         }
 
-        [[nodiscard]] SDL_GPUTexture* get() const noexcept { return m_texture; }
+        [[nodiscard]] const SDL_GPUTextureSamplerBinding* get() const noexcept
+        {
+            return &m_tex_binding;
+        }
 
         void reset() noexcept;
 
