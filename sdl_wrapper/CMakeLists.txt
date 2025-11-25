@@ -24,6 +24,7 @@ target_sources(sdl_wrapper
         src/sdl_wrapper.render_procedural.cpp
         src/sdl_wrapper.gpu.cpp
         src/sdl_callback_implement.cpp
+        src/sdl_wrapper.texture.cpp
 )
 
 target_link_libraries(sdl_wrapper PUBLIC SDL3::SDL3 shaderc glsl_reflector data_type)

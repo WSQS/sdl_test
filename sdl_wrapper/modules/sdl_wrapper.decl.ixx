@@ -8,7 +8,6 @@ export namespace sopho
 {
     class App;
     class GpuWrapper;
-    class BufferWrapper;
     class RenderProcedural;
     class RenderData;
 }

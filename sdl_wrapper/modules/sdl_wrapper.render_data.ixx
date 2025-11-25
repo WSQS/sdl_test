@@ -5,6 +5,7 @@ module;
 #include <SDL3/SDL_gpu.h>
 #include <vector>
 #include <expected>
+#include <variant>
 export module sdl_wrapper:render_data;
 import :vertex_layout;
 namespace sopho

@@ -370,6 +370,7 @@ public:
         info.props = 0;
 
         m_sampler = SDL_CreateGPUSampler(m_gpu->device(), &info);
+        sopho::TextureWrapper::Builder{}.set_image_data(m_image_data).build(*m_gpu.get());
         return SDL_APP_CONTINUE;
     }
 
