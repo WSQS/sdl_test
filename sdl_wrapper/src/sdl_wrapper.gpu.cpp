@@ -3,6 +3,7 @@
 //
 module;
 #include <expected>
+#include <memory>
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_log.h"
 module sdl_wrapper;
@@ -10,6 +11,8 @@ import :gpu;
 import :render_procedural;
 import :render_data;
 import :vertex_layout;
+import :transfer_buffer;
+import :render_data_impl;
 namespace sopho
 {
     /**
@@ -53,8 +56,8 @@ namespace sopho
      * @param vertex_count Number of vertices the allocated buffer must hold.
      * @return RenderData RenderData containing the allocated vertex buffer, the vertex layout, and `vertex_count`.
      */
-    std::expected<RenderData, GpuError> GpuWrapper::create_data(const RenderProcedural& render_procedural,
-                                                                uint32_t vertex_count)
+    checkable<std::unique_ptr<RenderData>> GpuWrapper::create_data(const RenderProcedural& render_procedural,
+                                                                   uint32_t vertex_count)
     {
         auto size = render_procedural.vertex_layout().get_stride() * vertex_count;
         auto vertex_buffer = create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, size);
@@ -67,8 +70,8 @@ namespace sopho
         {
             return std::unexpected(index_buffer.error());
         }
-        return RenderData{std::move(vertex_buffer.value()), std::move(index_buffer.value()),
-                          render_procedural.vertex_layout(), vertex_count};
+        return std::make_unique<RenderDataImpl>(std::move(vertex_buffer.value()), std::move(index_buffer.value()),
+                          render_procedural.vertex_layout(), vertex_count);
     }
     /**
      * @brief Create a RenderProcedural configured for the device's texture format.
