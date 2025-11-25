@@ -9,6 +9,7 @@
  * that allows specifying usage limits for automatic resource management.
  */
 module;
+#include <assert.h>
 #include <cstdint>
 #include <expected>
 #include <memory>
@@ -28,13 +29,13 @@ namespace sopho
     private:
         std::shared_ptr<GpuWrapper> m_gpu{}; // Owns the device lifetime
         SDL_GPUTransferBuffer* m_transfer_buffer{}; // The actual transfer buffer
-        std::int32_t m_usage_count{}; // Current usage count
+        std::int32_t m_usage_limit{}; // Current usage count
         std::uint32_t m_size{}; // Size of the transfer buffer in bytes
 
         // Private constructor to ensure only Builder can create instances
         TransferBufferWrapper(std::shared_ptr<GpuWrapper> gpu, SDL_GPUTransferBuffer* transfer_buffer,
                               std::int32_t usage_limit, std::uint32_t size) noexcept :
-            m_gpu(std::move(gpu)), m_transfer_buffer(transfer_buffer), m_usage_count(usage_limit), m_size(size)
+            m_gpu(std::move(gpu)), m_transfer_buffer(transfer_buffer), m_usage_limit(usage_limit), m_size(size)
         {
         }
 
@@ -43,7 +44,7 @@ namespace sopho
         TransferBufferWrapper& operator=(const TransferBufferWrapper&) = delete;
         TransferBufferWrapper(TransferBufferWrapper&& other) noexcept :
             m_gpu(std::move(other.m_gpu)), m_transfer_buffer(other.m_transfer_buffer),
-            m_usage_count(other.m_usage_count), m_size(other.m_size)
+            m_usage_limit(other.m_usage_limit), m_size(other.m_size)
         {
             other.m_transfer_buffer = nullptr;
         }
@@ -55,7 +56,7 @@ namespace sopho
                 reset();
                 m_gpu = std::move(other.m_gpu);
                 m_transfer_buffer = other.m_transfer_buffer;
-                m_usage_count = other.m_usage_count;
+                m_usage_limit = other.m_usage_limit;
                 m_size = other.m_size;
                 other.m_transfer_buffer = nullptr;
             }
@@ -88,6 +89,31 @@ namespace sopho
          * @brief Returns the size of the transfer buffer in bytes.
          */
         [[nodiscard]] std::uint32_t size() const noexcept { return m_size; }
+
+        checkable<std::monostate> submit(void* data_source)
+        {
+            assert(m_usage_limit != 0);
+            void* dst = SDL_MapGPUTransferBuffer(m_gpu->device(), m_transfer_buffer, false);
+            if (!dst)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to map transfer buffer: %s", __FILE__, __LINE__,
+                             SDL_GetError());
+
+                return std::unexpected(GpuError::MAP_TRANSFER_BUFFER_FAILED);
+            }
+
+            SDL_memcpy(dst, data_source, m_size);
+            SDL_UnmapGPUTransferBuffer(m_gpu->device(), m_transfer_buffer);
+            if (m_usage_limit != -1)
+            {
+                m_usage_limit--;
+                if (m_usage_limit ==0)
+                {
+                    reset();
+                }
+            }
+            return {};
+        }
 
         /*
          * @brief Builder pattern for creating TransferBufferWrapper instances.

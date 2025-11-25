@@ -29,12 +29,12 @@ import sdl_wrapper;
 
 /**
  * @brief Structure to hold camera transformation matrix data.
- * 
+ *
  * Contains a 4x4 matrix (16 elements) representing the camera's view transformation.
  */
 struct CameraUniform
 {
-    std::array<float, 16> m{};  ///< 4x4 transformation matrix as a flat array
+    std::array<float, 16> m{}; ///< 4x4 transformation matrix as a flat array
 };
 
 /**
@@ -284,7 +284,7 @@ public:
         }
 
         // 5. Upload initial vertex data.
-        auto upload_result = render_data.and_then([&](auto& vertex_buffer) { return vertex_buffer.upload(); });
+        auto upload_result = render_data.and_then([&](auto& vertex_buffer) { return vertex_buffer->upload(); });
 
         if (!upload_result)
         {
@@ -295,7 +295,7 @@ public:
 
         m_renderable = std::make_shared<sopho::Renderable>(sopho::Renderable{
             .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result.value())),
-            .m_render_data = std::make_shared<sopho::RenderData>(std::move(render_data.value()))});
+            .m_render_data = std::move(render_data.value())});
 
         // 6. Initialize camera matrix to identity.
         {
@@ -472,7 +472,7 @@ public:
                     else
                     {
                         auto new_data = m_gpu->create_data(*m_renderable->procedural(), 3);
-                        m_renderable->data() = std::make_shared<sopho::RenderData>(std::move(new_data.value()));
+                        m_renderable->data() = std::move(new_data.value());
                         m_renderable->data()->upload();
                     }
                 }

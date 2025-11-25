@@ -1,7 +1,8 @@
 ﻿// sdl_wrapper.render_data_impl.ixx
 // Created by wsqsy on 11/25/2025.
 //
-
+module;
+#include <utility>
 export module sdl_wrapper:render_data_impl;
 import :render_data;
 import :buffer;

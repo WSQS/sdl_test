@@ -11,7 +11,6 @@ module;
 #include "shaderc/shaderc.hpp"
 export module sdl_wrapper:gpu;
 import :decl;
-import :buffer;
 import :render_procedural;
 export namespace sopho
 {
@@ -211,9 +210,7 @@ export namespace sopho
 
         [[nodiscard]] auto device() const { return m_ctx.device.raw; }
         [[nodiscard]] SDL_Window* window() const { return m_ctx.window.raw; }
-
-        [[nodiscard]] std::expected<BufferWrapper, GpuError> create_buffer(SDL_GPUBufferUsageFlags flag, uint32_t size);
-        [[nodiscard]] checkable<std::unique_ptr<RenderData>> create_data(const RenderProcedural& render_procedural,
+        [[nodiscard]] checkable<std::shared_ptr<RenderData>> create_data(const RenderProcedural& render_procedural,
                                                                          uint32_t vertex_count);
 
         auto release_buffer(SDL_GPUBuffer* buffer)
