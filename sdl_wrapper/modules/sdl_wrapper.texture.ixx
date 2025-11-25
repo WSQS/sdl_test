@@ -56,7 +56,11 @@ namespace sopho
         {
             ImageData img_data{};
 
-            Builder& set_image_data(ImageData image_data) { img_data = image_data; }
+            Builder& set_image_data(ImageData image_data)
+            {
+                img_data = image_data;
+                return *this;
+            }
 
             std::expected<TextureWrapper, GpuError> build(GpuWrapper& gpu);
         };
