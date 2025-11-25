@@ -67,121 +67,6 @@ sopho::ImageData load_image()
     return result;
 }
 
-/**
- * @brief Creates a GPU texture from image data.
- *
- * Creates a 2D RGBA8 texture with sampler usage based on the provided image data.
- *
- * @param device Pointer to the SDL GPU device.
- * @param img Reference to the ImageData structure containing image information.
- * @return SDL_GPUTexture* Pointer to the created GPU texture, or nullptr on failure.
- */
-SDL_GPUTexture* create_texture_from_image(SDL_GPUDevice* device, const sopho::ImageData& img)
-{
-    SDL_GPUTextureCreateInfo create_info{.type = SDL_GPU_TEXTURETYPE_2D,
-                                         .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
-                                         .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER,
-                                         .width = static_cast<std::uint32_t>(img.width),
-                                         .height = static_cast<std::uint32_t>(img.height),
-                                         .layer_count_or_depth = 1,
-                                         .num_levels = 1,
-                                         .sample_count = SDL_GPU_SAMPLECOUNT_1,
-                                         .props = 0};
-    return SDL_CreateGPUTexture(device, &create_info);
-}
-
-/**
- * @brief Creates a GPU transfer buffer for texture data upload.
- *
- * Creates an upload transfer buffer containing the image data for efficient GPU upload.
- *
- * @param device Pointer to the SDL GPU device.
- * @param img Reference to the ImageData structure containing image information.
- * @return SDL_GPUTransferBuffer* Pointer to the created GPU transfer buffer, or nullptr on failure.
- */
-SDL_GPUTransferBuffer* create_texture_transfer_buffer(SDL_GPUDevice* device, const sopho::ImageData& img)
-{
-    const Uint32 bytes_per_pixel = 4;
-    const Uint32 size_in_bytes = static_cast<Uint32>(img.width) * static_cast<Uint32>(img.height) * bytes_per_pixel;
-
-    SDL_GPUTransferBufferCreateInfo info{
-        .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, .size = size_in_bytes, .props = 0};
-
-    SDL_GPUTransferBuffer* transfer = SDL_CreateGPUTransferBuffer(device, &info);
-    if (!transfer)
-    {
-        SDL_Log("Failed to create transfer buffer: %s", SDL_GetError());
-        return nullptr;
-    }
-
-    void* ptr = SDL_MapGPUTransferBuffer(device, transfer, false);
-    if (!ptr)
-    {
-        SDL_Log("Failed to map transfer buffer: %s", SDL_GetError());
-        SDL_ReleaseGPUTransferBuffer(device, transfer);
-        return nullptr;
-    }
-
-    SDL_memcpy(ptr, img.pixels.data(), size_in_bytes);
-    SDL_UnmapGPUTransferBuffer(device, transfer);
-
-    return transfer;
-}
-
-/**
- * @brief Uploads texture data from transfer buffer to GPU texture.
- *
- * Performs a GPU copy operation to upload texture data from the provided transfer buffer to the target texture.
- *
- * @param device Pointer to the SDL GPU device.
- * @param texture Pointer to the target GPU texture.
- * @param transfer Pointer to the source GPU transfer buffer containing texture data.
- * @param width Width of the texture in pixels.
- * @param height Height of the texture in pixels.
- */
-void upload_texture_full(SDL_GPUDevice* device, SDL_GPUTexture* texture, SDL_GPUTransferBuffer* transfer, int width,
-                         int height)
-{
-    SDL_GPUCommandBuffer* cmd = SDL_AcquireGPUCommandBuffer(device);
-    if (!cmd)
-    {
-        SDL_Log("SDL_AcquireGPUCommandBuffer failed: %s", SDL_GetError());
-        return;
-    }
-
-    SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(cmd);
-    if (!copy_pass)
-    {
-        SDL_Log("SDL_BeginGPUCopyPass failed: %s", SDL_GetError());
-        return;
-    }
-
-    const Uint32 bytes_per_pixel = 4; // RGBA8
-    const Uint32 row_bytes = static_cast<Uint32>(width) * bytes_per_pixel;
-
-    SDL_GPUTextureTransferInfo src{};
-    src.transfer_buffer = transfer;
-    src.offset = 0;
-    src.pixels_per_row = 0;
-    src.rows_per_layer = 0;
-
-    SDL_GPUTextureRegion dst{};
-    dst.texture = texture;
-    dst.mip_level = 0;
-    dst.layer = 0;
-    dst.x = 0;
-    dst.y = 0;
-    dst.z = 0;
-    dst.w = static_cast<Uint32>(width);
-    dst.h = static_cast<Uint32>(height);
-    dst.d = 1;
-
-    SDL_UploadToGPUTexture(copy_pass, &src, &dst, false);
-
-    SDL_EndGPUCopyPass(copy_pass);
-    SDL_SubmitGPUCommandBuffer(cmd);
-}
-
 class UserApp : public sopho::App
 {
     // GPU + resources
@@ -191,8 +76,6 @@ class UserApp : public sopho::App
 
     sopho::ImageData m_image_data;
     std::shared_ptr<sopho::TextureWrapper> m_texture_wrapper{};
-    SDL_GPUSampler* m_sampler;
-    SDL_GPUTexture* m_texture;
 
     // camera state
     float yaw = 0.0f;
@@ -276,7 +159,7 @@ public:
         }
 
         // 3. Create vertex buffer.
-        auto render_data = std::move(m_gpu->create_data(pw_result.value(), 4));
+        auto render_data = m_gpu->create_data(pw_result.value(), 4);
         if (!render_data)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
@@ -353,24 +236,6 @@ public:
 
         ImGui_ImplSDLGPU3_Init(&init_info);
         m_image_data = load_image();
-        m_texture = create_texture_from_image(m_gpu->device(), m_image_data);
-        auto transfer_buffer = create_texture_transfer_buffer(m_gpu->device(), m_image_data);
-        upload_texture_full(m_gpu->device(), m_texture, transfer_buffer, m_image_data.width, m_image_data.height);
-        SDL_ReleaseGPUTransferBuffer(m_gpu->device(), transfer_buffer);
-        SDL_GPUSamplerCreateInfo info{};
-        info.min_filter = SDL_GPU_FILTER_LINEAR;
-        info.mag_filter = SDL_GPU_FILTER_LINEAR;
-        info.max_anisotropy = 1.f;
-        info.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
-        info.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-        info.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-        info.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
-        info.enable_anisotropy = true;
-        info.enable_compare = false;
-        info.compare_op = SDL_GPU_COMPAREOP_ALWAYS;
-        info.props = 0;
-
-        m_sampler = SDL_CreateGPUSampler(m_gpu->device(), &info);
 
         auto texture = sopho::TextureWrapper::Builder{}.set_image_data(m_image_data).build(*m_gpu.get());
         if (texture)
@@ -690,8 +555,6 @@ public:
         ImGui_ImplSDL3_Shutdown();
         ImGui_ImplSDLGPU3_Shutdown();
         ImGui::DestroyContext();
-        SDL_ReleaseGPUTexture(m_gpu->device(), m_texture);
-        SDL_ReleaseGPUSampler(m_gpu->device(), m_sampler);
     }
 };
 
