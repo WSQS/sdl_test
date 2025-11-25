@@ -27,7 +27,7 @@ namespace sopho
         }
         return *this;
     }
-    void TransferBufferWrapper::reset()
+    void TransferBufferWrapper::reset() noexcept
     {
         if (m_transfer_buffer && m_gpu && m_gpu->device())
         {
