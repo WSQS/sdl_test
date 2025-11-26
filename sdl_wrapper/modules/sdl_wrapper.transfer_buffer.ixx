@@ -72,7 +72,7 @@ namespace sopho
          */
         [[nodiscard]] std::uint32_t size() const noexcept { return m_size; }
 
-        checkable<std::monostate> submit(void* data_source);
+        checkable<std::monostate> submit(const void* data_source);
 
         /*
          * @brief Builder pattern for creating TransferBufferWrapper instances.

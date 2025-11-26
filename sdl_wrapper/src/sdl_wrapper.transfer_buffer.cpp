@@ -36,7 +36,7 @@ namespace sopho
         }
     }
 
-    checkable<std::monostate> TransferBufferWrapper::submit(void* data_source)
+    checkable<std::monostate> TransferBufferWrapper::submit(const void* data_source)
     {
         assert(m_usage_limit != 0);
         void* dst = SDL_MapGPUTransferBuffer(m_gpu->device(), m_transfer_buffer, false);
