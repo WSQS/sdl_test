@@ -3,9 +3,10 @@
 //
 module;
 #include <SDL3/SDL_gpu.h>
-#include <vector>
+#include <cstddef>
 #include <expected>
 #include <variant>
+#include <vector>
 export module sdl_wrapper:render_data;
 import :vertex_layout;
 namespace sopho
