@@ -9,7 +9,7 @@ export module logos;
 
 namespace sopho
 {
-    template <typename TScalar, std::uint8_t Row, std::uint8_t Col>
+    export template <typename TScalar, std::uint8_t Row, std::uint8_t Col>
     class Mat
     {
         std::array<std::array<TScalar, Col>, Row> m_data{};
