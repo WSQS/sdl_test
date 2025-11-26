@@ -56,6 +56,7 @@ namespace sopho
         auto submit_result = c_tb.and_then([&](auto& tb) { return tb.submit(img_data.pixels.data()); });
         if (!submit_result)
         {
+            SDL_ReleaseGPUTexture(gpu.device(), texture);
             return std::unexpected{submit_result.error()};
         }
         SDL_GPUCommandBuffer* cmd = SDL_AcquireGPUCommandBuffer(gpu.device());
@@ -69,6 +70,7 @@ namespace sopho
         if (!copy_pass)
         {
             SDL_SubmitGPUCommandBuffer(cmd);
+            SDL_ReleaseGPUTexture(gpu.device(), texture);
             SDL_Log("SDL_BeginGPUCopyPass failed: %s", SDL_GetError());
             return std::unexpected{GpuError::BEGIN_COPY_PASS_FAILED};
         }
@@ -112,6 +114,7 @@ namespace sopho
         if (!sampler)
         {
             SDL_Log("SDL_CreateGPUSampler failed: %s", SDL_GetError());
+            SDL_ReleaseGPUTexture(gpu.device(), texture);
             return std::unexpected{GpuError::CREATE_SAMPLER_FAILED};
         }
 
