@@ -68,6 +68,7 @@ namespace sopho
         SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(cmd);
         if (!copy_pass)
         {
+            SDL_SubmitGPUCommandBuffer(cmd);
             SDL_Log("SDL_BeginGPUCopyPass failed: %s", SDL_GetError());
             return std::unexpected{GpuError::BEGIN_COPY_PASS_FAILED};
         }
