@@ -241,7 +241,7 @@ public:
         auto texture = sopho::TextureWrapper::Builder{}.set_image_data(m_image_data).build(*m_gpu.get());
         if (texture)
         {
-            m_texture_wrapper =std::make_shared<sopho::TextureWrapper>(std::move(texture.value()));
+            m_texture_wrapper = std::make_shared<sopho::TextureWrapper>(std::move(texture.value()));
         }
         return SDL_APP_CONTINUE;
     }
