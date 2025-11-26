@@ -99,4 +99,29 @@ namespace sopho
         return R;
     }
 
+    export Mat<float, 4, 4> Scale(float scale_size)
+    {
+
+        Mat<float, 4, 4> R{};
+
+        R(0, 0) = scale_size;
+        R(0, 1) = 0;
+        R(0, 2) = 0;
+        R(0, 3) = 0;
+        R(1, 0) = 0;
+        R(1, 1) = scale_size;
+        R(1, 2) = 0;
+        R(1, 3) = 0;
+        R(2, 0) = 0;
+        R(2, 1) = 0;
+        R(2, 2) = scale_size;
+        R(2, 3) = 0;
+        R(3, 0) = 0;
+        R(3, 1) = 0;
+        R(3, 2) = 0;
+        R(3, 3) = 1;
+
+        return R;
+    }
+
 } // namespace sopho
