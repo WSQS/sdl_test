@@ -3,10 +3,11 @@
 //
 module;
 #include <cstddef>
-#include <vector>
+#include <cstdint>
 #include <expected>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "SDL3/SDL_gpu.h"
 export module sdl_wrapper:render_data_impl;
@@ -26,9 +27,9 @@ namespace sopho
 
     public:
         RenderDataImpl(BufferWrapper&& vertex_buffer_wrapper, BufferWrapper&& index_buffer_wrapper,
-                                const VertexLayout& layouts, size_t vertex_count, std::uint32_t index_count) :
+                       const VertexLayout& layouts, size_t vertex_count, std::uint32_t index_count) :
             m_vertex_buffer(std::move(vertex_buffer_wrapper)), m_index_buffer(std::move(index_buffer_wrapper)),
-            m_layouts(layouts), m_vertex_count(vertex_count),m_index_count(index_count)
+            m_layouts(layouts), m_vertex_count(vertex_count), m_index_count(index_count)
         {
             m_bindings.emplace_back(m_vertex_buffer.gpu_buffer(), 0);
             m_index_binding.buffer = m_index_buffer.gpu_buffer();
