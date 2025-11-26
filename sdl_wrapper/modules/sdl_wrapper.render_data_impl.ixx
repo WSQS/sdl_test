@@ -20,14 +20,15 @@ namespace sopho
         BufferWrapper m_index_buffer;
         VertexLayout m_layouts{};
         size_t m_vertex_count{};
+        size_t m_index_count{};
         std::vector<SDL_GPUBufferBinding> m_bindings{};
         SDL_GPUBufferBinding m_index_binding{};
 
     public:
-        explicit RenderDataImpl(BufferWrapper&& vertex_buffer_wrapper, BufferWrapper&& index_buffer_wrapper,
-                                const VertexLayout& layouts, size_t vertex_count) :
+        RenderDataImpl(BufferWrapper&& vertex_buffer_wrapper, BufferWrapper&& index_buffer_wrapper,
+                                const VertexLayout& layouts, size_t vertex_count, std::uint32_t index_count) :
             m_vertex_buffer(std::move(vertex_buffer_wrapper)), m_index_buffer(std::move(index_buffer_wrapper)),
-            m_layouts(layouts), m_vertex_count(vertex_count)
+            m_layouts(layouts), m_vertex_count(vertex_count),m_index_count(index_count)
         {
             m_bindings.emplace_back(m_vertex_buffer.gpu_buffer(), 0);
             m_index_binding.buffer = m_index_buffer.gpu_buffer();
@@ -45,7 +46,7 @@ namespace sopho
         }
         virtual IndexView index_view() override
         {
-            return IndexView{.index_count = m_vertex_count, .raw = m_index_buffer.cpu_buffer()};
+            return IndexView{.index_count = m_index_count, .raw = m_index_buffer.cpu_buffer()};
         }
         virtual std::expected<std::monostate, GpuError> upload() override
         {

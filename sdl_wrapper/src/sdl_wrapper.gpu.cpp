@@ -27,10 +27,12 @@ namespace sopho
      *
      * @param render_procedural Source procedural that provides the vertex layout.
      * @param vertex_count Number of vertices the allocated buffer must hold.
+     * @param index_count
      * @return RenderData RenderData containing the allocated vertex buffer, the vertex layout, and `vertex_count`.
      */
     checkable<std::shared_ptr<RenderData>> GpuWrapper::create_data(const RenderProcedural& render_procedural,
-                                                                   uint32_t vertex_count)
+                                                                   std::uint32_t vertex_count,
+                                                                   std::uint32_t index_count)
     {
         auto size = render_procedural.vertex_layout().get_stride() * vertex_count;
         auto vertex_buffer = BufferWrapper::Builder{}.set_flag(SDL_GPU_BUFFERUSAGE_VERTEX).set_size(size).build(*this);
@@ -45,7 +47,7 @@ namespace sopho
             return std::unexpected(index_buffer.error());
         }
         return std::make_shared<RenderDataImpl>(std::move(vertex_buffer.value()), std::move(index_buffer.value()),
-                                                render_procedural.vertex_layout(), vertex_count);
+                                                render_procedural.vertex_layout(), vertex_count, index_count);
     }
 
     /**

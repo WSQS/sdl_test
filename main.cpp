@@ -160,7 +160,7 @@ public:
         }
 
         // 3. Create vertex buffer.
-        auto render_data = m_gpu->create_data(pw_result.value(), 4);
+        auto render_data = m_gpu->create_data(pw_result.value(), 4, 6);
         if (!render_data)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
@@ -349,7 +349,7 @@ public:
                     }
                     else
                     {
-                        auto new_data = m_gpu->create_data(*m_renderable->procedural(), 4);
+                        auto new_data = m_gpu->create_data(*m_renderable->procedural(), 4, 6);
                         m_renderable->data() = std::move(new_data.value());
                         m_renderable->data()->upload();
                     }
