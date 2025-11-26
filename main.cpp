@@ -102,6 +102,7 @@ layout(set = 2, binding = 0) uniform sampler2D uTexture;
 void main()
 {
     FragColor = texture(uTexture, v_color.xy);
+    FragColor.a = 1;
 })WSQ";
 
 public:
@@ -445,8 +446,8 @@ public:
 
         // Compute camera matrix and upload as a vertex uniform.
         SDL_PushGPUVertexUniformData(commandBuffer, 0,
-                                     (sopho::perspective(1, 1, 0.1, 2) * sopho::rotation_x(-pitch) *
-                                      sopho::rotation_y(yaw) * sopho::translate(0, 0, -1))
+                                     (sopho::perspective(1, 1, 0.1, 2) * sopho::translate(0, 0, -1) *
+                                      sopho::rotation_x(-pitch) * sopho::rotation_y(yaw))
                                          .data(),
                                      sizeof(sopho::Mat<float, 4, 4>));
 
