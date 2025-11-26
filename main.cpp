@@ -299,7 +299,7 @@ public:
                 }
                 auto index_view = m_renderable->data()->index_view();
                 auto index_ptr = index_view.raw;
-                for (int index_index = 0; index_index < 2; ++index_index)
+                for (int index_index = 0; index_index < index_view.index_count; index_index+=3)
                 {
                     changed |= ImGui::InputInt3(std::format("index_{}", index_index).data(),
                                                 reinterpret_cast<int*>(index_ptr));
