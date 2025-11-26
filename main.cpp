@@ -29,16 +29,6 @@ import sdl_wrapper;
 import logos;
 
 /**
- * @brief Structure to hold camera transformation matrix data.
- *
- * Contains a 4x4 matrix (16 elements) representing the camera's view transformation.
- */
-struct CameraUniform
-{
-    std::array<float, 16> m{}; ///< 4x4 transformation matrix as a flat array
-};
-
-/**
  * @brief Loads image data from the test texture file.
  *
  * Uses stb_image library to load a PNG file (assets/test_texture.png) into an ImageData structure.
@@ -82,8 +72,6 @@ class UserApp : public sopho::App
     // camera state
     float yaw = 0.0f;
     float pitch = 0.0f;
-
-    CameraUniform cam{};
 
     std::string vertex_source =
         R"WSQ(#version 460
@@ -182,15 +170,6 @@ public:
         m_renderable = std::make_shared<sopho::Renderable>(sopho::Renderable{
             .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result.value())),
             .m_render_data = std::move(render_data.value())});
-
-        // 6. Initialize camera matrix to identity.
-        {
-            cam.m.fill(0.0F);
-            cam.m[0] = 1.0F;
-            cam.m[5] = 1.0F;
-            cam.m[10] = 1.0F;
-            cam.m[15] = 1.0F;
-        }
 
         // 7. Setup Dear ImGui context.
         IMGUI_CHECKVERSION();
@@ -467,7 +446,7 @@ public:
         // Compute camera matrix and upload as a vertex uniform.
         SDL_PushGPUVertexUniformData(
             commandBuffer, 0, (sopho::MakeRotationY(yaw) * sopho::MakeRotationX(-pitch) * sopho::Scale(0.1F)).data(),
-            sizeof(cam.m));
+            sizeof(sopho::Mat<float, 4, 4>));
 
         SDL_BindGPUVertexBuffers(renderPass, 0, m_renderable->data()->get_vertex_buffer_binding().data(),
                                  m_renderable->data()->get_vertex_buffer_binding().size());
