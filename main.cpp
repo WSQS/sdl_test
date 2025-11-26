@@ -343,7 +343,7 @@ public:
                     }
                     else
                     {
-                        auto new_data = m_gpu->create_data(*m_renderable->procedural(), 3);
+                        auto new_data = m_gpu->create_data(*m_renderable->procedural(), 4);
                         m_renderable->data() = std::move(new_data.value());
                         m_renderable->data()->upload();
                     }
