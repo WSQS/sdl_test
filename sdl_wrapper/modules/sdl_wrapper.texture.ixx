@@ -6,6 +6,7 @@ module;
 #include <SDL3/SDL_gpu.h>
 #include <expected>
 #include <memory>
+#include <utility>
 export module sdl_wrapper:texture;
 import data_type;
 import :decl;
@@ -68,7 +69,7 @@ namespace sopho
 
             Builder& set_image_data(ImageData image_data)
             {
-                img_data = image_data;
+                img_data = std::move(image_data);
                 return *this;
             }
 
