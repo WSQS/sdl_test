@@ -40,8 +40,10 @@ namespace sopho
         {
             return std::unexpected(vertex_buffer.error());
         }
-        auto index_buffer =
-            BufferWrapper::Builder{}.set_flag(SDL_GPU_BUFFERUSAGE_INDEX).set_size(6 * sizeof(int)).build(*this);
+        auto index_buffer = BufferWrapper::Builder{}
+                                .set_flag(SDL_GPU_BUFFERUSAGE_INDEX)
+                                .set_size(index_count * sizeof(int))
+                                .build(*this);
         if (!index_buffer)
         {
             return std::unexpected(index_buffer.error());
