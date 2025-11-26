@@ -26,6 +26,7 @@
 import data_type;
 import glsl_reflector;
 import sdl_wrapper;
+import logos;
 
 /**
  * @brief Structure to hold camera transformation matrix data.
@@ -464,34 +465,8 @@ public:
         SDL_BindGPUGraphicsPipeline(renderPass, m_renderable->procedural()->data());
 
         // Compute camera matrix and upload as a vertex uniform.
-        {
-            float cy = std::cos(yaw);
-            float sy = std::sin(yaw);
-            float cp = std::cos(pitch);
-            float sp = std::sin(pitch);
-
-            std::array<float, 16> Ry = {cy,  0.0F, sy, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
-                                        -sy, 0.0F, cy, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
-
-            std::array<float, 16> Rx = {1.0F, 0.0F, 0.0F, 0.0F, 0.0F, cp,   sp,   0.0F,
-                                        0.0F, -sp,  cp,   0.0F, 0.0F, 0.0F, 0.0F, 1.0F};
-
-            auto mulMat4 = [](const float* A, const float* B, float* C)
-            {
-                for (int col = 0; col < 4; ++col)
-                {
-                    for (int row = 0; row < 4; ++row)
-                    {
-                        C[col * 4 + row] = A[0 * 4 + row] * B[col * 4 + 0] + A[1 * 4 + row] * B[col * 4 + 1] +
-                            A[2 * 4 + row] * B[col * 4 + 2] + A[3 * 4 + row] * B[col * 4 + 3];
-                    }
-                }
-            };
-
-            // uView = Rx * Ry
-            mulMat4(Rx.data(), Ry.data(), cam.m.data());
-            SDL_PushGPUVertexUniformData(commandBuffer, 0, cam.m.data(), static_cast<std::uint32_t>(sizeof(cam.m)));
-        }
+        SDL_PushGPUVertexUniformData(commandBuffer, 0, (sopho::MakeRotationX(pitch) * sopho::MakeRotationY(yaw)).data(),
+                                     sizeof(cam.m));
 
         SDL_BindGPUVertexBuffers(renderPass, 0, m_renderable->data()->get_vertex_buffer_binding().data(),
                                  m_renderable->data()->get_vertex_buffer_binding().size());
