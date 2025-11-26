@@ -492,8 +492,15 @@ public:
 
         SDL_BindGPUIndexBuffer(renderPass, &m_renderable->data()->get_index_buffer_binding(),
                                SDL_GPU_INDEXELEMENTSIZE_32BIT);
+        if (m_texture_wrapper)
+        {
+            SDL_BindGPUFragmentSamplers(renderPass, 0, m_texture_wrapper->get(), 1);
+        }
+        else
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_GPU, "Texture not available, skip binding sampler");
+        }
 
-        SDL_BindGPUFragmentSamplers(renderPass, 0, m_texture_wrapper->get(), 1);
 
         SDL_DrawGPUIndexedPrimitives(renderPass, 6, 1, 0, 0, 0);
 
