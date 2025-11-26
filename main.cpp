@@ -466,7 +466,7 @@ public:
 
         // Compute camera matrix and upload as a vertex uniform.
         SDL_PushGPUVertexUniformData(
-            commandBuffer, 0, (sopho::MakeRotationX(pitch) * sopho::MakeRotationY(yaw) * sopho::Scale(0.1F)).data(),
+            commandBuffer, 0, (sopho::MakeRotationY(yaw) * sopho::MakeRotationX(-pitch) * sopho::Scale(0.1F)).data(),
             sizeof(cam.m));
 
         SDL_BindGPUVertexBuffers(renderPass, 0, m_renderable->data()->get_vertex_buffer_binding().data(),
