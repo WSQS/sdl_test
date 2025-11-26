@@ -243,6 +243,11 @@ public:
         {
             m_texture_wrapper = std::make_shared<sopho::TextureWrapper>(std::move(texture.value()));
         }
+        else
+        {
+            SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to create texture: error = %d",
+                        static_cast<int>(texture.error()));
+        }
         return SDL_APP_CONTINUE;
     }
 
