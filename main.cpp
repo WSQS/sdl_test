@@ -150,7 +150,11 @@ public:
         }
 
         // 3. Create vertex buffer.
-        auto render_data = m_gpu->create_data(pw_result.value(), 4, 6);
+        auto render_data = sopho::RenderData::Builder{}
+                               .set_vertex_layout(pw_result.value().vertex_layout())
+                               .set_vertex_count(4)
+                               .set_index_count(6)
+                               .build(*m_gpu.get());
         if (!render_data)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
@@ -330,7 +334,11 @@ public:
                     }
                     else
                     {
-                        auto new_data = m_gpu->create_data(*m_renderable->procedural(), 4, 6);
+                        auto new_data = sopho::RenderData::Builder{}
+                                            .set_vertex_layout(m_renderable->procedural()->vertex_layout())
+                                            .set_vertex_count(4)
+                                            .set_index_count(6)
+                                            .build(*m_gpu.get());
                         m_renderable->data() = std::move(new_data.value());
                         m_renderable->data()->upload();
                     }

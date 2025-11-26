@@ -210,7 +210,6 @@ export namespace sopho
 
         [[nodiscard]] auto device() const { return m_ctx.device.raw; }
         [[nodiscard]] SDL_Window* window() const { return m_ctx.window.raw; }
-        [[nodiscard]] checkable<std::shared_ptr<RenderData>> create_data(const RenderProcedural& render_procedural, std::uint32_t vertex_count, std::uint32_t index_count);
 
         auto release_buffer(SDL_GPUBuffer* buffer)
         {
