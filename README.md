@@ -11,7 +11,7 @@ This is a personal learning project following [Learn OpenGL](https://learnopengl
   - [x] Hello Triangle
   - [x] Shaders
   - [x] Textures
-  - [ ] Transformations
+  - [x] Transformations
   - [ ] Coordinate Systems
   - [ ] Camera
 - [ ] Lighting
