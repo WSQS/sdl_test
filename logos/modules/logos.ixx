@@ -3,8 +3,10 @@
 //
 module;
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 export module logos;
 
 namespace sopho
@@ -45,7 +47,7 @@ namespace sopho
         }
     };
 
-    export Mat<float, 4, 4> MakeRotationY(float yaw)
+    export Mat<float, 4, 4> make_rotation_y(float yaw)
     {
         float cy = std::cos(yaw);
         float sy = std::sin(yaw);
@@ -72,7 +74,7 @@ namespace sopho
         return R;
     }
 
-    export Mat<float, 4, 4> MakeRotationX(float pitch)
+    export Mat<float, 4, 4> make_rotation_x(float pitch)
     {
         float cp = std::cos(pitch);
         float sp = std::sin(pitch);
@@ -99,7 +101,7 @@ namespace sopho
         return R;
     }
 
-    export Mat<float, 4, 4> Scale(float scale_size)
+    export Mat<float, 4, 4> scale(float scale_size)
     {
 
         Mat<float, 4, 4> R{};
