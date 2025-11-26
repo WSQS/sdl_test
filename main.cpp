@@ -6,7 +6,6 @@
 #include <cmath>
 #include <expected>
 #include <format>
-#include <iostream>
 #include <memory>
 #include <numbers>
 #include <string>
@@ -20,14 +19,54 @@
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_keycode.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 import data_type;
 import glsl_reflector;
 import sdl_wrapper;
 
+/**
+ * @brief Structure to hold camera transformation matrix data.
+ *
+ * Contains a 4x4 matrix (16 elements) representing the camera's view transformation.
+ */
 struct CameraUniform
 {
-    std::array<float, 16> m{};
+    std::array<float, 16> m{}; ///< 4x4 transformation matrix as a flat array
 };
+
+/**
+ * @brief Loads image data from the test texture file.
+ *
+ * Uses stb_image library to load a PNG file (assets/test_texture.png) into an ImageData structure.
+ * The image is flipped vertically on load and the pixel data is stored as a vector of bytes.
+ *
+ * @return sopho::ImageData Structure containing the loaded image dimensions, channels, and pixel data.
+ * Returns an empty structure if loading fails.
+ */
+sopho::ImageData load_image()
+{
+    stbi_set_flip_vertically_on_load(true);
+    std::string file_name{"assets/test_texture.png"};
+    sopho::ImageData result;
+    auto data = stbi_load(file_name.data(), &result.width, &result.height, &result.channels, 4);
+    result.channels = 4;
+
+    if (!data)
+    {
+        SDL_Log("stbi_load failed for %s: %s", file_name.data(), stbi_failure_reason());
+    }
+    else
+    {
+        result.pixels.assign(reinterpret_cast<std::byte*>(data),
+                             reinterpret_cast<std::byte*>(data) + result.width * result.height * result.channels);
+        stbi_image_free(data);
+        SDL_Log("stbi_load succeeded, w: %d h:%d ch:%d", result.width, result.height, result.channels);
+    }
+    return result;
+}
 
 class UserApp : public sopho::App
 {
@@ -35,6 +74,9 @@ class UserApp : public sopho::App
     std::shared_ptr<sopho::GpuWrapper> m_gpu{};
 
     std::shared_ptr<sopho::Renderable> m_renderable{};
+
+    sopho::ImageData m_image_data;
+    std::shared_ptr<sopho::TextureWrapper> m_texture_wrapper{};
 
     // camera state
     float yaw = 0.0f;
@@ -66,9 +108,11 @@ void main()
 layout (location = 0) in vec4 v_color;
 layout (location = 0) out vec4 FragColor;
 
+layout(set = 2, binding = 0) uniform sampler2D uTexture;
+
 void main()
 {
-    FragColor = v_color;
+    FragColor = texture(uTexture, v_color.xy);
 })WSQ";
 
 public:
@@ -116,7 +160,7 @@ public:
         }
 
         // 3. Create vertex buffer.
-        auto render_data = std::move(m_gpu->create_data(pw_result.value(), 4));
+        auto render_data = m_gpu->create_data(pw_result.value(), 4, 6);
         if (!render_data)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
@@ -125,7 +169,7 @@ public:
         }
 
         // 5. Upload initial vertex data.
-        auto upload_result = render_data.and_then([&](auto& vertex_buffer) { return vertex_buffer.upload(); });
+        auto upload_result = render_data.and_then([&](auto& vertex_buffer) { return vertex_buffer->upload(); });
 
         if (!upload_result)
         {
@@ -136,7 +180,7 @@ public:
 
         m_renderable = std::make_shared<sopho::Renderable>(sopho::Renderable{
             .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result.value())),
-            .m_render_data = std::make_shared<sopho::RenderData>(std::move(render_data.value()))});
+            .m_render_data = std::move(render_data.value())});
 
         // 6. Initialize camera matrix to identity.
         {
@@ -192,7 +236,18 @@ public:
         init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
 
         ImGui_ImplSDLGPU3_Init(&init_info);
+        m_image_data = load_image();
 
+        auto texture = sopho::TextureWrapper::Builder{}.set_image_data(m_image_data).build(*m_gpu.get());
+        if (texture)
+        {
+            m_texture_wrapper = std::make_shared<sopho::TextureWrapper>(std::move(texture.value()));
+        }
+        else
+        {
+            SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to create texture: error = %d",
+                        static_cast<int>(texture.error()));
+        }
         return SDL_APP_CONTINUE;
     }
 
@@ -294,8 +349,8 @@ public:
                     }
                     else
                     {
-                        auto new_data = m_gpu->create_data(*m_renderable->procedural(), 3);
-                        m_renderable->data() = std::make_shared<sopho::RenderData>(std::move(new_data.value()));
+                        auto new_data = m_gpu->create_data(*m_renderable->procedural(), 4, 6);
+                        m_renderable->data() = std::move(new_data.value());
                         m_renderable->data()->upload();
                     }
                 }
@@ -443,6 +498,15 @@ public:
 
         SDL_BindGPUIndexBuffer(renderPass, &m_renderable->data()->get_index_buffer_binding(),
                                SDL_GPU_INDEXELEMENTSIZE_32BIT);
+        if (m_texture_wrapper)
+        {
+            SDL_BindGPUFragmentSamplers(renderPass, 0, m_texture_wrapper->get(), 1);
+        }
+        else
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_GPU, "Texture not available, skip binding sampler");
+        }
+
 
         SDL_DrawGPUIndexedPrimitives(renderPass, 6, 1, 0, 0, 0);
 

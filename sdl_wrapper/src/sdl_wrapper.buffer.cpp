@@ -35,13 +35,6 @@ namespace sopho
             m_gpu->release_buffer(m_gpu_buffer);
             m_gpu_buffer = nullptr;
         }
-
-        // Release transfer buffer
-        if (m_transfer_buffer)
-        {
-            SDL_ReleaseGPUTransferBuffer(m_gpu->device(), m_transfer_buffer);
-            m_transfer_buffer = nullptr;
-        }
     }
 
     /**
@@ -63,18 +56,13 @@ namespace sopho
 
         auto* device = m_gpu->device();
 
-        // 2. Map the transfer buffer and copy data into it.
-        void* dst = SDL_MapGPUTransferBuffer(device, m_transfer_buffer, false);
-        if (!dst)
+        auto rst = m_transfer_buffer.submit(src_data);
+        if (!rst)
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to map transfer buffer: %s", __FILE__, __LINE__,
                          SDL_GetError());
-
-            return std::unexpected(GpuError::MAP_TRANSFER_BUFFER_FAILED);
+            return std::unexpected(rst.error());
         }
-
-        SDL_memcpy(dst, src_data, size);
-        SDL_UnmapGPUTransferBuffer(device, m_transfer_buffer);
 
         // 3. Acquire a command buffer and enqueue the copy pass.
         auto* command_buffer = SDL_AcquireGPUCommandBuffer(device);
@@ -97,7 +85,7 @@ namespace sopho
         }
 
         SDL_GPUTransferBufferLocation location{};
-        location.transfer_buffer = m_transfer_buffer;
+        location.transfer_buffer = m_transfer_buffer.raw();
         location.offset = 0;
 
         SDL_GPUBufferRegion region{};
@@ -115,6 +103,29 @@ namespace sopho
         }
 
         return std::monostate{};
+    }
+
+    checkable<BufferWrapper> BufferWrapper::Builder::build(GpuWrapper& gpu)
+    {
+        SDL_GPUBufferCreateInfo create_info{.usage = flag, .size = size};
+        auto gpu_buffer = SDL_CreateGPUBuffer(gpu.device(), &create_info);
+        if (!gpu_buffer)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
+            return std::unexpected(GpuError::CREATE_GPU_BUFFER_FAILED);
+        }
+        auto transfer_buffer = TransferBufferWrapper::Builder{}
+                                   .set_size(size)
+                                   .set_usage(SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD)
+                                   .set_usage_limit(-1)
+                                   .build(gpu);
+        if (!transfer_buffer)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
+            gpu.release_buffer(gpu_buffer);
+            return std::unexpected(transfer_buffer.error());
+        }
+        return BufferWrapper{gpu.shared_from_this(), gpu_buffer, (std::move(transfer_buffer.value())), size};
     }
 
 } // namespace sopho

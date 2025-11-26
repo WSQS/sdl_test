@@ -11,7 +11,6 @@ module;
 #include "shaderc/shaderc.hpp"
 export module sdl_wrapper:gpu;
 import :decl;
-import :buffer;
 import :render_procedural;
 export namespace sopho
 {
@@ -210,11 +209,8 @@ export namespace sopho
         GpuWrapper& operator=(GpuWrapper&&) = delete;
 
         [[nodiscard]] auto device() const { return m_ctx.device.raw; }
-        [[nodiscard]] SDL_Window *window() const { return m_ctx.window.raw; }
-
-        [[nodiscard]] std::expected<BufferWrapper, GpuError> create_buffer(SDL_GPUBufferUsageFlags flag, uint32_t size);
-        [[nodiscard]] std::expected<RenderData, GpuError>
-        create_data(const RenderProcedural& render_procedural, uint32_t vertex_count);
+        [[nodiscard]] SDL_Window* window() const { return m_ctx.window.raw; }
+        [[nodiscard]] checkable<std::shared_ptr<RenderData>> create_data(const RenderProcedural& render_procedural, std::uint32_t vertex_count, std::uint32_t index_count);
 
         auto release_buffer(SDL_GPUBuffer* buffer)
         {
@@ -247,7 +243,8 @@ export namespace sopho
         }
 
         [[nodiscard]] auto create_shader(const std::vector<uint8_t>& shader, SDL_GPUShaderStage stage,
-                                         uint32_t num_uniform_buffers) -> std::expected<SDL_GPUShader*, GpuError>
+                                         uint32_t num_uniform_buffers, uint32_t num_samplers)
+            -> std::expected<SDL_GPUShader*, GpuError>
         {
             SDL_GPUShaderCreateInfo info{};
             info.code = shader.data();
@@ -255,7 +252,7 @@ export namespace sopho
             info.entrypoint = "main";
             info.format = SDL_GPU_SHADERFORMAT_SPIRV;
             info.stage = stage;
-            info.num_samplers = 0;
+            info.num_samplers = num_samplers;
             info.num_storage_buffers = 0;
             info.num_storage_textures = 0;
             info.num_uniform_buffers = num_uniform_buffers;

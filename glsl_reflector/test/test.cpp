@@ -36,3 +36,41 @@ TEST(reflect_vertex, Basic)
     EXPECT_EQ(reflect_info.inputs[1].basic_type, sopho::BasicType::FLOAT);
     EXPECT_EQ(reflect_info.inputs[1].vector_size, 3);
 }
+
+
+TEST(reflect_fragment, Basic)
+{
+    auto reflect_info = sopho::reflect_fragment(R"(
+#version 460
+
+layout (location = 0) in vec4 v_color;
+layout (location = 0) out vec4 FragColor;
+
+layout(set = 2, binding = 0) uniform sampler2D uTexture;
+
+void main()
+{
+    FragColor = texture(uTexture, v_color.xy);
+}
+    )");
+    EXPECT_EQ(reflect_info.sampler_count, 1);
+}
+
+TEST(reflect_fragment, Multi)
+{
+    auto reflect_info = sopho::reflect_fragment(R"(
+#version 460
+
+layout (location = 0) in vec4 v_color;
+layout (location = 0) out vec4 FragColor;
+
+layout(set = 2, binding = 0) uniform sampler2D uTexture;
+layout(set = 2, binding = 1) uniform sampler2D uTexture1;
+
+void main()
+{
+    FragColor = texture(uTexture, v_color.xy) + texture(uTexture1, v_color.xy);
+}
+    )");
+    EXPECT_EQ(reflect_info.sampler_count, 2);
+}

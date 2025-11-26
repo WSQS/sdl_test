@@ -219,7 +219,7 @@ namespace sopho
         // Convert SPIR-V words to a byte vector
         std::vector<std::uint8_t> code = spv_result_to_bytes(result);
 
-        auto shader_result = m_gpu->create_shader(code, SDL_GPU_SHADERSTAGE_VERTEX, 1);
+        auto shader_result = m_gpu->create_shader(code, SDL_GPU_SHADERSTAGE_VERTEX, 1, 0);
         if (!shader_result)
         {
             return std::unexpected(shader_result.error());
@@ -270,7 +270,9 @@ namespace sopho
         // Convert SPIR-V words to a byte vector
         std::vector<std::uint8_t> code = spv_result_to_bytes(result);
 
-        auto shader_result = m_gpu->create_shader(code, SDL_GPU_SHADERSTAGE_FRAGMENT, 0);
+        auto reflect_result = reflect_fragment(source);
+        auto shader_result = m_gpu->create_shader(code, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, reflect_result.sampler_count);
+
         if (!shader_result)
         {
             return std::unexpected(shader_result.error());

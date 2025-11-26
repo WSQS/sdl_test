@@ -3,44 +3,20 @@
 //
 module;
 #include <expected>
+#include <memory>
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_log.h"
 module sdl_wrapper;
 import :gpu;
 import :render_procedural;
+import :buffer;
 import :render_data;
 import :vertex_layout;
+import :transfer_buffer;
+import :render_data_impl;
 namespace sopho
 {
-    /**
-     * @brief Create a GPU buffer and its associated upload transfer buffer.
-     *
-     * @param flag Usage flags for the GPU buffer.
-     * @param size Size in bytes of the buffer to allocate.
-     * @return std::expected<BufferWrapper, GpuError> BufferWrapper containing the created GPU buffer, its transfer
-     * buffer, and the buffer size on success; `std::unexpected` with a `GpuError` on failure.
-     */
-    std::expected<BufferWrapper, GpuError> GpuWrapper::create_buffer(SDL_GPUBufferUsageFlags flag, uint32_t size)
-    {
-        SDL_GPUBufferCreateInfo create_info{.usage = flag, .size = size};
-        auto gpu_buffer = SDL_CreateGPUBuffer(device(), &create_info);
-        if (!gpu_buffer)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
-            return std::unexpected(GpuError::CREATE_GPU_BUFFER_FAILED);
-        }
-        SDL_GPUTransferBufferCreateInfo transfer_info{};
-        transfer_info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-        transfer_info.size = size;
-        transfer_info.props = 0;
-        auto transfer_buffer = SDL_CreateGPUTransferBuffer(device(), &transfer_info);
-        if (!transfer_buffer)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
-            return std::unexpected(GpuError::CREATE_TRANSFER_BUFFER_FAILED);
-        }
-        return BufferWrapper{shared_from_this(), gpu_buffer, transfer_buffer, size};
-    }
+
     /**
      * @brief Create RenderData for a procedural render setup and given vertex count.
      *
@@ -51,25 +27,31 @@ namespace sopho
      *
      * @param render_procedural Source procedural that provides the vertex layout.
      * @param vertex_count Number of vertices the allocated buffer must hold.
+     * @param index_count
      * @return RenderData RenderData containing the allocated vertex buffer, the vertex layout, and `vertex_count`.
      */
-    std::expected<RenderData, GpuError> GpuWrapper::create_data(const RenderProcedural& render_procedural,
-                                                                uint32_t vertex_count)
+    checkable<std::shared_ptr<RenderData>> GpuWrapper::create_data(const RenderProcedural& render_procedural,
+                                                                   std::uint32_t vertex_count,
+                                                                   std::uint32_t index_count)
     {
         auto size = render_procedural.vertex_layout().get_stride() * vertex_count;
-        auto vertex_buffer = create_buffer(SDL_GPU_BUFFERUSAGE_VERTEX, size);
-        auto index_buffer = create_buffer(SDL_GPU_BUFFERUSAGE_INDEX, 6 * sizeof(int));
+        auto vertex_buffer = BufferWrapper::Builder{}.set_flag(SDL_GPU_BUFFERUSAGE_VERTEX).set_size(size).build(*this);
         if (!vertex_buffer)
         {
             return std::unexpected(vertex_buffer.error());
         }
+        auto index_buffer = BufferWrapper::Builder{}
+                                .set_flag(SDL_GPU_BUFFERUSAGE_INDEX)
+                                .set_size(index_count * sizeof(int))
+                                .build(*this);
         if (!index_buffer)
         {
             return std::unexpected(index_buffer.error());
         }
-        return RenderData{std::move(vertex_buffer.value()), std::move(index_buffer.value()),
-                          render_procedural.vertex_layout(), vertex_count};
+        return std::make_shared<RenderDataImpl>(std::move(vertex_buffer.value()), std::move(index_buffer.value()),
+                                                render_procedural.vertex_layout(), vertex_count, index_count);
     }
+
     /**
      * @brief Create a RenderProcedural configured for the device's texture format.
      *
