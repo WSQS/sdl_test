@@ -105,7 +105,8 @@ layout(set = 2, binding = 0) uniform sampler2D uTexture;
 void main()
 {
     FragColor = texture(uTexture, v_uv);
-    FragColor.a = 1;
+    if (FragColor.a <= 0.001)
+        discard;
 })WSQ";
 
 public:
