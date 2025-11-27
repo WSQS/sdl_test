@@ -308,9 +308,11 @@ public:
                                 case 4:
                                     changed |= ImGui::DragFloat4(std::format("{}{}", format.name, vertex_index).data(),
                                                                  reinterpret_cast<float*>(raw_ptr), 0.01f, -1.f, 1.f);
+                                    break;
                                 default:
                                     SDL_Log("Not implemented size");
                                     assert(false);
+                                    break;
                                 }
                             }
                             break;
