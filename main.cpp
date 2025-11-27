@@ -519,10 +519,10 @@ public:
                 pitch = std::clamp<float>(pitch, -std::numbers::pi_v<float> / 2, +std::numbers::pi_v<float> / 2);
                 break;
             case SDLK_LEFT:
-                yaw += 0.1F;
+                yaw -= 0.1F;
                 break;
             case SDLK_RIGHT:
-                yaw -= 0.1F;
+                yaw += 0.1F;
                 break;
             default:
                 break;
