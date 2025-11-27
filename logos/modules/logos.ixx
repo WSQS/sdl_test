@@ -17,6 +17,7 @@ namespace sopho
         std::array<std::array<TScalar, Row>, Col> m_data{};
 
     public:
+        constexpr Mat() = default;
         TScalar& operator()(std::uint8_t col, std::uint8_t row) { return m_data[col][row]; }
         const TScalar& operator()(std::uint8_t col, std::uint8_t row) const { return m_data[col][row]; }
         TScalar& operator()(std::uint8_t row)
@@ -85,6 +86,24 @@ namespace sopho
             }
             return result;
         }
+        constexpr Mat(std::initializer_list<TScalar> list)
+            requires(Col == 1)
+        {
+            assert(list.size() <= Row);
+            auto it = list.begin();
+
+            for (std::uint8_t r = 0; r < Row; ++r)
+            {
+                if (it != list.end())
+                {
+                    (*this)(r) = *it++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
     };
 
     export Mat<float, 4, 4> scale(float scale_size)
@@ -130,15 +149,13 @@ namespace sopho
 
     export Mat<float, 4, 4> rotation_y(float yaw)
     {
-        Mat<float, 1, 3> y{};
-        y(1) = 1;
+        Mat<float, 1, 3> y{0, 1, 0};
         return rotation(y, yaw);
     }
 
     export Mat<float, 4, 4> rotation_x(float pitch)
     {
-        Mat<float, 1, 3> x{};
-        x(0) = 1;
+        Mat<float, 1, 3> x{1, 0, 0};
         return rotation(x, pitch);
     }
 
