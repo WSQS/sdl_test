@@ -16,6 +16,13 @@ graph TD
         imgui
     end
 
+    subgraph Modules
+        data_type
+        glsl_reflector
+        sdl_wrapper
+        logos
+    end
+
     glslang --> shaderc
     SPIRVTools --> shaderc
 
