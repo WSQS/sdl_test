@@ -559,26 +559,32 @@ public:
     SDL_AppResult event(SDL_Event* event) override
     {
         ImGui_ImplSDL3_ProcessEvent(event);
-        if (event->type == SDL_EVENT_KEY_DOWN)
+
+        ImGuiIO& io = ImGui::GetIO();
+
+        if (!io.WantCaptureKeyboard)
         {
-            switch (event->key.key)
+            if (event->type == SDL_EVENT_KEY_DOWN)
             {
-            case SDLK_UP:
-                pitch += 0.1F;
-                pitch = std::clamp<float>(pitch, -std::numbers::pi_v<float> / 2, +std::numbers::pi_v<float> / 2);
-                break;
-            case SDLK_DOWN:
-                pitch -= 0.1F;
-                pitch = std::clamp<float>(pitch, -std::numbers::pi_v<float> / 2, +std::numbers::pi_v<float> / 2);
-                break;
-            case SDLK_LEFT:
-                yaw -= 0.1F;
-                break;
-            case SDLK_RIGHT:
-                yaw += 0.1F;
-                break;
-            default:
-                break;
+                switch (event->key.key)
+                {
+                case SDLK_UP:
+                    pitch += 0.1F;
+                    pitch = std::clamp<float>(pitch, -std::numbers::pi_v<float> / 2, +std::numbers::pi_v<float> / 2);
+                    break;
+                case SDLK_DOWN:
+                    pitch -= 0.1F;
+                    pitch = std::clamp<float>(pitch, -std::numbers::pi_v<float> / 2, +std::numbers::pi_v<float> / 2);
+                    break;
+                case SDLK_LEFT:
+                    yaw -= 0.1F;
+                    break;
+                case SDLK_RIGHT:
+                    yaw += 0.1F;
+                    break;
+                default:
+                    break;
+                }
             }
         }
 
