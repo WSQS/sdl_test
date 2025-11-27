@@ -61,6 +61,22 @@ namespace sopho
 
             return result;
         }
+
+        Mat operator*(const TScalar& rhs) const
+        {
+            Mat result{};
+
+            for (std::uint8_t r = 0; r < Row; ++r)
+            {
+                for (std::uint8_t c = 0; c < Col; ++c)
+                {
+                    result(c, r) = (*this)(c, r) * rhs;
+                }
+            }
+
+            return result;
+        }
+
         Mat<TScalar, Row, Col> transpose()
         {
             Mat<TScalar, Row, Col> result{};
@@ -89,12 +105,12 @@ namespace sopho
         TScalar length()
             requires(Col == 1)
         {
-            TScalar sum;
+            TScalar sum{};
             for (const auto e : m_data[0])
             {
                 sum += e * e;
             }
-            return std::sqrt<TScalar>(sum);
+            return std::sqrt(sum);
         }
         constexpr Mat(std::initializer_list<TScalar> list)
             requires(Col == 1)
@@ -147,6 +163,7 @@ namespace sopho
     export Mat<float, 4, 4> rotation(Mat<float, 1, 3> k, float theta)
     {
         assert(k.length() > 0);
+        k = k * (1 / k.length());
         Mat k_k_t = (k * k.transpose()).resize<4, 4>();
         Mat<float, 4, 4> k_m{};
         k_m(0, 1) = k(2);
