@@ -469,7 +469,18 @@ public:
         colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
         colorTargetInfo.texture = swapchainTexture;
 
-        SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, nullptr);
+        SDL_GPUDepthStencilTargetInfo depthStencilTargetInfo{};
+        depthStencilTargetInfo.texture = SceneDepthTexture;
+        depthStencilTargetInfo.cycle = true;
+        depthStencilTargetInfo.clear_depth = 1;
+        depthStencilTargetInfo.clear_stencil = 0;
+        depthStencilTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
+        depthStencilTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
+        depthStencilTargetInfo.stencil_load_op = SDL_GPU_LOADOP_CLEAR;
+        depthStencilTargetInfo.stencil_store_op = SDL_GPU_STOREOP_STORE;
+
+        SDL_GPURenderPass* renderPass =
+            SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, &depthStencilTargetInfo);
 
         // Bind pipeline if available.
 
