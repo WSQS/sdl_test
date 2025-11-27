@@ -570,6 +570,7 @@ public:
     void quit(SDL_AppResult result) override
     {
         (void)result;
+        SDL_ReleaseGPUTexture(m_gpu->device(),SceneDepthTexture);
         ImGui_ImplSDL3_Shutdown();
         ImGui_ImplSDLGPU3_Shutdown();
         ImGui::DestroyContext();
