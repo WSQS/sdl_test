@@ -2,9 +2,11 @@
 // Created by wsqsy on 11/17/2025.
 //
 module;
+#include <cassert>
 #include <cstdint>
 #include <vector>
 #include "SDL3/SDL_gpu.h"
+#include "SDL3/SDL_log.h"
 export module sdl_wrapper:vertex_layout;
 import glsl_reflector;
 namespace sopho
@@ -88,15 +90,21 @@ namespace sopho
             {
                 switch (vector_size)
                 {
+                case 2:
+                    return SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2;
                 case 3:
                     return SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
                 case 4:
                     return SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4;
                 default:
+                    SDL_LogError(SDL_LOG_CATEGORY_GPU,"Not supported vector size");
+                    assert(false);
                     return SDL_GPU_VERTEXELEMENTFORMAT_INVALID;
                 }
             }
         default:
+            SDL_LogError(SDL_LOG_CATEGORY_GPU,"Not supported Basic type");
+            assert(false);
             return SDL_GPU_VERTEXELEMENTFORMAT_INVALID;
         }
     }

@@ -4,16 +4,45 @@
 module;
 #include <SDL3/SDL_gpu.h>
 #include <cstddef>
+#include <cstdint>
 #include <expected>
+#include <memory>
 #include <variant>
 #include <vector>
 export module sdl_wrapper:render_data;
 import :vertex_layout;
+import :gpu;
 namespace sopho
 {
     export class RenderData
     {
     public:
+        struct Builder
+        {
+            VertexLayout layout{};
+            std::uint32_t vertex_count{};
+            std::uint32_t index_count{};
+
+            Builder& set_vertex_layout(VertexLayout new_layout)
+            {
+                layout = new_layout;
+                return *this;
+            }
+
+            Builder& set_vertex_count(std::uint32_t new_vertex_count)
+            {
+                vertex_count = new_vertex_count;
+                return *this;
+            }
+
+            Builder& set_index_count(std::uint32_t new_index_count)
+            {
+                index_count = new_index_count;
+                return *this;
+            }
+
+            checkable<std::shared_ptr<RenderData>> build(GpuWrapper& gpu);
+        };
         struct VertexView
         {
             VertexLayout layout{};

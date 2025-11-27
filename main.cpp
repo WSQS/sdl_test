@@ -68,17 +68,20 @@ class UserApp : public sopho::App
 
     sopho::ImageData m_image_data;
     std::shared_ptr<sopho::TextureWrapper> m_texture_wrapper{};
+    SDL_GPUTexture* SceneDepthTexture{};
 
     // camera state
     float yaw = 0.0f;
     float pitch = 0.0f;
 
+    int win_w = 0, win_h = 0;
+
     std::string vertex_source =
         R"WSQ(#version 460
 
 layout (location = 0) in vec3 a_position;
-layout (location = 1) in vec4 a_color;
-layout (location = 0) out vec4 v_color;
+layout (location = 1) in vec2 a_uv;
+layout (location = 0) out vec2 v_uv;
 
 layout(std140, set = 1, binding = 0) uniform Camera
 {
@@ -88,20 +91,21 @@ layout(std140, set = 1, binding = 0) uniform Camera
 void main()
 {
   gl_Position = uView * vec4(a_position, 1.0f);
-  v_color = a_color;
+  v_uv = a_uv;
 })WSQ";
 
     std::string fragment_source =
         R"WSQ(#version 460
 
-layout (location = 0) in vec4 v_color;
+layout (location = 0) in vec2 v_uv;
 layout (location = 0) out vec4 FragColor;
 
 layout(set = 2, binding = 0) uniform sampler2D uTexture;
 
 void main()
 {
-    FragColor = texture(uTexture, v_color.xy);
+    FragColor = texture(uTexture, v_uv);
+    FragColor.a = 1;
 })WSQ";
 
 public:
@@ -149,7 +153,11 @@ public:
         }
 
         // 3. Create vertex buffer.
-        auto render_data = m_gpu->create_data(pw_result.value(), 4, 6);
+        auto render_data = sopho::RenderData::Builder{}
+                               .set_vertex_layout(pw_result.value().vertex_layout())
+                               .set_vertex_count(8)
+                               .set_index_count(36)
+                               .build(*m_gpu.get());
         if (!render_data)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
@@ -228,6 +236,20 @@ public:
             SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to create texture: error = %d",
                         static_cast<int>(texture.error()));
         }
+
+        SDL_GetWindowSizeInPixels(m_gpu->window(), &win_w, &win_h);
+        SDL_GPUTextureCreateInfo ci = {
+            .type = SDL_GPU_TEXTURETYPE_2D,
+            .format = SDL_GPU_TEXTUREFORMAT_D16_UNORM,
+            .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
+            .width = static_cast<std::uint32_t>(win_w),
+            .height = static_cast<std::uint32_t>(win_h),
+            .layer_count_or_depth = 1,
+            .num_levels = 1,
+            .sample_count = SDL_GPU_SAMPLECOUNT_1,
+        };
+
+        SceneDepthTexture = SDL_CreateGPUTexture(m_gpu->device(), &ci);
         return SDL_APP_CONTINUE;
     }
 
@@ -275,6 +297,10 @@ public:
                             {
                                 switch (format.vector_size)
                                 {
+                                case 2:
+                                    changed |= ImGui::DragFloat2(std::format("{}{}", format.name, vertex_index).data(),
+                                                                 reinterpret_cast<float*>(raw_ptr), 0.01f, -1.f, 1.f);
+                                    break;
                                 case 3:
                                     changed |= ImGui::DragFloat3(std::format("{}{}", format.name, vertex_index).data(),
                                                                  reinterpret_cast<float*>(raw_ptr), 0.01f, -1.f, 1.f);
@@ -282,10 +308,17 @@ public:
                                 case 4:
                                     changed |= ImGui::DragFloat4(std::format("{}{}", format.name, vertex_index).data(),
                                                                  reinterpret_cast<float*>(raw_ptr), 0.01f, -1.f, 1.f);
+                                    break;
+                                default:
+                                    SDL_Log("Not implemented size");
+                                    assert(false);
+                                    break;
                                 }
                             }
                             break;
                         default:
+                            SDL_Log("Not implemented Basic type");
+                            assert(false);
                             break;
                         }
                         auto size = sopho::get_size(sopho::to_sdl_format(format.basic_type, format.vector_size));
@@ -294,7 +327,7 @@ public:
                 }
                 auto index_view = m_renderable->data()->index_view();
                 auto index_ptr = index_view.raw;
-                for (int index_index = 0; index_index < 2; ++index_index)
+                for (int index_index = 0; index_index < index_view.index_count; index_index += 3)
                 {
                     changed |= ImGui::InputInt3(std::format("index_{}", index_index).data(),
                                                 reinterpret_cast<int*>(index_ptr));
@@ -329,7 +362,11 @@ public:
                     }
                     else
                     {
-                        auto new_data = m_gpu->create_data(*m_renderable->procedural(), 4, 6);
+                        auto new_data = sopho::RenderData::Builder{}
+                                            .set_vertex_layout(m_renderable->procedural()->vertex_layout())
+                                            .set_vertex_count(8)
+                                            .set_index_count(36)
+                                            .build(*m_gpu.get());
                         m_renderable->data() = std::move(new_data.value());
                         m_renderable->data()->upload();
                     }
@@ -421,6 +458,24 @@ public:
             return SDL_APP_CONTINUE;
         }
 
+        if (win_w != width || win_h != height)
+        {
+            SDL_GPUTextureCreateInfo ci = {
+                .type = SDL_GPU_TEXTURETYPE_2D,
+                .format = SDL_GPU_TEXTUREFORMAT_D16_UNORM,
+                .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
+                .width = static_cast<std::uint32_t>(width),
+                .height = static_cast<std::uint32_t>(height),
+                .layer_count_or_depth = 1,
+                .num_levels = 1,
+                .sample_count = SDL_GPU_SAMPLECOUNT_1,
+            };
+            SDL_ReleaseGPUTexture(m_gpu->device(), SceneDepthTexture);
+            SceneDepthTexture = SDL_CreateGPUTexture(m_gpu->device(), &ci);
+            win_w = width;
+            win_h = height;
+        }
+
         if (swapchainTexture == nullptr)
         {
             // You must always submit the command buffer, even if no texture is available.
@@ -437,16 +492,29 @@ public:
         colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
         colorTargetInfo.texture = swapchainTexture;
 
-        SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, nullptr);
+        SDL_GPUDepthStencilTargetInfo depthStencilTargetInfo{};
+        depthStencilTargetInfo.texture = SceneDepthTexture;
+        depthStencilTargetInfo.cycle = true;
+        depthStencilTargetInfo.clear_depth = 1;
+        depthStencilTargetInfo.clear_stencil = 0;
+        depthStencilTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
+        depthStencilTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
+        depthStencilTargetInfo.stencil_load_op = SDL_GPU_LOADOP_CLEAR;
+        depthStencilTargetInfo.stencil_store_op = SDL_GPU_STOREOP_STORE;
+
+        SDL_GPURenderPass* renderPass =
+            SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, &depthStencilTargetInfo);
 
         // Bind pipeline if available.
 
         SDL_BindGPUGraphicsPipeline(renderPass, m_renderable->procedural()->data());
 
         // Compute camera matrix and upload as a vertex uniform.
-        SDL_PushGPUVertexUniformData(
-            commandBuffer, 0, (sopho::MakeRotationY(yaw) * sopho::MakeRotationX(-pitch) * sopho::Scale(0.1F)).data(),
-            sizeof(sopho::Mat<float, 4, 4>));
+        SDL_PushGPUVertexUniformData(commandBuffer, 0,
+                                     (sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) *
+                                      sopho::translate(0, 0, -5) * sopho::rotation_x(-pitch) * sopho::rotation_y(yaw))
+                                         .data(),
+                                     sizeof(sopho::Mat<float, 4, 4>));
 
         SDL_BindGPUVertexBuffers(renderPass, 0, m_renderable->data()->get_vertex_buffer_binding().data(),
                                  m_renderable->data()->get_vertex_buffer_binding().size());
@@ -463,8 +531,13 @@ public:
         }
 
 
-        SDL_DrawGPUIndexedPrimitives(renderPass, 6, 1, 0, 0, 0);
+        SDL_DrawGPUIndexedPrimitives(renderPass, 36, 1, 0, 0, 0);
 
+        SDL_EndGPURenderPass(renderPass);
+
+        colorTargetInfo.load_op = SDL_GPU_LOADOP_LOAD;
+
+        renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, nullptr);
         ImGui_ImplSDLGPU3_RenderDrawData(draw_data, commandBuffer, renderPass);
 
         SDL_EndGPURenderPass(renderPass);
@@ -499,10 +572,10 @@ public:
                 pitch = std::clamp<float>(pitch, -std::numbers::pi_v<float> / 2, +std::numbers::pi_v<float> / 2);
                 break;
             case SDLK_LEFT:
-                yaw += 0.1F;
+                yaw -= 0.1F;
                 break;
             case SDLK_RIGHT:
-                yaw -= 0.1F;
+                yaw += 0.1F;
                 break;
             default:
                 break;
@@ -520,6 +593,7 @@ public:
     void quit(SDL_AppResult result) override
     {
         (void)result;
+        SDL_ReleaseGPUTexture(m_gpu->device(), SceneDepthTexture);
         ImGui_ImplSDL3_Shutdown();
         ImGui_ImplSDLGPU3_Shutdown();
         ImGui::DestroyContext();

@@ -100,6 +100,16 @@ namespace sopho
 
         info.target_info.color_target_descriptions = m_color_target_descriptions.data();
         info.target_info.num_color_targets = static_cast<std::uint32_t>(m_color_target_descriptions.size());
+        info.target_info.has_depth_stencil_target = true;
+        info.target_info.depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
+
+        info.depth_stencil_state = SDL_GPUDepthStencilState{
+            .compare_op = SDL_GPU_COMPAREOP_LESS,
+            .write_mask = 0xFF,
+            .enable_depth_test = true,
+            .enable_depth_write = true,
+            .enable_stencil_test = false,
+        };
 
         // Shaders will be filled in later by set_vertex_shader / set_fragment_shader.
         info.vertex_shader = nullptr;
