@@ -45,61 +45,47 @@ namespace sopho
 
             return result;
         }
+
+        Mat operator+(const Mat& rhs) const
+        {
+            Mat result{};
+
+            for (std::uint8_t r = 0; r < Row; ++r)
+            {
+                for (std::uint8_t c = 0; c < Col; ++c)
+                {
+                    result(c, r) = (*this)(c, r) + rhs(c, r);
+                }
+            }
+
+            return result;
+        }
+        Mat<TScalar, Row, Col> transpose()
+        {
+            Mat<TScalar, Row, Col> result{};
+            for (std::uint8_t r = 0; r < Row; ++r)
+            {
+                for (std::uint8_t c = 0; c < Col; ++c)
+                {
+                    result(r, c) = (*this)(c, r);
+                }
+            }
+            return result;
+        }
+        template <std::uint8_t NewCol, std::uint8_t NewRow>
+        Mat<TScalar, NewCol, NewRow> resize()
+        {
+            Mat<TScalar, NewCol, NewRow> result{};
+            for (std::uint8_t r = 0; r < std::min(Row, NewRow); ++r)
+            {
+                for (std::uint8_t c = 0; c < std::min(Col, NewCol); ++c)
+                {
+                    result(c, r) = (*this)(c, r);
+                }
+            }
+            return result;
+        }
     };
-
-    export Mat<float, 4, 4> rotation_y(float yaw)
-    {
-        float cy = std::cos(yaw);
-        float sy = std::sin(yaw);
-
-        Mat<float, 4, 4> R{};
-
-        R(0, 0) = cy;
-        R(0, 1) = 0;
-        R(0, 2) = -sy;
-        R(0, 3) = 0;
-        R(1, 0) = 0;
-        R(1, 1) = 1;
-        R(1, 2) = 0;
-        R(1, 3) = 0;
-        R(2, 0) = sy;
-        R(2, 1) = 0;
-        R(2, 2) = cy;
-        R(2, 3) = 0;
-        R(3, 0) = 0;
-        R(3, 1) = 0;
-        R(3, 2) = 0;
-        R(3, 3) = 1;
-
-        return R;
-    }
-
-    export Mat<float, 4, 4> rotation_x(float pitch)
-    {
-        float cp = std::cos(pitch);
-        float sp = std::sin(pitch);
-
-        Mat<float, 4, 4> R{};
-
-        R(0, 0) = 1;
-        R(0, 1) = 0;
-        R(0, 2) = 0;
-        R(0, 3) = 0;
-        R(1, 0) = 0;
-        R(1, 1) = cp;
-        R(1, 2) = -sp;
-        R(1, 3) = 0;
-        R(2, 0) = 0;
-        R(2, 1) = sp;
-        R(2, 2) = cp;
-        R(2, 3) = 0;
-        R(3, 0) = 0;
-        R(3, 1) = 0;
-        R(3, 2) = 0;
-        R(3, 3) = 1;
-
-        return R;
-    }
 
     export Mat<float, 4, 4> scale(float scale_size)
     {
@@ -124,6 +110,36 @@ namespace sopho
         R(3, 3) = 1;
 
         return R;
+    }
+
+    // Rodrigues' rotation formula
+    // v_rot = cos(theta)*v+(1−cos(theta))*(v*k)*k+sin(theta)*(kxv)
+    // (v*k)k=(k*k^T)v
+    export Mat<float, 4, 4> rotation(Mat<float, 1, 3> k, float theta)
+    {
+        Mat k_k_t = (k * k.transpose()).resize<4, 4>();
+        Mat<float, 4, 4> k_m{};
+        k_m(0, 1) = k(2);
+        k_m(0, 2) = -k(1);
+        k_m(1, 0) = -k(2);
+        k_m(1, 2) = k(0);
+        k_m(2, 0) = k(1);
+        k_m(2, 1) = -k(0);
+        return scale(std::cos(theta)) + scale(1.F - std::cos(theta)) * k_k_t + scale(std::sin(theta)) * k_m;
+    }
+
+    export Mat<float, 4, 4> rotation_y(float yaw)
+    {
+        Mat<float, 1, 3> y{};
+        y(1) = 1;
+        return rotation(y, yaw);
+    }
+
+    export Mat<float, 4, 4> rotation_x(float pitch)
+    {
+        Mat<float, 1, 3> x{};
+        x(0) = 1;
+        return rotation(x, pitch);
     }
 
     export Mat<float, 4, 4> translate(float x, float y, float z)
