@@ -52,9 +52,15 @@ graph TD
     - [x] Shaders
     - [x] Textures
     - [x] Transformations
-    - [ ] Coordinate Systems
+    - [x] Coordinate Systems
     - [ ] Camera
 - [ ] Lighting
+    - [ ] Colors
+    - [ ] Basic Lighting
+    - [ ] Materials
+    - [ ] Lighting maps
+    - [ ] Light casters
+    - [ ] Multiple lights
 - [ ] Model Loading
 - [ ] Advanced OpenGL
 - [ ] Advanced Lighting
