@@ -510,6 +510,11 @@ public:
 
         SDL_DrawGPUIndexedPrimitives(renderPass, 36, 1, 0, 0, 0);
 
+        SDL_EndGPURenderPass(renderPass);
+
+        colorTargetInfo.load_op = SDL_GPU_LOADOP_LOAD;
+
+        renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, nullptr);
         ImGui_ImplSDLGPU3_RenderDrawData(draw_data, commandBuffer, renderPass);
 
         SDL_EndGPURenderPass(renderPass);
