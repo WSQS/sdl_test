@@ -488,8 +488,8 @@ public:
 
         // Compute camera matrix and upload as a vertex uniform.
         SDL_PushGPUVertexUniformData(commandBuffer, 0,
-                                     (sopho::perspective(1, 1, 0.1, 10) * sopho::translate(0, 0, -5) *
-                                      sopho::rotation_x(-pitch) * sopho::rotation_y(yaw))
+                                     (sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) *
+                                      sopho::translate(0, 0, -5) * sopho::rotation_x(-pitch) * sopho::rotation_y(yaw))
                                          .data(),
                                      sizeof(sopho::Mat<float, 4, 4>));
 
