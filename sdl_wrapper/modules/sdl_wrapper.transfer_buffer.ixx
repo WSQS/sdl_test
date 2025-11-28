@@ -18,6 +18,7 @@ module;
 #include "SDL3/SDL_log.h"
 export module sdl_wrapper:transfer_buffer;
 import data_type;
+import sdl_raii;
 import :decl;
 namespace sopho
 {
@@ -29,28 +30,24 @@ namespace sopho
     {
     private:
         std::shared_ptr<GpuWrapper> m_gpu{}; // Owns the device lifetime
-        SDL_GPUTransferBuffer* m_transfer_buffer{}; // The actual transfer buffer
+        TransferBufferRaii m_transfer_buffer{}; // The actual transfer buffer
         std::int32_t m_usage_limit{}; // Current usage count
         std::uint32_t m_size{}; // Size of the transfer buffer in bytes
 
         // Private constructor to ensure only Builder can create instances
-        TransferBufferWrapper(std::shared_ptr<GpuWrapper> gpu, SDL_GPUTransferBuffer* transfer_buffer,
+        TransferBufferWrapper(std::shared_ptr<GpuWrapper> gpu, TransferBufferRaii transfer_buffer,
                               std::int32_t usage_limit, std::uint32_t size) noexcept :
-            m_gpu(std::move(gpu)), m_transfer_buffer(transfer_buffer), m_usage_limit(usage_limit), m_size(size)
+            m_gpu(std::move(gpu)), m_transfer_buffer(std::move(transfer_buffer)), m_usage_limit(usage_limit),
+            m_size(size)
         {
         }
 
     public:
         TransferBufferWrapper(const TransferBufferWrapper&) = delete;
         TransferBufferWrapper& operator=(const TransferBufferWrapper&) = delete;
-        TransferBufferWrapper(TransferBufferWrapper&& other) noexcept :
-            m_gpu(std::move(other.m_gpu)), m_transfer_buffer(other.m_transfer_buffer),
-            m_usage_limit(other.m_usage_limit), m_size(other.m_size)
-        {
-            other.m_transfer_buffer = nullptr;
-        }
+        TransferBufferWrapper(TransferBufferWrapper&& other) noexcept = default;
 
-        TransferBufferWrapper& operator=(TransferBufferWrapper&& other) noexcept;
+        TransferBufferWrapper& operator=(TransferBufferWrapper&& other) noexcept = default;
 
         /*
          * @brief Destructor that releases the transfer buffer.
@@ -65,7 +62,7 @@ namespace sopho
         /*
          * @brief Returns the underlying SDL_GPUTransferBuffer pointer.
          */
-        [[nodiscard]] SDL_GPUTransferBuffer* raw() const noexcept { return m_transfer_buffer; }
+        [[nodiscard]] SDL_GPUTransferBuffer* raw() const noexcept { return m_transfer_buffer.raw(); }
 
         /*
          * @brief Returns the size of the transfer buffer in bytes.
