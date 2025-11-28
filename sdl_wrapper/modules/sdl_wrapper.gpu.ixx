@@ -15,59 +15,14 @@ import :decl;
 import :render_procedural;
 export namespace sopho
 {
-    struct ClaimedWindow
-    {
-        SDL_GPUDevice* device{};
-        SDL_Window* window{};
-
-        ClaimedWindow() = default;
-
-        ClaimedWindow(SDL_GPUDevice* d, SDL_Window* w) noexcept : device(d), window(w) {}
-
-        ClaimedWindow(const ClaimedWindow&) = delete;
-        ClaimedWindow& operator=(const ClaimedWindow&) = delete;
-
-        ClaimedWindow(ClaimedWindow&& other) noexcept : device(other.device), window(other.window)
-        {
-            other.device = nullptr;
-            other.window = nullptr;
-        }
-
-        ClaimedWindow& operator=(ClaimedWindow&& other) noexcept
-        {
-            if (this != &other)
-            {
-                reset();
-                device = other.device;
-                window = other.window;
-                other.device = nullptr;
-                other.window = nullptr;
-            }
-            return *this;
-        }
-
-        ~ClaimedWindow() noexcept { reset(); }
-
-        void reset() noexcept
-        {
-            if (device && window)
-            {
-                SDL_ReleaseWindowFromGPUDevice(device, window);
-                device = nullptr;
-                window = nullptr;
-            }
-        }
-
-        [[nodiscard]] bool valid() const noexcept { return device && window; }
-    };
 
     struct GpuContext
     {
         GpuDeviceRaii device;
         WindowRaii window;
-        ClaimedWindow claimed;
+        ClaimWindowRaii claimed;
 
-        GpuContext(GpuDeviceRaii d, WindowRaii w, ClaimedWindow c) noexcept :
+        GpuContext(GpuDeviceRaii d, WindowRaii w, ClaimWindowRaii c) noexcept :
             device(std::move(d)), window(std::move(w)), claimed(std::move(c))
         {
         }
@@ -107,7 +62,7 @@ export namespace sopho
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
             return std::unexpected(GpuError::CLAIM_WINDOW_FAILED);
         }
-        ClaimedWindow claimed{device.raw(), window.raw()};
+        ClaimWindowRaii claimed{device.raw(), window.raw()};
 
         return GpuContext{std::move(device), std::move(window), std::move(claimed)};
     }
