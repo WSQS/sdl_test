@@ -47,7 +47,7 @@ namespace sopho
 
         ~BoundRaii() noexcept { reset(); }
 
-        void reset(T* resource = nullptr, Device* device = nullptr) noexcept
+        void reset(Device* device = nullptr ,T* resource = nullptr) noexcept
         {
             if (m_raw && m_gpu_device)
             {

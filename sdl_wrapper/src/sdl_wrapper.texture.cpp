@@ -26,13 +26,17 @@ namespace sopho
                                              .sample_count = SDL_GPU_SAMPLECOUNT_1,
                                              .props = 0};
 
-        auto* texture = SDL_CreateGPUTexture(gpu.device(), &create_info);
-        if (!texture)
+        GpuTextureRaii texture_raii{};
         {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to create GPU texture: %s", SDL_GetError());
-            return std::unexpected(GpuError::CREATE_TEXTURE_FAILED);
+
+            auto* texture = SDL_CreateGPUTexture(gpu.device(), &create_info);
+            if (!texture)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to create GPU texture: %s", SDL_GetError());
+                return std::unexpected(GpuError::CREATE_TEXTURE_FAILED);
+            }
+            texture_raii.reset(gpu.device(), texture);
         }
-        GpuTextureRaii texture_raii{gpu.device(), texture};
 
         auto c_tb =
             TransferBufferWrapper::Builder{}
@@ -102,7 +106,6 @@ namespace sopho
         if (!sampler)
         {
             SDL_Log("SDL_CreateGPUSampler failed: %s", SDL_GetError());
-            SDL_ReleaseGPUTexture(gpu.device(), texture);
             return std::unexpected{GpuError::CREATE_SAMPLER_FAILED};
         }
         GPUSamplerRaii sampler_raii{gpu.device(), sampler};
