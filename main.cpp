@@ -459,7 +459,7 @@ public:
             return SDL_APP_CONTINUE;
         }
 
-        if (win_w != width || win_h != height)
+        if ((win_w != width || win_h != height) && width != 0 && height != 0)
         {
             SDL_GPUTextureCreateInfo ci = {
                 .type = SDL_GPU_TEXTURETYPE_2D,
