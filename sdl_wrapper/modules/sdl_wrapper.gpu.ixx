@@ -105,14 +105,6 @@ export namespace sopho
             return pipeline;
         }
 
-        auto release_pipeline(SDL_GPUGraphicsPipeline* graphics_pipeline)
-        {
-            if (graphics_pipeline)
-            {
-                SDL_ReleaseGPUGraphicsPipeline(device(), graphics_pipeline);
-            }
-        }
-
         [[nodiscard]] auto create_shader(const std::vector<uint8_t>& shader, SDL_GPUShaderStage stage,
                                          uint32_t num_uniform_buffers, uint32_t num_samplers)
             -> std::expected<SDL_GPUShader*, GpuError>
@@ -134,14 +126,6 @@ export namespace sopho
                 return std::unexpected(GpuError::CREATE_SHADER_FAILED);
             }
             return s;
-        }
-
-        auto release_shader(SDL_GPUShader* shader)
-        {
-            if (shader)
-            {
-                SDL_ReleaseGPUShader(device(), shader);
-            }
         }
 
         [[nodiscard]] std::expected<SDL_GPUTextureFormat, GpuError> get_texture_format() const
