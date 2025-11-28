@@ -9,3 +9,4 @@ export import :window;
 export import :claim_window;
 export import :transfer_buffer;
 export import :gpu_buffer;
+export import :shader;

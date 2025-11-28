@@ -30,12 +30,12 @@ namespace sopho
     {
     private:
         std::shared_ptr<GpuWrapper> m_gpu{}; // Owns the device lifetime
-        TransferBufferRaii m_transfer_buffer{}; // The actual transfer buffer
+        GpuTransferBufferRaii m_transfer_buffer{}; // The actual transfer buffer
         std::int32_t m_usage_limit{}; // Current usage count
         std::uint32_t m_size{}; // Size of the transfer buffer in bytes
 
         // Private constructor to ensure only Builder can create instances
-        TransferBufferWrapper(std::shared_ptr<GpuWrapper> gpu, TransferBufferRaii transfer_buffer,
+        TransferBufferWrapper(std::shared_ptr<GpuWrapper> gpu, GpuTransferBufferRaii transfer_buffer,
                               std::int32_t usage_limit, std::uint32_t size) noexcept :
             m_gpu(std::move(gpu)), m_transfer_buffer(std::move(transfer_buffer)), m_usage_limit(usage_limit),
             m_size(size)

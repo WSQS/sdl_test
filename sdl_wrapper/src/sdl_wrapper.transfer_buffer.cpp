@@ -58,7 +58,7 @@ namespace sopho
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
             return std::unexpected(GpuError::CREATE_TRANSFER_BUFFER_FAILED);
         }
-        TransferBufferRaii tb_raii{gpu.device(), transfer_buffer};
+        GpuTransferBufferRaii tb_raii{gpu.device(), transfer_buffer};
 
         return TransferBufferWrapper{gpu.shared_from_this(), std::move(tb_raii), usage_limit, size};
     }
