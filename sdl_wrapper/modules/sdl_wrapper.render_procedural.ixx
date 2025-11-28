@@ -12,6 +12,7 @@ module;
 #include "shaderc/shaderc.hpp"
 export module sdl_wrapper:render_procedural;
 import data_type;
+import sdl_raii;
 import :decl; // GpuError, forward declarations, etc.
 import :vertex_layout;
 export namespace sopho
@@ -21,8 +22,8 @@ export namespace sopho
         std::shared_ptr<GpuWrapper> m_gpu{};
 
         SDL_GPUGraphicsPipeline* m_graphics_pipeline{};
-        SDL_GPUShader* m_vertex_shader{};
-        SDL_GPUShader* m_fragment_shader{};
+        GpuShaderRaii m_vertex_shader{};
+        GpuShaderRaii m_fragment_shader{};
 
         std::vector<SDL_GPUVertexBufferDescription> m_vertex_buffer_descriptions{};
         std::vector<SDL_GPUColorTargetDescription> m_color_target_descriptions{};

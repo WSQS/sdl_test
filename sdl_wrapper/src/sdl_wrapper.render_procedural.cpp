@@ -138,18 +138,6 @@ namespace sopho
             m_gpu->release_pipeline(m_graphics_pipeline);
             m_graphics_pipeline = nullptr;
         }
-
-        if (m_vertex_shader)
-        {
-            m_gpu->release_shader(m_vertex_shader);
-            m_vertex_shader = nullptr;
-        }
-
-        if (m_fragment_shader)
-        {
-            m_gpu->release_shader(m_fragment_shader);
-            m_fragment_shader = nullptr;
-        }
     }
 
     /**
@@ -237,13 +225,7 @@ namespace sopho
 
         SDL_GPUShader* new_shader = shader_result.value();
 
-        // Release previous shader, if any
-        if (m_vertex_shader)
-        {
-            m_gpu->release_shader(m_vertex_shader);
-        }
-
-        m_vertex_shader = new_shader;
+        m_vertex_shader = GpuShaderRaii{m_gpu->device(), new_shader};
         m_pipeline_info.vertex_shader = new_shader;
         m_modified = true;
 
@@ -290,13 +272,7 @@ namespace sopho
 
         SDL_GPUShader* new_shader = shader_result.value();
 
-        // Release previous shader, if any
-        if (m_fragment_shader)
-        {
-            m_gpu->release_shader(m_fragment_shader);
-        }
-
-        m_fragment_shader = new_shader;
+        m_fragment_shader = GpuShaderRaii{m_gpu->device(), new_shader};
         m_pipeline_info.fragment_shader = new_shader;
         m_modified = true;
 

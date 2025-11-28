@@ -8,11 +8,14 @@ import :gpu_resource;
 namespace sopho
 {
     template <>
-struct GpuResourceTraits<SDL_GPUTransferBuffer>
+    struct GpuResourceTraits<SDL_GPUTransferBuffer>
     {
         using Device = SDL_GPUDevice;
 
-        static void release(Device* device, SDL_GPUTransferBuffer* buffer) noexcept { SDL_ReleaseGPUTransferBuffer(device, buffer); }
+        static void release(Device* device, SDL_GPUTransferBuffer* buffer) noexcept
+        {
+            SDL_ReleaseGPUTransferBuffer(device, buffer);
+        }
     };
     export using GpuTransferBufferRaii = GpuResourceRaii<SDL_GPUTransferBuffer>;
 } // namespace sopho
