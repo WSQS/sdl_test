@@ -8,15 +8,15 @@ export module sdl_raii;
 export import :gpu_device;
 export import :window;
 export import :claim_window;
-export import :gpu_resource;
-export import :gpu_resource_raii;
+export import :bound_traits;
+export import :bound_raii;
 
 export namespace sopho
 {
-    using GpuBufferRaii = GpuResourceRaii<SDL_GPUBuffer>;
-    using GPUGraphicsPipelineRaii = GpuResourceRaii<SDL_GPUGraphicsPipeline>;
-    using GPUSamplerRaii = GpuResourceRaii<SDL_GPUSampler>;
-    using GpuShaderRaii = GpuResourceRaii<SDL_GPUShader>;
-    using GpuTextureRaii = GpuResourceRaii<SDL_GPUTexture>;
-    using GpuTransferBufferRaii = GpuResourceRaii<SDL_GPUTransferBuffer>;
+    using GpuBufferRaii = BoundRaii<SDL_GPUBuffer>;
+    using GPUGraphicsPipelineRaii = BoundRaii<SDL_GPUGraphicsPipeline>;
+    using GPUSamplerRaii = BoundRaii<SDL_GPUSampler>;
+    using GpuShaderRaii = BoundRaii<SDL_GPUShader>;
+    using GpuTextureRaii = BoundRaii<SDL_GPUTexture>;
+    using GpuTransferBufferRaii = BoundRaii<SDL_GPUTransferBuffer>;
 } // namespace sopho

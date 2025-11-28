@@ -1,15 +1,15 @@
-// sdl_raii.gpu_resource_raii.ixx
+// sdl_raii.bound_raii.ixx
 // Created by sophomore on 11/28/25.
 //
 
-export module sdl_raii:gpu_resource_raii;
-import :gpu_resource;
+export module sdl_raii:bound_raii;
+import :bound_traits;
 namespace sopho
 {
     export template <typename T>
-    struct GpuResourceRaii
+    struct BoundRaii
     {
-        using Traits = GpuResourceTraits<T>;
+        using Traits = BoundTraits<T>;
         using Device = typename Traits::Device;
 
     private:
@@ -17,20 +17,20 @@ namespace sopho
         T* m_raw{};
 
     public:
-        GpuResourceRaii() noexcept = default;
+        BoundRaii() noexcept = default;
 
-        explicit GpuResourceRaii(Device* device, T* resource) noexcept : m_gpu_device(device), m_raw(resource) {}
+        explicit BoundRaii(Device* device, T* resource) noexcept : m_gpu_device(device), m_raw(resource) {}
 
-        GpuResourceRaii(const GpuResourceRaii&) = delete;
-        GpuResourceRaii& operator=(const GpuResourceRaii&) = delete;
+        BoundRaii(const BoundRaii&) = delete;
+        BoundRaii& operator=(const BoundRaii&) = delete;
 
-        GpuResourceRaii(GpuResourceRaii&& other) noexcept : m_gpu_device(other.m_gpu_device), m_raw(other.m_raw)
+        BoundRaii(BoundRaii&& other) noexcept : m_gpu_device(other.m_gpu_device), m_raw(other.m_raw)
         {
             other.m_gpu_device = nullptr;
             other.m_raw = nullptr;
         }
 
-        GpuResourceRaii& operator=(GpuResourceRaii&& other) noexcept
+        BoundRaii& operator=(BoundRaii&& other) noexcept
         {
             if (this != &other)
             {
@@ -45,7 +45,7 @@ namespace sopho
             return *this;
         }
 
-        ~GpuResourceRaii() noexcept { reset(); }
+        ~BoundRaii() noexcept { reset(); }
 
         void reset(T* resource = nullptr, Device* device = nullptr) noexcept
         {
