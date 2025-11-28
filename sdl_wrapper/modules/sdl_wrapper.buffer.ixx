@@ -11,6 +11,7 @@ module;
 
 export module sdl_wrapper:buffer;
 import data_type;
+import sdl_raii;
 import :decl;
 import :transfer_buffer;
 
@@ -19,15 +20,15 @@ namespace sopho
     class BufferWrapper
     {
         std::shared_ptr<GpuWrapper> m_gpu{}; // Owns the device lifetime
-        SDL_GPUBuffer* m_gpu_buffer{}; // Target GPU buffer
+        GpuBufferRaii m_gpu_buffer{}; // Target GPU buffer
         TransferBufferWrapper m_transfer_buffer; // Staging/transfer buffer
         std::uint32_t m_buffer_size{}; // Total size of the GPU buffer
         std::vector<std::byte> m_cpu_buffer{};
 
         // Only GpuWrapper is allowed to construct this type.
-        BufferWrapper(std::shared_ptr<GpuWrapper> gpu, SDL_GPUBuffer* gpu_buffer, TransferBufferWrapper transfer_buffer,
+        BufferWrapper(std::shared_ptr<GpuWrapper> gpu, GpuBufferRaii gpu_buffer, TransferBufferWrapper transfer_buffer,
                       std::uint32_t size) noexcept :
-            m_gpu(std::move(gpu)), m_gpu_buffer(gpu_buffer), m_transfer_buffer(std::move(transfer_buffer)),
+            m_gpu(std::move(gpu)), m_gpu_buffer(std::move(gpu_buffer)), m_transfer_buffer(std::move(transfer_buffer)),
             m_buffer_size(size)
         {
             m_cpu_buffer.resize(m_buffer_size);
@@ -64,10 +65,10 @@ namespace sopho
         [[nodiscard]] std::expected<std::monostate, GpuError> upload();
 
         /// Returns the underlying SDL_GPUBuffer pointer.
-        [[nodiscard]] SDL_GPUBuffer* gpu_buffer() const noexcept { return m_gpu_buffer; }
+        [[nodiscard]] SDL_GPUBuffer* gpu_buffer() const noexcept { return m_gpu_buffer.raw(); }
         [[nodiscard]] std::byte* cpu_buffer() noexcept { return m_cpu_buffer.data(); }
 
-        ~BufferWrapper() noexcept;
+        ~BufferWrapper() noexcept = default;
 
         friend class GpuWrapper;
     };

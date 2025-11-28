@@ -8,3 +8,4 @@ export import :gpu_device;
 export import :window;
 export import :claim_window;
 export import :transfer_buffer;
+export import :gpu_buffer;

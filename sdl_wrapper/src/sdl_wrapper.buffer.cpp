@@ -17,27 +17,6 @@ import :gpu;
 namespace sopho
 {
     /**
-     * @brief Releases any owned GPU resources held by the wrapper.
-     *
-     * Ensures the associated GPU object is valid, then releases the GPU buffer and the
-     * GPU transfer buffer if they exist and clears their pointers.
-     */
-    BufferWrapper::~BufferWrapper() noexcept
-    {
-        if (!m_gpu)
-        {
-            return;
-        }
-
-        // Release gpu buffer
-        if (m_gpu_buffer)
-        {
-            m_gpu->release_buffer(m_gpu_buffer);
-            m_gpu_buffer = nullptr;
-        }
-    }
-
-    /**
      * @brief Uploads the internal CPU-side buffer to the GPU buffer via the transfer buffer and a GPU copy pass.
      *
      * Copies the contents of m_cpu_buffer into the existing transfer buffer, records a GPU copy pass that
@@ -89,7 +68,7 @@ namespace sopho
         location.offset = 0;
 
         SDL_GPUBufferRegion region{};
-        region.buffer = m_gpu_buffer;
+        region.buffer = m_gpu_buffer.raw();
         region.size = size;
         region.offset = 0;
 
@@ -114,6 +93,7 @@ namespace sopho
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
             return std::unexpected(GpuError::CREATE_GPU_BUFFER_FAILED);
         }
+        GpuBufferRaii gpu_buffer_raii{gpu.device(), gpu_buffer};
         auto transfer_buffer = TransferBufferWrapper::Builder{}
                                    .set_size(size)
                                    .set_usage(SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD)
@@ -125,7 +105,8 @@ namespace sopho
             gpu.release_buffer(gpu_buffer);
             return std::unexpected(transfer_buffer.error());
         }
-        return BufferWrapper{gpu.shared_from_this(), gpu_buffer, (std::move(transfer_buffer.value())), size};
+        return BufferWrapper{gpu.shared_from_this(), std::move(gpu_buffer_raii), (std::move(transfer_buffer.value())),
+                             size};
     }
 
 } // namespace sopho
