@@ -6,7 +6,10 @@ export module sdl_raii:gpu_resource;
 namespace sopho
 {
     template <typename T>
-    struct GpuResourceTraits;
+    struct GpuResourceTraits
+    {
+        using Device = void;
+    };
     export template <typename T>
     struct GpuResourceRaii
     {
