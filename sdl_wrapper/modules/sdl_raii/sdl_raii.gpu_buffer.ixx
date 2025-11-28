@@ -14,4 +14,5 @@ namespace sopho
 
         static void release(Device* device, SDL_GPUBuffer* buffer) noexcept { SDL_ReleaseGPUBuffer(device, buffer); }
     };
+    export using GpuBufferRaii = GpuResourceRaii<SDL_GPUBuffer>;
 } // namespace sopho

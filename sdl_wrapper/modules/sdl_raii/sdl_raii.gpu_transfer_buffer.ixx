@@ -12,9 +12,10 @@ namespace sopho
     {
         using Device = SDL_GPUDevice;
 
-        static void release(Device* device, SDL_GPUTransferBuffer* raw) noexcept
+        static void release(Device* device, SDL_GPUTransferBuffer* buffer) noexcept
         {
-            SDL_ReleaseGPUTransferBuffer(device, raw);
+            SDL_ReleaseGPUTransferBuffer(device, buffer);
         }
     };
+    export using GpuTransferBufferRaii = GpuResourceRaii<SDL_GPUTransferBuffer>;
 } // namespace sopho

@@ -14,4 +14,5 @@ namespace sopho
 
         static void release(Device* device, SDL_GPUTexture* raw) noexcept { SDL_ReleaseGPUTexture(device, raw); }
     };
+    export using GpuTextureRaii = GpuResourceRaii<SDL_GPUTexture>;
 } // namespace sopho
