@@ -25,6 +25,7 @@ graph TD
     
     subgraph sdl_wrapper
         lifecycle
+        sdl_raii
     end
 
     glslang --> shaderc
