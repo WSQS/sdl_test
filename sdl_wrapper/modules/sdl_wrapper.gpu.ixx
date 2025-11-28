@@ -91,14 +91,6 @@ export namespace sopho
         [[nodiscard]] auto device() const { return m_ctx.device.raw(); }
         [[nodiscard]] SDL_Window* window() const { return m_ctx.window.raw(); }
 
-        auto release_buffer(SDL_GPUBuffer* buffer)
-        {
-            if (buffer)
-            {
-                SDL_ReleaseGPUBuffer(device(), buffer);
-            }
-        }
-
         [[nodiscard]] std::expected<RenderProcedural, GpuError> create_render_procedural();
 
         std::expected<SDL_GPUGraphicsPipeline*, GpuError>

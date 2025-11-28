@@ -102,7 +102,6 @@ namespace sopho
         if (!transfer_buffer)
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
-            gpu.release_buffer(gpu_buffer);
             return std::unexpected(transfer_buffer.error());
         }
         return BufferWrapper{gpu.shared_from_this(), std::move(gpu_buffer_raii), (std::move(transfer_buffer.value())),
