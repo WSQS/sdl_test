@@ -37,9 +37,7 @@ export namespace sopho
         [[nodiscard]] SDL_Window* window_raw() const noexcept { return window.raw(); }
     };
 
-    using GpuContextResult = std::expected<GpuContext, GpuError>;
-
-    inline GpuContextResult create_gpu_context()
+    inline checkable<GpuContext> create_gpu_context()
     {
         auto* dev_raw = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, nullptr);
         if (!dev_raw)
