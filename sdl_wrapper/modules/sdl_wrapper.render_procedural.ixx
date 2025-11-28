@@ -21,7 +21,7 @@ export namespace sopho
     {
         std::shared_ptr<GpuWrapper> m_gpu{};
 
-        SDL_GPUGraphicsPipeline* m_graphics_pipeline{};
+        GPUGraphicsPipelineRaii m_graphics_pipeline{};
         GpuShaderRaii m_vertex_shader{};
         GpuShaderRaii m_fragment_shader{};
 
@@ -43,10 +43,10 @@ export namespace sopho
         RenderProcedural& operator=(const RenderProcedural&) = delete;
         RenderProcedural(RenderProcedural&&) noexcept = default;
         RenderProcedural& operator=(RenderProcedural&&) = delete;
-        ~RenderProcedural() noexcept;
+        ~RenderProcedural() noexcept = default;
 
         /// Returns the underlying SDL_GPUGraphicsPipeline*.
-        [[nodiscard]] SDL_GPUGraphicsPipeline* data() const noexcept { return m_graphics_pipeline; }
+        [[nodiscard]] SDL_GPUGraphicsPipeline* raw() const noexcept { return m_graphics_pipeline.raw(); }
 
         /// Rebuilds the graphics pipeline if any state has been modified.
         ///

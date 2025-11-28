@@ -16,6 +16,7 @@ target_sources(sdl_wrapper
         modules/sdl_raii/sdl_raii.gpu_buffer.ixx
         modules/sdl_raii/sdl_raii.gpu_shader.ixx
         modules/sdl_raii/sdl_raii.gpu_resource.ixx
+        modules/sdl_raii/sdl_raii.gpu_graphics_pipeline.ixx
         modules/sdl_wrapper.ixx
         modules/sdl_wrapper.buffer.ixx
         modules/sdl_wrapper.render_procedural.ixx

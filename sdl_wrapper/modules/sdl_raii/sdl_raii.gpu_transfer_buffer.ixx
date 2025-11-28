@@ -1,9 +1,9 @@
-﻿// sdl_raii.transfer_buffer.ixx
+﻿// sdl_raii.gpu_transfer_buffer.ixx
 // Created by wsqsy on 11/28/2025.
 //
 module;
 #include <SDL3/SDL_gpu.h>
-export module sdl_raii:transfer_buffer;
+export module sdl_raii:gpu_transfer_buffer;
 import :gpu_resource;
 namespace sopho
 {

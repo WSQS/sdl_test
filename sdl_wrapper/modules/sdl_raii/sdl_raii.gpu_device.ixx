@@ -1,4 +1,4 @@
-﻿// sdl_raii.gpu.ixx
+﻿// sdl_raii.gpu_device.ixx
 // Created by wsqsy on 11/28/2025.
 //
 module;

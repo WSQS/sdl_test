@@ -509,7 +509,7 @@ public:
 
         // Bind pipeline if available.
 
-        SDL_BindGPUGraphicsPipeline(renderPass, m_renderable->procedural()->data());
+        SDL_BindGPUGraphicsPipeline(renderPass, m_renderable->procedural()->raw());
 
         // Compute camera matrix and upload as a vertex uniform.
         SDL_PushGPUVertexUniformData(commandBuffer, 0,
