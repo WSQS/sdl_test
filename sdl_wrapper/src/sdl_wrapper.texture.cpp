@@ -13,15 +13,6 @@ import :gpu;
 namespace sopho
 {
 
-    void TextureWrapper::reset() noexcept
-    {
-        if (m_sampler && m_gpu)
-        {
-            SDL_ReleaseGPUSampler(m_gpu->device(), m_sampler);
-            m_sampler = nullptr;
-        }
-    }
-
     std::expected<TextureWrapper, GpuError> TextureWrapper::Builder::build(GpuWrapper& gpu)
     {
         SDL_GPUTextureCreateInfo create_info{.type = SDL_GPU_TEXTURETYPE_2D,
@@ -111,7 +102,8 @@ namespace sopho
             SDL_ReleaseGPUTexture(gpu.device(), texture);
             return std::unexpected{GpuError::CREATE_SAMPLER_FAILED};
         }
+        GPUSamplerRaii sampler_raii{gpu.device(), sampler};
 
-        return TextureWrapper{gpu.shared_from_this(), std::move(texture_raii), sampler};
+        return TextureWrapper{gpu.shared_from_this(), std::move(texture_raii), std::move(sampler_raii)};
     }
 } // namespace sopho
