@@ -14,6 +14,8 @@ target_sources(sdl_wrapper
         modules/sdl_raii/sdl_raii.claim_window.ixx
         modules/sdl_raii/sdl_raii.bound_raii.ixx
         modules/sdl_raii/sdl_raii.bound_traits.ixx
+        modules/sdl_raii/sdl_raii.pure_raii.ixx
+        modules/sdl_raii/sdl_raii.pure_traits.ixx
         modules/sdl_wrapper.ixx
         modules/sdl_wrapper.buffer.ixx
         modules/sdl_wrapper.render_procedural.ixx

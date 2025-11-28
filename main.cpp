@@ -25,6 +25,7 @@
 
 import lifecycle;
 import data_type;
+import sdl_raii;
 import glsl_reflector;
 import sdl_wrapper;
 import logos;
@@ -434,12 +435,16 @@ public:
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "GpuWrapper::device() returned null in draw()");
             return SDL_APP_CONTINUE;
         }
-
-        SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(device);
-        if (!commandBuffer)
+        sopho::GpuCommandBufferRaii command_buffer_raii{};
         {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to acquire GPU command buffer");
-            return SDL_APP_CONTINUE;
+
+            SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(device);
+            if (!command_buffer)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to acquire GPU command buffer");
+                return SDL_APP_CONTINUE;
+            }
+            command_buffer_raii.reset(command_buffer);
         }
 
         SDL_GPUTexture* swapchainTexture = nullptr;
@@ -449,14 +454,13 @@ public:
         if (!window)
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "GpuWrapper::window() returned null in draw()");
-            SDL_SubmitGPUCommandBuffer(commandBuffer);
             return SDL_APP_CONTINUE;
         }
 
-        if (!SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, window, &swapchainTexture, &width, &height))
+        if (!SDL_WaitAndAcquireGPUSwapchainTexture(command_buffer_raii.raw(), window, &swapchainTexture, &width,
+                                                   &height))
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to acquire swapchain texture: %s", SDL_GetError());
-            SDL_SubmitGPUCommandBuffer(commandBuffer);
             return SDL_APP_CONTINUE;
         }
 
@@ -481,11 +485,10 @@ public:
         if (swapchainTexture == nullptr)
         {
             // You must always submit the command buffer, even if no texture is available.
-            SDL_SubmitGPUCommandBuffer(commandBuffer);
             return SDL_APP_CONTINUE;
         }
 
-        ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, commandBuffer);
+        ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer_raii.raw());
 
         // Create the color target.
         SDL_GPUColorTargetInfo colorTargetInfo{};
@@ -505,14 +508,14 @@ public:
         depthStencilTargetInfo.stencil_store_op = SDL_GPU_STOREOP_STORE;
 
         SDL_GPURenderPass* renderPass =
-            SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, &depthStencilTargetInfo);
+            SDL_BeginGPURenderPass(command_buffer_raii.raw(), &colorTargetInfo, 1, &depthStencilTargetInfo);
 
         // Bind pipeline if available.
 
         SDL_BindGPUGraphicsPipeline(renderPass, m_renderable->procedural()->raw());
 
         // Compute camera matrix and upload as a vertex uniform.
-        SDL_PushGPUVertexUniformData(commandBuffer, 0,
+        SDL_PushGPUVertexUniformData(command_buffer_raii.raw(), 0,
                                      (sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) *
                                       sopho::translate(0, 0, -5) * sopho::rotation_x(-pitch) * sopho::rotation_y(yaw))
                                          .data(),
@@ -539,11 +542,10 @@ public:
 
         colorTargetInfo.load_op = SDL_GPU_LOADOP_LOAD;
 
-        renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, nullptr);
-        ImGui_ImplSDLGPU3_RenderDrawData(draw_data, commandBuffer, renderPass);
+        renderPass = SDL_BeginGPURenderPass(command_buffer_raii.raw(), &colorTargetInfo, 1, nullptr);
+        ImGui_ImplSDLGPU3_RenderDrawData(draw_data, command_buffer_raii.raw(), renderPass);
 
         SDL_EndGPURenderPass(renderPass);
-        SDL_SubmitGPUCommandBuffer(commandBuffer);
 
         return SDL_APP_CONTINUE;
     }

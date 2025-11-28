@@ -10,6 +10,8 @@ export import :window;
 export import :claim_window;
 export import :bound_traits;
 export import :bound_raii;
+export import :pure_traits;
+export import :pure_raii;
 
 export namespace sopho
 {
@@ -19,4 +21,5 @@ export namespace sopho
     using GpuShaderRaii = BoundRaii<SDL_GPUShader>;
     using GpuTextureRaii = BoundRaii<SDL_GPUTexture>;
     using GpuTransferBufferRaii = BoundRaii<SDL_GPUTransferBuffer>;
+    using GpuCommandBufferRaii = PureRaii<SDL_GPUCommandBuffer>;
 } // namespace sopho
