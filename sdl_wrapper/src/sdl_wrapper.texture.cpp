@@ -7,6 +7,7 @@ module;
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_log.h"
 module sdl_wrapper;
+import sdl_raii;
 import :texture;
 import :transfer_buffer;
 import :gpu;
@@ -45,17 +46,20 @@ namespace sopho
         {
             return std::unexpected{submit_result.error()};
         }
-        SDL_GPUCommandBuffer* cmd = SDL_AcquireGPUCommandBuffer(gpu.device());
-        if (!cmd)
+        GpuCommandBufferRaii command_buffer_raii;
         {
-            SDL_Log("SDL_AcquireGPUCommandBuffer failed: %s", SDL_GetError());
-            return std::unexpected{GpuError::ACQUIRE_COMMAND_BUFFER_FAILED};
+            SDL_GPUCommandBuffer* cmd = SDL_AcquireGPUCommandBuffer(gpu.device());
+            if (!cmd)
+            {
+                SDL_Log("SDL_AcquireGPUCommandBuffer failed: %s", SDL_GetError());
+                return std::unexpected{GpuError::ACQUIRE_COMMAND_BUFFER_FAILED};
+            }
+            command_buffer_raii.reset(cmd);
         }
 
-        SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(cmd);
+        SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(command_buffer_raii.raw());
         if (!copy_pass)
         {
-            SDL_SubmitGPUCommandBuffer(cmd);
             SDL_Log("SDL_BeginGPUCopyPass failed: %s", SDL_GetError());
             return std::unexpected{GpuError::BEGIN_COPY_PASS_FAILED};
         }
@@ -80,7 +84,6 @@ namespace sopho
         SDL_UploadToGPUTexture(copy_pass, &src, &dst, false);
 
         SDL_EndGPUCopyPass(copy_pass);
-        SDL_SubmitGPUCommandBuffer(cmd);
 
         SDL_GPUSamplerCreateInfo info{};
         info.min_filter = SDL_GPU_FILTER_NEAREST;
