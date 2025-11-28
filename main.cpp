@@ -23,6 +23,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+import lifecycle;
 import data_type;
 import glsl_reflector;
 import sdl_wrapper;

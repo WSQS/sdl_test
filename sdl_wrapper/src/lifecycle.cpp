@@ -4,7 +4,7 @@
 #define SDL_MAIN_USE_CALLBACKS
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_main.h"
-import sdl_wrapper;
+import lifecycle;
 import data_type;
 
 extern sopho::checkable<sopho::App*> create_app(int argc, char** argv);

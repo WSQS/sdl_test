@@ -3,7 +3,7 @@
 //
 module;
 #include "SDL3/SDL_init.h"
-export module sdl_wrapper:app;
+export module lifecycle;
 export namespace sopho
 {
     class App

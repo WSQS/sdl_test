@@ -4,7 +4,6 @@
 
 export module sdl_wrapper;
 export import :decl;
-export import :app;
 export import :gpu;
 export import :render_procedural;
 export import :renderable;
