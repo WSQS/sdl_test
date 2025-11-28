@@ -98,8 +98,8 @@ namespace sopho
         SDL_SubmitGPUCommandBuffer(cmd);
 
         SDL_GPUSamplerCreateInfo info{};
-        info.min_filter = SDL_GPU_FILTER_LINEAR;
-        info.mag_filter = SDL_GPU_FILTER_LINEAR;
+        info.min_filter = SDL_GPU_FILTER_NEAREST;
+        info.mag_filter = SDL_GPU_FILTER_NEAREST;
         info.max_anisotropy = 1.f;
         info.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
         info.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
