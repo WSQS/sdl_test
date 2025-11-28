@@ -22,6 +22,10 @@ graph TD
         sdl_wrapper
         logos
     end
+    
+    subgraph sdl_wrapper
+        lifecycle
+    end
 
     glslang --> shaderc
     SPIRVTools --> shaderc
