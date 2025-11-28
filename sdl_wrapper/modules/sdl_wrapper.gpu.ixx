@@ -5,10 +5,10 @@ module;
 #include <expected>
 #include <memory>
 
-#include "SDL3/SDL_gpu.h"
-#include "SDL3/SDL_log.h"
-#include "SDL3/SDL_video.h"
-#include "shaderc/shaderc.hpp"
+#include <SDL3/SDL_gpu.h>
+#include <SDL3/SDL_log.h>
+#include <SDL3/SDL_video.h>
+#include <shaderc/shaderc.hpp>
 export module sdl_wrapper:gpu;
 import sdl_raii;
 import :decl;
