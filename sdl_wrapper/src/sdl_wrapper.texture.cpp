@@ -15,11 +15,6 @@ namespace sopho
 
     void TextureWrapper::reset() noexcept
     {
-        if (m_texture && m_gpu)
-        {
-            SDL_ReleaseGPUTexture(m_gpu->device(), m_texture);
-            m_texture = nullptr;
-        }
         if (m_sampler && m_gpu)
         {
             SDL_ReleaseGPUSampler(m_gpu->device(), m_sampler);
@@ -45,6 +40,7 @@ namespace sopho
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to create GPU texture: %s", SDL_GetError());
             return std::unexpected(GpuError::CREATE_TEXTURE_FAILED);
         }
+        GpuTextureRaii texture_raii{gpu.device(), texture};
 
         auto c_tb =
             TransferBufferWrapper::Builder{}
@@ -56,7 +52,6 @@ namespace sopho
         auto submit_result = c_tb.and_then([&](auto& tb) { return tb.submit(img_data.pixels.data()); });
         if (!submit_result)
         {
-            SDL_ReleaseGPUTexture(gpu.device(), texture);
             return std::unexpected{submit_result.error()};
         }
         SDL_GPUCommandBuffer* cmd = SDL_AcquireGPUCommandBuffer(gpu.device());
@@ -70,7 +65,6 @@ namespace sopho
         if (!copy_pass)
         {
             SDL_SubmitGPUCommandBuffer(cmd);
-            SDL_ReleaseGPUTexture(gpu.device(), texture);
             SDL_Log("SDL_BeginGPUCopyPass failed: %s", SDL_GetError());
             return std::unexpected{GpuError::BEGIN_COPY_PASS_FAILED};
         }
@@ -82,7 +76,7 @@ namespace sopho
         src.rows_per_layer = 0;
 
         SDL_GPUTextureRegion dst{};
-        dst.texture = texture;
+        dst.texture = texture_raii.raw();
         dst.mip_level = 0;
         dst.layer = 0;
         dst.x = 0;
@@ -118,6 +112,6 @@ namespace sopho
             return std::unexpected{GpuError::CREATE_SAMPLER_FAILED};
         }
 
-        return TextureWrapper{gpu.shared_from_this(), texture, sampler};
+        return TextureWrapper{gpu.shared_from_this(), std::move(texture_raii), sampler};
     }
 } // namespace sopho

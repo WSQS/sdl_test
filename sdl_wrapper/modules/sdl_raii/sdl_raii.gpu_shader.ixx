@@ -12,9 +12,9 @@ namespace sopho
     {
         using Device = SDL_GPUDevice;
 
-        static void release(Device* device, SDL_GPUShader* shader) noexcept
+        static void release(Device* device, SDL_GPUShader* raw) noexcept
         {
-            SDL_ReleaseGPUShader(device, shader);
+            SDL_ReleaseGPUShader(device, raw);
         }
     };
     export using GpuShaderRaii = GpuResourceRaii<SDL_GPUShader>;

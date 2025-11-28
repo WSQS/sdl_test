@@ -12,3 +12,4 @@ export import :gpu_transfer_buffer;
 export import :gpu_buffer;
 export import :gpu_shader;
 export import :gpu_graphics_pipeline;
+export import :gpu_texture;
