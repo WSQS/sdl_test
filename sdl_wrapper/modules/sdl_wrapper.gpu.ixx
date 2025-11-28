@@ -15,44 +15,6 @@ import :decl;
 import :render_procedural;
 export namespace sopho
 {
-    struct WindowHandle
-    {
-        SDL_Window* raw{};
-
-        WindowHandle() = default;
-
-        explicit WindowHandle(SDL_Window* w) noexcept : raw(w) {}
-
-        WindowHandle(const WindowHandle&) = delete;
-        WindowHandle& operator=(const WindowHandle&) = delete;
-
-        WindowHandle(WindowHandle&& other) noexcept : raw(other.raw) { other.raw = nullptr; }
-
-        WindowHandle& operator=(WindowHandle&& other) noexcept
-        {
-            if (this != &other)
-            {
-                reset();
-                raw = other.raw;
-                other.raw = nullptr;
-            }
-            return *this;
-        }
-
-        ~WindowHandle() noexcept { reset(); }
-
-        void reset() noexcept
-        {
-            if (raw)
-            {
-                SDL_DestroyWindow(raw);
-                raw = nullptr;
-            }
-        }
-
-        [[nodiscard]] bool valid() const noexcept { return raw != nullptr; }
-    };
-
     struct ClaimedWindow
     {
         SDL_GPUDevice* device{};
@@ -102,10 +64,10 @@ export namespace sopho
     struct GpuContext
     {
         GpuDeviceRaii device;
-        WindowHandle window;
+        WindowRaii window;
         ClaimedWindow claimed;
 
-        GpuContext(GpuDeviceRaii d, WindowHandle w, ClaimedWindow c) noexcept :
+        GpuContext(GpuDeviceRaii d, WindowRaii w, ClaimedWindow c) noexcept :
             device(std::move(d)), window(std::move(w)), claimed(std::move(c))
         {
         }
@@ -117,7 +79,7 @@ export namespace sopho
         GpuContext& operator=(GpuContext&&) = default;
 
         [[nodiscard]] SDL_GPUDevice* device_raw() const noexcept { return device.raw(); }
-        [[nodiscard]] SDL_Window* window_raw() const noexcept { return window.raw; }
+        [[nodiscard]] SDL_Window* window_raw() const noexcept { return window.raw(); }
     };
 
     using GpuContextResult = std::expected<GpuContext, GpuError>;
@@ -138,14 +100,14 @@ export namespace sopho
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
             return std::unexpected(GpuError::CREATE_WINDOW_FAILED);
         }
-        WindowHandle window{win_raw};
+        WindowRaii window{win_raw};
 
-        if (!SDL_ClaimWindowForGPUDevice(device.raw(), window.raw))
+        if (!SDL_ClaimWindowForGPUDevice(device.raw(), window.raw()))
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
             return std::unexpected(GpuError::CLAIM_WINDOW_FAILED);
         }
-        ClaimedWindow claimed{device.raw(), window.raw};
+        ClaimedWindow claimed{device.raw(), window.raw()};
 
         return GpuContext{std::move(device), std::move(window), std::move(claimed)};
     }
@@ -174,7 +136,7 @@ export namespace sopho
         GpuWrapper& operator=(GpuWrapper&&) = delete;
 
         [[nodiscard]] auto device() const { return m_ctx.device.raw(); }
-        [[nodiscard]] SDL_Window* window() const { return m_ctx.window.raw; }
+        [[nodiscard]] SDL_Window* window() const { return m_ctx.window.raw(); }
 
         auto release_buffer(SDL_GPUBuffer* buffer)
         {

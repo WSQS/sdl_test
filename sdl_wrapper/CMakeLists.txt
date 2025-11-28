@@ -10,6 +10,7 @@ target_sources(sdl_wrapper
         modules/lifecycle.ixx
         modules/sdl_raii/sdl_raii.ixx
         modules/sdl_raii/sdl_raii.gpu_device.ixx
+        modules/sdl_raii/sdl_raii.window.ixx
         modules/sdl_wrapper.ixx
         modules/sdl_wrapper.buffer.ixx
         modules/sdl_wrapper.render_procedural.ixx
