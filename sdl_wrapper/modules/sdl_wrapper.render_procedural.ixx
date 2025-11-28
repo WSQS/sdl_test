@@ -1,4 +1,4 @@
-// sdl_wrapper.pipeline.ixx
+// sdl_wrapper.render_procedural.ixx
 // Created by sophomore on 11/11/25.
 //
 module;
