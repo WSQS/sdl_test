@@ -2,7 +2,7 @@
 // Created by wsqsy on 11/28/2025.
 //
 module;
-#include "SDL3/SDL_gpu.h"
+#include <SDL3/SDL_gpu.h>
 export module sdl_raii:gpu_device;
 namespace sopho
 {
