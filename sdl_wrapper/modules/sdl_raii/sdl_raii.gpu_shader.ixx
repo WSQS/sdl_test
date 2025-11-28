@@ -17,5 +17,4 @@ namespace sopho
             SDL_ReleaseGPUShader(device, raw);
         }
     };
-    export using GpuShaderRaii = GpuResourceRaii<SDL_GPUShader>;
 } // namespace sopho

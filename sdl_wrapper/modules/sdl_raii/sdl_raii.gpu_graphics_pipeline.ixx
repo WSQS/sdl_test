@@ -17,5 +17,4 @@ namespace sopho
             SDL_ReleaseGPUGraphicsPipeline(device, raw);
         }
     };
-    export using GPUGraphicsPipelineRaii = GpuResourceRaii<SDL_GPUGraphicsPipeline>;
 } // namespace sopho

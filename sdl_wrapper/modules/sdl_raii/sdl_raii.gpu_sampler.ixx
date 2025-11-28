@@ -7,15 +7,11 @@ export module sdl_raii:gpu_sampler;
 import :gpu_resource;
 namespace sopho
 {
-    template<>
+    template <>
     struct GpuResourceTraits<SDL_GPUSampler>
     {
         using Device = SDL_GPUDevice;
 
-        static void release(Device* device, SDL_GPUSampler* raw) noexcept
-        {
-            SDL_ReleaseGPUSampler(device, raw);
-        }
+        static void release(Device* device, SDL_GPUSampler* raw) noexcept { SDL_ReleaseGPUSampler(device, raw); }
     };
-    export using GPUSamplerRaii = GpuResourceRaii<SDL_GPUSampler>;
 } // namespace sopho
