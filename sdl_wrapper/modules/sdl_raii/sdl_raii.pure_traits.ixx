@@ -16,4 +16,9 @@ namespace sopho
     {
         static void release(SDL_GPUCommandBuffer* raw) noexcept { SDL_SubmitGPUCommandBuffer(raw); }
     };
+    template <>
+    struct PureTraits<SDL_GPUDevice>
+    {
+        static void release(SDL_GPUDevice* raw) noexcept { SDL_DestroyGPUDevice(raw); }
+    };
 } // namespace sopho

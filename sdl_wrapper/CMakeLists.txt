@@ -9,7 +9,6 @@ target_sources(sdl_wrapper
         FILE_SET cxx_modules TYPE CXX_MODULES FILES
         modules/lifecycle.ixx
         modules/sdl_raii/sdl_raii.ixx
-        modules/sdl_raii/sdl_raii.gpu_device.ixx
         modules/sdl_raii/sdl_raii.window.ixx
         modules/sdl_raii/sdl_raii.claim_window.ixx
         modules/sdl_raii/sdl_raii.bound_raii.ixx

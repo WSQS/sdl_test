@@ -5,7 +5,6 @@ module;
 #include <SDL3/SDL_gpu.h>
 export module sdl_raii;
 
-export import :gpu_device;
 export import :window;
 export import :claim_window;
 export import :bound_traits;
@@ -22,4 +21,5 @@ export namespace sopho
     using GpuTextureRaii = BoundRaii<SDL_GPUTexture>;
     using GpuTransferBufferRaii = BoundRaii<SDL_GPUTransferBuffer>;
     using GpuCommandBufferRaii = PureRaii<SDL_GPUCommandBuffer>;
+    using GpuDeviceRaii = PureRaii<SDL_GPUDevice>;
 } // namespace sopho
