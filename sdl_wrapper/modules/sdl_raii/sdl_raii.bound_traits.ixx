@@ -59,6 +59,13 @@ namespace sopho
             SDL_ReleaseGPUTransferBuffer(device, buffer);
         }
     };
+    template <>
+    struct BoundTraits<SDL_Window>
+    {
+        using Device = SDL_GPUDevice;
+
+        static void release(Device* device, SDL_Window* raw) noexcept { SDL_ReleaseWindowFromGPUDevice(device, raw); }
+    };
 
 
 } // namespace sopho
