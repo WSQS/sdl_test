@@ -28,48 +28,15 @@ namespace sopho
             return std::unexpected(index_buffer.error());
         }
 
-        for (int i = 0;i<std::min<int>(size,vertex_data.size());++i)
+        for (int i = 0; i < std::min<int>(size, vertex_data.size()); ++i)
         {
             vertex_buffer->cpu_buffer()[i] = vertex_data[i];
         }
 
-        int* index_ptr = reinterpret_cast<int*>(index_buffer.value().cpu_buffer());
-        index_ptr[0] = 0;
-        index_ptr[1] = 1;
-        index_ptr[2] = 2;
-        index_ptr[3] = 1;
-        index_ptr[4] = 2;
-        index_ptr[5] = 3;
-        index_ptr[6] = 0;
-        index_ptr[7] = 1;
-        index_ptr[8] = 4;
-        index_ptr[9] = 1;
-        index_ptr[10] = 4;
-        index_ptr[11] = 5;
-        index_ptr[12] = 0;
-        index_ptr[13] = 2;
-        index_ptr[14] = 4;
-        index_ptr[15] = 2;
-        index_ptr[16] = 4;
-        index_ptr[17] = 6;
-        index_ptr[18] = 2;
-        index_ptr[19] = 3;
-        index_ptr[20] = 6;
-        index_ptr[21] = 3;
-        index_ptr[22] = 6;
-        index_ptr[23] = 7;
-        index_ptr[24] = 1;
-        index_ptr[25] = 3;
-        index_ptr[26] = 5;
-        index_ptr[27] = 3;
-        index_ptr[28] = 5;
-        index_ptr[29] = 7;
-        index_ptr[30] = 4;
-        index_ptr[31] = 5;
-        index_ptr[32] = 6;
-        index_ptr[33] = 5;
-        index_ptr[34] = 6;
-        index_ptr[35] = 7;
+        for (int i = 0; i < std::min<int>(index_count * sizeof(int), index_data.size()); ++i)
+        {
+            index_buffer->cpu_buffer()[i] = index_data[i];
+        }
         return std::make_shared<RenderDataImpl>(std::move(vertex_buffer.value()), std::move(index_buffer.value()),
                                                 layout, vertex_count, index_count);
     }

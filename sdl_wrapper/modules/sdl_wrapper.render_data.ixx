@@ -24,6 +24,7 @@ namespace sopho
             std::uint32_t vertex_count{};
             std::uint32_t index_count{};
             std::vector<std::byte> vertex_data{};
+            std::vector<std::byte> index_data{};
 
             Builder& set_vertex_layout(VertexLayout new_layout)
             {
@@ -50,6 +51,13 @@ namespace sopho
                 vertex_data =
                     std::vector<std::byte>(reinterpret_cast<const std::byte*>(vertices.data()),
                                            reinterpret_cast<const std::byte*>(vertices.data()) + vertices.size_bytes());
+                return *this;
+            }
+            Builder& set_indices(std::span<const uint32_t> indices)
+            {
+                index_data =
+                    std::vector<std::byte>(reinterpret_cast<const std::byte*>(indices.data()),
+                                           reinterpret_cast<const std::byte*>(indices.data()) + indices.size_bytes());
                 return *this;
             }
 
