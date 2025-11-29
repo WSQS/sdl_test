@@ -42,24 +42,26 @@ namespace sopho
                          SDL_GetError());
             return std::unexpected(rst.error());
         }
-
-        // 3. Acquire a command buffer and enqueue the copy pass.
-        auto* command_buffer = SDL_AcquireGPUCommandBuffer(device);
-        if (!command_buffer)
+        GpuCommandBufferRaii command_buffer_raii;
         {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to acquire GPU command buffer: %s", __FILE__, __LINE__,
-                         SDL_GetError());
+            // 3. Acquire a command buffer and enqueue the copy pass.
+            auto* command_buffer = SDL_AcquireGPUCommandBuffer(device);
+            if (!command_buffer)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to acquire GPU command buffer: %s", __FILE__, __LINE__,
+                             SDL_GetError());
 
-            return std::unexpected(GpuError::ACQUIRE_COMMAND_BUFFER_FAILED);
+                return std::unexpected(GpuError::ACQUIRE_COMMAND_BUFFER_FAILED);
+            }
+            command_buffer_raii.reset(command_buffer);
         }
 
-        auto* copy_pass = SDL_BeginGPUCopyPass(command_buffer);
+        auto* copy_pass = SDL_BeginGPUCopyPass(command_buffer_raii.raw());
 
         if (!copy_pass)
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to begin GPU copy pass: %s", __FILE__, __LINE__,
                          SDL_GetError());
-            SDL_SubmitGPUCommandBuffer(command_buffer);
             return std::unexpected(GpuError::BEGIN_COPY_PASS_FAILED);
         }
 
@@ -75,11 +77,6 @@ namespace sopho
         SDL_UploadToGPUBuffer(copy_pass, &location, &region, false);
 
         SDL_EndGPUCopyPass(copy_pass);
-        if (!SDL_SubmitGPUCommandBuffer(command_buffer))
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
-            return std::unexpected(GpuError::SUBMIT_COMMAND_FAILED);
-        }
 
         return std::monostate{};
     }
