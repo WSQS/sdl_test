@@ -30,6 +30,11 @@ import glsl_reflector;
 import sdl_wrapper;
 import logos;
 
+struct VertexType
+{
+    float x{}, y{}, z{}, u{}, v{};
+};
+
 /**
  * @brief Loads image data from the test texture file.
  *
@@ -155,11 +160,17 @@ public:
             return SDL_APP_FAILURE;
         }
 
+        std::vector<VertexType> vertices{
+            {0.5, 0.5, 0.5, 0., 0.},  {-0.5, 0.5, 0.5, 1., 0.},  {0.5, -0.5, 0.5, 0., 1.},  {-0.5, -0.5, 0.5, 1., 1.},
+            {0.5, 0.5, -0.5, 1., 1.}, {-0.5, 0.5, -0.5, 0., 1.}, {0.5, -0.5, -0.5, 1., 0.}, {-0.5, -0.5, -0.5, 0., 0.},
+        };
+
         // 3. Create vertex buffer.
         auto render_data = sopho::RenderData::Builder{}
                                .set_vertex_layout(pw_result.value().vertex_layout())
                                .set_vertex_count(8)
                                .set_index_count(36)
+                               .set_vertices(std::span(vertices))
                                .build(*m_gpu.get());
         if (!render_data)
         {

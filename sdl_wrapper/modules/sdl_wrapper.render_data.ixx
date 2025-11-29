@@ -7,6 +7,7 @@ module;
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <span>
 #include <variant>
 #include <vector>
 export module sdl_wrapper:render_data;
@@ -22,6 +23,7 @@ namespace sopho
             VertexLayout layout{};
             std::uint32_t vertex_count{};
             std::uint32_t index_count{};
+            std::vector<std::byte> vertex_data{};
 
             Builder& set_vertex_layout(VertexLayout new_layout)
             {
@@ -38,6 +40,16 @@ namespace sopho
             Builder& set_index_count(std::uint32_t new_index_count)
             {
                 index_count = new_index_count;
+                return *this;
+            }
+
+            template <typename VertexType>
+            Builder& set_vertices(std::span<VertexType> vertices)
+            {
+                static_assert(std::is_trivially_copyable_v<VertexType>, "VertexType must be trivially copyable");
+                vertex_data =
+                    std::vector<std::byte>(reinterpret_cast<const std::byte*>(vertices.data()),
+                                           reinterpret_cast<const std::byte*>(vertices.data()) + vertices.size_bytes());
                 return *this;
             }
 
