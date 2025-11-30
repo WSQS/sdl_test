@@ -2,6 +2,7 @@
 // Created by sophomore on 11/26/25.
 //
 module;
+#include <cassert>
 #include <expected>
 #include <memory>
 #include "SDL3/SDL_gpu.h"
@@ -27,13 +28,14 @@ namespace sopho
         {
             return std::unexpected(index_buffer.error());
         }
-
-        for (int i = 0; i < std::min<int>(size, vertex_data.size()); ++i)
+        assert(vertex_data.size() <= size);
+        for (int i = 0; i < vertex_data.size(); ++i)
         {
             vertex_buffer->cpu_buffer()[i] = vertex_data[i];
         }
 
-        for (int i = 0; i < std::min<int>(index_count * sizeof(int), index_data.size()); ++i)
+        assert(index_data.size() <= index_count * sizeof(int));
+        for (int i = 0; i < index_data.size(); ++i)
         {
             index_buffer->cpu_buffer()[i] = index_data[i];
         }
