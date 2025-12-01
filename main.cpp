@@ -86,7 +86,9 @@ class UserApp : public sopho::App
 
     // camera state
     float yaw = 0.0f;
+    float yaw_speed = 0.0f;
     float pitch = 0.0f;
+    float pitch_speed = 0.0f;
 
     sopho::Mat<float, 1, 3> location{};
 
@@ -292,6 +294,9 @@ public:
             m_fps_frames = 0;
             m_fps_accumulator = 0.0;
         }
+        pitch += pitch_speed * dt;
+        pitch = std::clamp<float>(pitch, -std::numbers::pi_v<float> / 2, +std::numbers::pi_v<float> / 2);
+        yaw += yaw_speed * dt;
         return SDL_APP_CONTINUE;
     }
 
@@ -598,55 +603,106 @@ public:
 
         if (!io.WantCaptureKeyboard)
         {
-            if (event->type == SDL_EVENT_KEY_DOWN)
+            switch (event->type)
             {
-                switch (event->key.key)
+            case SDL_EVENT_KEY_DOWN:
                 {
-                case SDLK_UP:
-                    pitch += 0.1F;
-                    pitch = std::clamp<float>(pitch, -std::numbers::pi_v<float> / 2, +std::numbers::pi_v<float> / 2);
-                    break;
-                case SDLK_DOWN:
-                    pitch -= 0.1F;
-                    pitch = std::clamp<float>(pitch, -std::numbers::pi_v<float> / 2, +std::numbers::pi_v<float> / 2);
-                    break;
-                case SDLK_LEFT:
-                    yaw -= 0.1F;
-                    break;
-                case SDLK_RIGHT:
-                    yaw += 0.1F;
-                    break;
-                case SDLK_W:
-                    location = location +
-                        ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
-                         sopho::Mat<float, 1, 4>{0.f, 0.f, -1.f, 1.f})
-                                .resize<1, 3>() *
-                            0.1;
-                    break;
-                case SDLK_S:
-                    location = location +
-                        ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
-                         sopho::Mat<float, 1, 4>{0.f, 0.f, -1.f, 1.f})
-                                .resize<1, 3>() *
-                            -0.1;
-                    break;
-                case SDLK_A:
-                    location = location +
-                        ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
-                         sopho::Mat<float, 1, 4>{1.f, 0.f, 0.f, 1.f})
-                                .resize<1, 3>() *
-                            -0.1;
-                    break;
-                case SDLK_D:
-                    location = location +
-                        ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
-                         sopho::Mat<float, 1, 4>{1.f, 0.f, 0.f, 1.f})
-                                .resize<1, 3>() *
-                            0.1;
-                    break;
-                default:
-                    break;
+                    switch (event->key.key)
+                    {
+                    case SDLK_UP:
+                        pitch_speed = 0.5F;
+                        break;
+                    case SDLK_DOWN:
+                        pitch_speed = -0.5F;
+                        break;
+                    case SDLK_LEFT:
+                        yaw_speed = -0.5F;
+                        break;
+                    case SDLK_RIGHT:
+                        yaw_speed = 0.5F;
+                        break;
+                    case SDLK_W:
+                        location = location +
+                            ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
+                             sopho::Mat<float, 1, 4>{0.f, 0.f, -1.f, 1.f})
+                                    .resize<1, 3>() *
+                                0.1;
+                        break;
+                    case SDLK_S:
+                        location = location +
+                            ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
+                             sopho::Mat<float, 1, 4>{0.f, 0.f, -1.f, 1.f})
+                                    .resize<1, 3>() *
+                                -0.1;
+                        break;
+                    case SDLK_A:
+                        location = location +
+                            ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
+                             sopho::Mat<float, 1, 4>{1.f, 0.f, 0.f, 1.f})
+                                    .resize<1, 3>() *
+                                -0.1;
+                        break;
+                    case SDLK_D:
+                        location = location +
+                            ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
+                             sopho::Mat<float, 1, 4>{1.f, 0.f, 0.f, 1.f})
+                                    .resize<1, 3>() *
+                                0.1;
+                        break;
+                    default:
+                        break;
+                    }
                 }
+                break;
+            case SDL_EVENT_KEY_UP:
+                {
+                    switch (event->key.key)
+                    {
+                    case SDLK_UP:
+                        pitch_speed = 0.F;
+                        break;
+                    case SDLK_DOWN:
+                        pitch_speed = 0.F;
+                        break;
+                    case SDLK_LEFT:
+                        yaw_speed = 0.F;
+                        break;
+                    case SDLK_RIGHT:
+                        yaw_speed = 0.F;
+                        break;
+                    case SDLK_W:
+                        location = location +
+                            ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
+                             sopho::Mat<float, 1, 4>{0.f, 0.f, -1.f, 1.f})
+                                    .resize<1, 3>() *
+                                0.1;
+                        break;
+                    case SDLK_S:
+                        location = location +
+                            ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
+                             sopho::Mat<float, 1, 4>{0.f, 0.f, -1.f, 1.f})
+                                    .resize<1, 3>() *
+                                -0.1;
+                        break;
+                    case SDLK_A:
+                        location = location +
+                            ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
+                             sopho::Mat<float, 1, 4>{1.f, 0.f, 0.f, 1.f})
+                                    .resize<1, 3>() *
+                                -0.1;
+                        break;
+                    case SDLK_D:
+                        location = location +
+                            ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
+                             sopho::Mat<float, 1, 4>{1.f, 0.f, 0.f, 1.f})
+                                    .resize<1, 3>() *
+                                0.1;
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                break;
             }
         }
 
