@@ -9,4 +9,5 @@ export namespace sopho
     class GpuWrapper;
     class RenderProcedural;
     class RenderData;
+    class TextureWrapper;
 }

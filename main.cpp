@@ -8,9 +8,9 @@
 #include <format>
 #include <memory>
 #include <numbers>
+#include <span>
 #include <string>
 #include <variant>
-#include <span>
 
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
@@ -526,33 +526,12 @@ public:
         SDL_GPURenderPass* renderPass =
             SDL_BeginGPURenderPass(command_buffer_raii.raw(), &colorTargetInfo, 1, &depthStencilTargetInfo);
 
-        // Bind pipeline if available.
-
-        SDL_BindGPUGraphicsPipeline(renderPass, m_renderable->procedural()->raw());
-
-        // Compute camera matrix and upload as a vertex uniform.
-        SDL_PushGPUVertexUniformData(command_buffer_raii.raw(), 0,
-                                     (sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) *
-                                      sopho::translate(0, 0, -5) * sopho::rotation_x(-pitch) * sopho::rotation_y(yaw))
-                                         .data(),
-                                     sizeof(sopho::Mat<float, 4, 4>));
-
-        SDL_BindGPUVertexBuffers(renderPass, 0, m_renderable->data()->get_vertex_buffer_binding().data(),
-                                 m_renderable->data()->get_vertex_buffer_binding().size());
-
-        SDL_BindGPUIndexBuffer(renderPass, &m_renderable->data()->get_index_buffer_binding(),
-                               SDL_GPU_INDEXELEMENTSIZE_32BIT);
-        if (m_texture_wrapper)
-        {
-            SDL_BindGPUFragmentSamplers(renderPass, 0, m_texture_wrapper->get(), 1);
-        }
-        else
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "Texture not available, skip binding sampler");
-        }
-
-
-        SDL_DrawGPUIndexedPrimitives(renderPass, 36, 1, 0, 0, 0);
+        m_renderable->draw(
+            sopho::RenderContex{.render_pass = renderPass,
+                                .command_buffer = command_buffer_raii.raw(),
+                                .camera_mat = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) *
+                                    sopho::translate(0, 0, -5) * sopho::rotation_x(-pitch) * sopho::rotation_y(yaw),
+                                .texture_wrapper = m_texture_wrapper});
 
         SDL_EndGPURenderPass(renderPass);
 
