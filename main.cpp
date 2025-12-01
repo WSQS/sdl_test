@@ -197,6 +197,9 @@ public:
         m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
             .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result.value())),
             .m_render_data = std::move(render_data.value())}));
+        m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
+            .m_render_procedural = m_renderables[0]->procedural(),
+            .m_render_data = m_renderables[0]->data()}));
 
         // 7. Setup Dear ImGui context.
         IMGUI_CHECKVERSION();
@@ -525,11 +528,12 @@ public:
         SDL_GPURenderPass* renderPass =
             SDL_BeginGPURenderPass(command_buffer_raii.raw(), &colorTargetInfo, 1, &depthStencilTargetInfo);
 
-        auto camera_mat = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) *
-            sopho::translate(0, 0, -5) * sopho::rotation_x(-pitch) * sopho::rotation_y(yaw);
 
-        for (auto renderable : m_renderables)
+        for (int i = 0; i < m_renderables.size(); i++)
         {
+            auto renderable = m_renderables[i];
+            auto camera_mat = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) *
+                sopho::translate(0, 0.5 * i, -i - 5) * sopho::rotation_x(-pitch) * sopho::rotation_y(yaw);
             renderable->draw(sopho::RenderContex{.render_pass = renderPass,
                                                  .command_buffer = command_buffer_raii.raw(),
                                                  .camera_mat = camera_mat,
