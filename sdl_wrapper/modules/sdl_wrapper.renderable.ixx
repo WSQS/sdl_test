@@ -12,7 +12,7 @@ import :decl;
 namespace sopho
 {
 
-    export struct RenderContex
+    export struct RenderContext
     {
         SDL_GPURenderPass* render_pass{};
         SDL_GPUCommandBuffer* command_buffer{};
@@ -27,6 +27,6 @@ namespace sopho
         std::shared_ptr<RenderData> m_render_data{};
         auto& procedural() { return m_render_procedural; }
         std::shared_ptr<RenderData>& data() { return m_render_data; }
-        checkable<std::monostate> draw(RenderContex render_contex);
+        checkable<std::monostate> draw(RenderContext render_contex);
     };
 } // namespace sopho

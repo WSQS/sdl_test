@@ -12,7 +12,7 @@ import :render_procedural;
 import :render_data;
 namespace sopho
 {
-    checkable<std::monostate> Renderable::draw(RenderContex render_contex)
+    checkable<std::monostate> Renderable::draw(RenderContext render_contex)
     {
         auto submit_result = procedural()->submit();
         if (!submit_result)
