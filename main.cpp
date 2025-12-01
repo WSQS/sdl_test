@@ -91,6 +91,7 @@ class UserApp : public sopho::App
     float pitch_speed = 0.0f;
 
     sopho::Mat<float, 1, 3> location{};
+    sopho::Mat<float, 1, 4> speed{};
 
     int win_w = 0, win_h = 0;
 
@@ -297,6 +298,8 @@ public:
         pitch += pitch_speed * dt;
         pitch = std::clamp<float>(pitch, -std::numbers::pi_v<float> / 2, +std::numbers::pi_v<float> / 2);
         yaw += yaw_speed * dt;
+        location =
+            location + ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() * speed).resize<1, 3>() * 0.1;
         return SDL_APP_CONTINUE;
     }
 
@@ -622,32 +625,16 @@ public:
                         yaw_speed = 0.5F;
                         break;
                     case SDLK_W:
-                        location = location +
-                            ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
-                             sopho::Mat<float, 1, 4>{0.f, 0.f, -1.f, 1.f})
-                                    .resize<1, 3>() *
-                                0.1;
+                        speed(2) = -1.F;
                         break;
                     case SDLK_S:
-                        location = location +
-                            ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
-                             sopho::Mat<float, 1, 4>{0.f, 0.f, -1.f, 1.f})
-                                    .resize<1, 3>() *
-                                -0.1;
+                        speed(2) = 1.F;
                         break;
                     case SDLK_A:
-                        location = location +
-                            ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
-                             sopho::Mat<float, 1, 4>{1.f, 0.f, 0.f, 1.f})
-                                    .resize<1, 3>() *
-                                -0.1;
+                        speed(0) = -1.F;
                         break;
                     case SDLK_D:
-                        location = location +
-                            ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
-                             sopho::Mat<float, 1, 4>{1.f, 0.f, 0.f, 1.f})
-                                    .resize<1, 3>() *
-                                0.1;
+                        speed(0) = 1.F;
                         break;
                     default:
                         break;
@@ -671,32 +658,16 @@ public:
                         yaw_speed = 0.F;
                         break;
                     case SDLK_W:
-                        location = location +
-                            ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
-                             sopho::Mat<float, 1, 4>{0.f, 0.f, -1.f, 1.f})
-                                    .resize<1, 3>() *
-                                0.1;
+                        speed(2) = 0.F;
                         break;
                     case SDLK_S:
-                        location = location +
-                            ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
-                             sopho::Mat<float, 1, 4>{0.f, 0.f, -1.f, 1.f})
-                                    .resize<1, 3>() *
-                                -0.1;
+                        speed(2) = 0.F;
                         break;
                     case SDLK_A:
-                        location = location +
-                            ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
-                             sopho::Mat<float, 1, 4>{1.f, 0.f, 0.f, 1.f})
-                                    .resize<1, 3>() *
-                                -0.1;
+                        speed(0) = 0.F;
                         break;
                     case SDLK_D:
-                        location = location +
-                            ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
-                             sopho::Mat<float, 1, 4>{1.f, 0.f, 0.f, 1.f})
-                                    .resize<1, 3>() *
-                                0.1;
+                        speed(0) = 0.F;
                         break;
                     default:
                         break;
