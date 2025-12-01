@@ -82,6 +82,8 @@ class UserApp : public sopho::App
     float yaw = 0.0f;
     float pitch = 0.0f;
 
+    sopho::Mat<float, 1, 3> location{};
+
     int win_w = 0, win_h = 0;
 
     std::string vertex_source =
@@ -198,8 +200,7 @@ public:
             .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result.value())),
             .m_render_data = std::move(render_data.value())}));
         m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
-            .m_render_procedural = m_renderables[0]->procedural(),
-            .m_render_data = m_renderables[0]->data()}));
+            .m_render_procedural = m_renderables[0]->procedural(), .m_render_data = m_renderables[0]->data()}));
 
         // 7. Setup Dear ImGui context.
         IMGUI_CHECKVERSION();
@@ -533,7 +534,8 @@ public:
         {
             auto renderable = m_renderables[i];
             auto camera_mat = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) *
-                sopho::translate(0, 0.5 * i, -i - 5) * sopho::rotation_x(-pitch) * sopho::rotation_y(yaw);
+                sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
+                sopho::translate(0 - location(0), 0.5 * i - location(1), -i - 5 - location(2));
             renderable->draw(sopho::RenderContex{.render_pass = renderPass,
                                                  .command_buffer = command_buffer_raii.raw(),
                                                  .camera_mat = camera_mat,
@@ -587,6 +589,18 @@ public:
                     break;
                 case SDLK_RIGHT:
                     yaw += 0.1F;
+                    break;
+                case SDLK_W:
+                    location(2) -= 0.1;
+                    break;
+                case SDLK_S:
+                    location(2) += 0.1;
+                    break;
+                case SDLK_A:
+                    location(0) -= 0.1;
+                    break;
+                case SDLK_D:
+                    location(0) += 0.1;
                     break;
                 default:
                     break;
