@@ -128,6 +128,17 @@ void main()
         discard;
 })WSQ";
 
+    std::string fragment_source2 =
+        R"WSQ(#version 460
+
+layout (location = 0) in vec2 v_uv;
+layout (location = 0) out vec4 FragColor;
+
+void main()
+{
+    FragColor = vec4(1,1,1,1);
+})WSQ";
+
 public:
     /**
      * @brief Initialize application GPU resources, shaders, vertex data, camera, and Dear ImGui.
@@ -208,8 +219,20 @@ public:
         m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
             .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result.value())),
             .m_render_data = std::move(render_data.value())}));
+
+        auto pw_result2 = m_gpu->create_render_procedural();
+        pipeline_init = pw_result2.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
+                            .and_then([&](std::monostate) { return pw_result2->set_fragment_shader(fragment_source2); })
+                            .and_then([&](std::monostate) { return pw_result2->submit(); });
+        if (!pipeline_init)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to initialize pipeline, error = %d",
+                         static_cast<int>(pipeline_init.error()));
+            return SDL_APP_FAILURE;
+        }
         m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
-            .m_render_procedural = m_renderables[0]->procedural(), .m_render_data = m_renderables[0]->data()}));
+            .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result2.value())),
+            .m_render_data = m_renderables[0]->data()}));
 
         // 7. Setup Dear ImGui context.
         IMGUI_CHECKVERSION();
@@ -566,7 +589,7 @@ public:
             renderable->draw(sopho::RenderContex{.render_pass = renderPass,
                                                  .command_buffer = command_buffer_raii.raw(),
                                                  .camera_mat = camera_mat,
-                                                 .texture_wrapper = m_texture_wrapper});
+                                                 .texture_wrapper = i == 0 ? m_texture_wrapper : nullptr});
         }
 
         SDL_EndGPURenderPass(renderPass);
