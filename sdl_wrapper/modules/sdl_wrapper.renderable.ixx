@@ -4,6 +4,7 @@
 module;
 #include <SDL3/SDL_gpu.h>
 #include <memory>
+#include <variant>
 export module sdl_wrapper:renderable;
 import logos;
 import data_type;
