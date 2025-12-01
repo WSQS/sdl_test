@@ -49,7 +49,7 @@ graph TD
 
 ## Track
 
-- [ ] Getting started
+- [x] Getting started
     - [x] OpenGL
     - [x] Creating a window
     - [x] Hello Window
@@ -58,9 +58,9 @@ graph TD
     - [x] Textures
     - [x] Transformations
     - [x] Coordinate Systems
-    - [ ] Camera
+    - [x] Camera
 - [ ] Lighting
-    - [ ] Colors
+    - [x] Colors
     - [ ] Basic Lighting
     - [ ] Materials
     - [ ] Lighting maps
