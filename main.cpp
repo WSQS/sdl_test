@@ -563,7 +563,7 @@ public:
 
         // Create the color target.
         SDL_GPUColorTargetInfo colorTargetInfo{};
-        colorTargetInfo.clear_color = {240 / 255.0F, 240 / 255.0F, 240 / 255.0F, 255 / 255.0F};
+        colorTargetInfo.clear_color = {135 / 255.0F, 135 / 255.0F, 135 / 255.0F, 255 / 255.0F};
         colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
         colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
         colorTargetInfo.texture = swapchainTexture;
