@@ -74,7 +74,7 @@ class UserApp : public sopho::App
 {
     std::chrono::steady_clock::time_point m_last_time{std::chrono::steady_clock::now()};
     double m_fps_accumulator = 0.0;
-    int    m_fps_frames = 0;
+    int m_fps_frames = 0;
     // GPU + resources
     std::shared_ptr<sopho::GpuWrapper> m_gpu{};
 
@@ -288,7 +288,7 @@ public:
         m_fps_accumulator += dt;
         if (m_fps_accumulator >= 1)
         {
-            SDL_Log("Fps: %f",m_fps_frames / m_fps_accumulator);
+            SDL_Log("Fps: %f in %f s", m_fps_frames / m_fps_accumulator, m_fps_accumulator);
             m_fps_frames = 0;
             m_fps_accumulator = 0.0;
         }
