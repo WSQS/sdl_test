@@ -10,6 +10,7 @@
 #include <numbers>
 #include <string>
 #include <variant>
+#include <span>
 
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
