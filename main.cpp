@@ -72,7 +72,7 @@ class UserApp : public sopho::App
     // GPU + resources
     std::shared_ptr<sopho::GpuWrapper> m_gpu{};
 
-    std::shared_ptr<sopho::Renderable> m_renderable{};
+    std::vector<std::shared_ptr<sopho::Renderable>> m_renderables{};
 
     sopho::ImageData m_image_data;
     std::shared_ptr<sopho::TextureWrapper> m_texture_wrapper{};
@@ -194,9 +194,9 @@ public:
             return SDL_APP_FAILURE;
         }
 
-        m_renderable = std::make_shared<sopho::Renderable>(sopho::Renderable{
+        m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
             .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result.value())),
-            .m_render_data = std::move(render_data.value())});
+            .m_render_data = std::move(render_data.value())}));
 
         // 7. Setup Dear ImGui context.
         IMGUI_CHECKVERSION();
@@ -299,122 +299,131 @@ public:
         std::array<const char*, 3> items = {"Node", "Vertex", "Fragment"};
         ImGui::Combo("##Object", &current, items.data(), static_cast<int>(items.size()));
 
-        switch (current)
-        {
-        case 0: // Vertex Edit
-            {
-                bool changed = false;
-                auto editor_data = m_renderable->data()->vertex_view();
-                auto raw_ptr = editor_data.raw;
-                for (int vertex_index = 0; vertex_index < editor_data.vertex_count; ++vertex_index)
-                {
-                    for (const auto& format : editor_data.layout.get_vertex_reflection().inputs)
-                    {
-                        switch (format.basic_type)
-                        {
-                        case sopho::BasicType::FLOAT:
-                            {
-                                switch (format.vector_size)
-                                {
-                                case 2:
-                                    changed |= ImGui::DragFloat2(std::format("{}{}", format.name, vertex_index).data(),
-                                                                 reinterpret_cast<float*>(raw_ptr), 0.01f, -1.f, 1.f);
-                                    break;
-                                case 3:
-                                    changed |= ImGui::DragFloat3(std::format("{}{}", format.name, vertex_index).data(),
-                                                                 reinterpret_cast<float*>(raw_ptr), 0.01f, -1.f, 1.f);
-                                    break;
-                                case 4:
-                                    changed |= ImGui::DragFloat4(std::format("{}{}", format.name, vertex_index).data(),
-                                                                 reinterpret_cast<float*>(raw_ptr), 0.01f, -1.f, 1.f);
-                                    break;
-                                default:
-                                    SDL_Log("Not implemented size");
-                                    assert(false);
-                                    break;
-                                }
-                            }
-                            break;
-                        default:
-                            SDL_Log("Not implemented Basic type");
-                            assert(false);
-                            break;
-                        }
-                        auto size = sopho::get_size(sopho::to_sdl_format(format.basic_type, format.vector_size));
-                        raw_ptr += size;
-                    }
-                }
-                auto index_view = m_renderable->data()->index_view();
-                auto index_ptr = index_view.raw;
-                for (int index_index = 0; index_index < index_view.index_count; index_index += 3)
-                {
-                    changed |= ImGui::InputInt3(std::format("index_{}", index_index).data(),
-                                                reinterpret_cast<int*>(index_ptr));
-                    index_ptr += 3 * sizeof(int);
-                }
-                if (changed)
-                {
-                    auto upload_result = m_renderable->data()->upload();
-                    if (!upload_result)
-                    {
-                        SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to upload vertex buffer in tick(), error = %d",
-                                     static_cast<int>(upload_result.error()));
-                    }
-                }
-            }
-            break;
-
-        case 1: // Vertex shader editor
-            {
-                auto line_count = std::count(vertex_source.begin(), vertex_source.end(), '\n');
-                ImVec2 size(ImGui::GetContentRegionAvail().x,
-                            std::min(ImGui::GetTextLineHeight() * (line_count + 3), ImGui::GetContentRegionAvail().y));
-
-                if (ImGui::InputTextMultiline("##vertex editor", &vertex_source, size,
-                                              ImGuiInputTextFlags_AllowTabInput))
-                {
-                    auto result = m_renderable->procedural()->set_vertex_shader(vertex_source);
-                    if (!result)
-                    {
-                        SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to set vertex shader from editor, error = %d",
-                                     static_cast<int>(result.error()));
-                    }
-                    else
-                    {
-                        auto new_data = sopho::RenderData::Builder{}
-                                            .set_vertex_layout(m_renderable->procedural()->vertex_layout())
-                                            .set_vertex_count(8)
-                                            .set_index_count(36)
-                                            .build(*m_gpu.get());
-                        m_renderable->data() = std::move(new_data.value());
-                        m_renderable->data()->upload();
-                    }
-                }
-            }
-            break;
-
-        case 2: // Fragment shader editor
-            {
-                auto line_count = std::count(fragment_source.begin(), fragment_source.end(), '\n');
-                ImVec2 size(ImGui::GetContentRegionAvail().x,
-                            std::min(ImGui::GetTextLineHeight() * (line_count + 3), ImGui::GetContentRegionAvail().y));
-
-                if (ImGui::InputTextMultiline("##fragment editor", &fragment_source, size,
-                                              ImGuiInputTextFlags_AllowTabInput))
-                {
-                    auto result = m_renderable->procedural()->set_fragment_shader(fragment_source);
-                    if (!result)
-                    {
-                        SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to set fragment shader from editor, error = %d",
-                                     static_cast<int>(result.error()));
-                    }
-                }
-            }
-            break;
-
-        default:
-            break;
-        }
+        // switch (current)
+        // {
+        // case 0: // Vertex Edit
+        //     {
+        //         bool changed = false;
+        //         auto editor_data = m_renderable->data()->vertex_view();
+        //         auto raw_ptr = editor_data.raw;
+        //         for (int vertex_index = 0; vertex_index < editor_data.vertex_count; ++vertex_index)
+        //         {
+        //             for (const auto& format : editor_data.layout.get_vertex_reflection().inputs)
+        //             {
+        //                 switch (format.basic_type)
+        //                 {
+        //                 case sopho::BasicType::FLOAT:
+        //                     {
+        //                         switch (format.vector_size)
+        //                         {
+        //                         case 2:
+        //                             changed |= ImGui::DragFloat2(std::format("{}{}", format.name,
+        //                             vertex_index).data(),
+        //                                                          reinterpret_cast<float*>(raw_ptr), 0.01f,
+        //                                                          -1.f, 1.f);
+        //                             break;
+        //                         case 3:
+        //                             changed |= ImGui::DragFloat3(std::format("{}{}", format.name,
+        //                             vertex_index).data(),
+        //                                                          reinterpret_cast<float*>(raw_ptr), 0.01f,
+        //                                                          -1.f, 1.f);
+        //                             break;
+        //                         case 4:
+        //                             changed |= ImGui::DragFloat4(std::format("{}{}", format.name,
+        //                             vertex_index).data(),
+        //                                                          reinterpret_cast<float*>(raw_ptr), 0.01f,
+        //                                                          -1.f, 1.f);
+        //                             break;
+        //                         default:
+        //                             SDL_Log("Not implemented size");
+        //                             assert(false);
+        //                             break;
+        //                         }
+        //                     }
+        //                     break;
+        //                 default:
+        //                     SDL_Log("Not implemented Basic type");
+        //                     assert(false);
+        //                     break;
+        //                 }
+        //                 auto size = sopho::get_size(sopho::to_sdl_format(format.basic_type, format.vector_size));
+        //                 raw_ptr += size;
+        //             }
+        //         }
+        //         auto index_view = m_renderable->data()->index_view();
+        //         auto index_ptr = index_view.raw;
+        //         for (int index_index = 0; index_index < index_view.index_count; index_index += 3)
+        //         {
+        //             changed |= ImGui::InputInt3(std::format("index_{}", index_index).data(),
+        //                                         reinterpret_cast<int*>(index_ptr));
+        //             index_ptr += 3 * sizeof(int);
+        //         }
+        //         if (changed)
+        //         {
+        //             auto upload_result = m_renderable->data()->upload();
+        //             if (!upload_result)
+        //             {
+        //                 SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to upload vertex buffer in tick(), error = %d",
+        //                              static_cast<int>(upload_result.error()));
+        //             }
+        //         }
+        //     }
+        //     break;
+        //
+        // case 1: // Vertex shader editor
+        //     {
+        //         auto line_count = std::count(vertex_source.begin(), vertex_source.end(), '\n');
+        //         ImVec2 size(ImGui::GetContentRegionAvail().x,
+        //                     std::min(ImGui::GetTextLineHeight() * (line_count + 3),
+        //                     ImGui::GetContentRegionAvail().y));
+        //
+        //         if (ImGui::InputTextMultiline("##vertex editor", &vertex_source, size,
+        //                                       ImGuiInputTextFlags_AllowTabInput))
+        //         {
+        //             auto result = m_renderable->procedural()->set_vertex_shader(vertex_source);
+        //             if (!result)
+        //             {
+        //                 SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to set vertex shader from editor, error = %d",
+        //                              static_cast<int>(result.error()));
+        //             }
+        //             else
+        //             {
+        //                 auto new_data = sopho::RenderData::Builder{}
+        //                                     .set_vertex_layout(m_renderable->procedural()->vertex_layout())
+        //                                     .set_vertex_count(8)
+        //                                     .set_index_count(36)
+        //                                     .build(*m_gpu.get());
+        //                 m_renderable->data() = std::move(new_data.value());
+        //                 m_renderable->data()->upload();
+        //             }
+        //         }
+        //     }
+        //     break;
+        //
+        // case 2: // Fragment shader editor
+        //     {
+        //         auto line_count = std::count(fragment_source.begin(), fragment_source.end(), '\n');
+        //         ImVec2 size(ImGui::GetContentRegionAvail().x,
+        //                     std::min(ImGui::GetTextLineHeight() * (line_count + 3),
+        //                     ImGui::GetContentRegionAvail().y));
+        //
+        //         if (ImGui::InputTextMultiline("##fragment editor", &fragment_source, size,
+        //                                       ImGuiInputTextFlags_AllowTabInput))
+        //         {
+        //             auto result = m_renderable->procedural()->set_fragment_shader(fragment_source);
+        //             if (!result)
+        //             {
+        //                 SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to set fragment shader from editor, error =
+        //                 %d",
+        //                              static_cast<int>(result.error()));
+        //             }
+        //         }
+        //     }
+        //     break;
+        //
+        // default:
+        //     break;
+        // }
 
         ImGui::End();
         ImGui::EndFrame();
@@ -434,16 +443,6 @@ public:
     {
         ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();
-
-        // Rebuild pipeline if needed.
-        auto pipeline_submit = m_renderable->procedural()->submit();
-        if (!pipeline_submit)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "Pipeline submit failed, error = %d",
-                         static_cast<int>(pipeline_submit.error()));
-            // Upload pipeline failed, no need to draw.
-            return SDL_APP_CONTINUE;
-        }
 
         SDL_GPUDevice* device = m_gpu->device();
         if (!device)
@@ -526,12 +525,16 @@ public:
         SDL_GPURenderPass* renderPass =
             SDL_BeginGPURenderPass(command_buffer_raii.raw(), &colorTargetInfo, 1, &depthStencilTargetInfo);
 
-        m_renderable->draw(
-            sopho::RenderContex{.render_pass = renderPass,
-                                .command_buffer = command_buffer_raii.raw(),
-                                .camera_mat = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) *
-                                    sopho::translate(0, 0, -5) * sopho::rotation_x(-pitch) * sopho::rotation_y(yaw),
-                                .texture_wrapper = m_texture_wrapper});
+        auto camera_mat = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) *
+            sopho::translate(0, 0, -5) * sopho::rotation_x(-pitch) * sopho::rotation_y(yaw);
+
+        for (auto renderable : m_renderables)
+        {
+            renderable->draw(sopho::RenderContex{.render_pass = renderPass,
+                                                 .command_buffer = command_buffer_raii.raw(),
+                                                 .camera_mat = camera_mat,
+                                                 .texture_wrapper = m_texture_wrapper});
+        }
 
         SDL_EndGPURenderPass(renderPass);
 
