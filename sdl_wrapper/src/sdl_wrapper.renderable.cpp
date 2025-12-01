@@ -3,6 +3,7 @@
 //
 module;
 #include <SDL3/SDL_gpu.h>
+#include <expected>
 #include <variant>
 module sdl_wrapper;
 import logos;
