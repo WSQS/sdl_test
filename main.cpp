@@ -22,6 +22,9 @@
 #include "SDL3/SDL_keycode.h"
 
 #define STB_IMAGE_IMPLEMENTATION
+#include <chrono>
+
+
 #include "stb_image.h"
 
 import lifecycle;
@@ -69,6 +72,9 @@ sopho::ImageData load_image()
 
 class UserApp : public sopho::App
 {
+    std::chrono::steady_clock::time_point m_last_time{std::chrono::steady_clock::now()};
+    double m_fps_accumulator = 0.0;
+    int    m_fps_frames = 0;
     // GPU + resources
     std::shared_ptr<sopho::GpuWrapper> m_gpu{};
 
@@ -273,6 +279,19 @@ public:
         };
 
         SceneDepthTexture = SDL_CreateGPUTexture(m_gpu->device(), &ci);
+        return SDL_APP_CONTINUE;
+    }
+
+    SDL_AppResult update(float dt)
+    {
+        m_fps_frames++;
+        m_fps_accumulator += dt;
+        if (m_fps_accumulator >= 1)
+        {
+            SDL_Log("Fps: %f",m_fps_frames / m_fps_accumulator);
+            m_fps_frames = 0;
+            m_fps_accumulator = 0.0;
+        }
         return SDL_APP_CONTINUE;
     }
 
@@ -556,7 +575,14 @@ public:
 
     SDL_AppResult iterate() override
     {
-        auto result = tick();
+        auto now{std::chrono::steady_clock::now()};
+        std::chrono::duration<double> delta = now - m_last_time;
+        m_last_time = now;
+        auto result = update(delta.count());
+        if (result == SDL_APP_CONTINUE)
+        {
+            result = tick();
+        }
         if (result == SDL_APP_CONTINUE)
         {
             result = draw();
