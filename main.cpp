@@ -591,16 +591,32 @@ public:
                     yaw += 0.1F;
                     break;
                 case SDLK_W:
-                    location(2) -= 0.1;
+                    location = location +
+                        ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
+                         sopho::Mat<float, 1, 4>{0.f, 0.f, -1.f, 1.f})
+                                .resize<1, 3>() *
+                            0.1;
                     break;
                 case SDLK_S:
-                    location(2) += 0.1;
+                    location = location +
+                        ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
+                         sopho::Mat<float, 1, 4>{0.f, 0.f, -1.f, 1.f})
+                                .resize<1, 3>() *
+                            -0.1;
                     break;
                 case SDLK_A:
-                    location(0) -= 0.1;
+                    location = location +
+                        ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
+                         sopho::Mat<float, 1, 4>{1.f, 0.f, 0.f, 1.f})
+                                .resize<1, 3>() *
+                            -0.1;
                     break;
                 case SDLK_D:
-                    location(0) += 0.1;
+                    location = location +
+                        ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() *
+                         sopho::Mat<float, 1, 4>{1.f, 0.f, 0.f, 1.f})
+                                .resize<1, 3>() *
+                            0.1;
                     break;
                 default:
                     break;
