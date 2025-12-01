@@ -27,7 +27,10 @@ namespace sopho
 
         SDL_BindGPUIndexBuffer(render_contex.render_pass, &data()->get_index_buffer_binding(),
                                SDL_GPU_INDEXELEMENTSIZE_32BIT);
-        SDL_BindGPUFragmentSamplers(render_contex.render_pass, 0, render_contex.texture_wrapper->get(), 1);
+        if (render_contex.texture_wrapper)
+        {
+            SDL_BindGPUFragmentSamplers(render_contex.render_pass, 0, render_contex.texture_wrapper->get(), 1);
+        }
         SDL_DrawGPUIndexedPrimitives(render_contex.render_pass, data()->index_view().index_count, 1, 0, 0, 0);
         return std::monostate{};
     }
