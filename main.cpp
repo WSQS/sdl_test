@@ -589,9 +589,9 @@ public:
                 sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
                 sopho::translate(0 - location(0), 0.5 * i - location(1), -i - 5 - location(2));
             renderable->draw(sopho::RenderContext{.render_pass = renderPass,
-                                                 .command_buffer = command_buffer_raii.raw(),
-                                                 .camera_mat = camera_mat,
-                                                 .texture_wrapper = i == 0 ? m_texture_wrapper : nullptr});
+                                                  .command_buffer = command_buffer_raii.raw(),
+                                                  .camera_mat = camera_mat,
+                                                  .texture_wrapper = i == 0 ? m_texture_wrapper : nullptr});
         }
 
         SDL_EndGPURenderPass(renderPass);
