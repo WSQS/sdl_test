@@ -659,6 +659,12 @@ public:
                     case SDLK_D:
                         speed(0) = 1.F;
                         break;
+                    case SDLK_E:
+                        speed(1) = 1.F;
+                        break;
+                    case SDLK_Q:
+                        speed(1) = -1.F;
+                        break;
                     default:
                         break;
                     }
@@ -691,6 +697,12 @@ public:
                         break;
                     case SDLK_D:
                         speed(0) = 0.F;
+                        break;
+                    case SDLK_Q:
+                        speed(1) = 0.F;
+                        break;
+                    case SDLK_E:
+                        speed(1) = 0.F;
                         break;
                     default:
                         break;
