@@ -92,6 +92,8 @@ class UserApp : public sopho::App
 
     sopho::Mat<float, 1, 3> location{};
     sopho::Mat<float, 1, 4> speed{};
+    bool m_dragging{};
+    float m_last_x{}, m_last_y{};
 
     int win_w = 0, win_h = 0;
 
@@ -712,6 +714,49 @@ public:
             }
         }
 
+        if (!io.WantCaptureMouse)
+        {
+            switch (event->type)
+            {
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                if (event->button.button == SDL_BUTTON_LEFT)
+                {
+                    m_dragging = true;
+                    m_last_x = event->button.x;
+                    m_last_y = event->button.y;
+                }
+                break;
+
+            case SDL_EVENT_MOUSE_BUTTON_UP:
+                if (event->button.button == SDL_BUTTON_LEFT)
+                {
+                    m_dragging = false;
+                }
+                break;
+
+            case SDL_EVENT_MOUSE_MOTION:
+                if (m_dragging)
+                {
+                    float x = event->motion.x;
+                    float y = event->motion.y;
+
+                    float dx = x - m_last_x;
+                    float dy = y - m_last_y;
+
+                    m_last_x = x;
+                    m_last_y = y;
+
+                    // 你自己的 yaw/pitch 变量（示例）
+                    yaw += dx * 0.01;
+                    pitch -= dy * 0.01;
+
+                    // 可选：限制 pitch 防止翻转
+                    pitch = std::clamp(pitch, -1.55f, 1.55f); // ~(-89°, 89°)
+                }
+                break;
+            }
+        }
+
         if (event->type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
         {
             return SDL_APP_SUCCESS;
@@ -735,7 +780,7 @@ public:
  *
  * @param argc Program argument count as passed to main.
  * @param argv Program argument vector as passed to main.
- * @return sopho::App* Pointer to a heap-allocated application object; the caller takes ownership and is responsible for
- * deleting it.
+ * @return sopho::App* Pointer to a heap-allocated application object; the caller takes ownership and is responsible
+ * for deleting it.
  */
 sopho::checkable<sopho::App*> create_app(int argc, char** argv) { return new UserApp(); }
