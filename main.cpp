@@ -638,18 +638,20 @@ public:
         SDL_GPURenderPass* renderPass =
             SDL_BeginGPURenderPass(command_buffer_raii.raw(), &colorTargetInfo, 1, &depthStencilTargetInfo);
 
-
-        for (int i = 0; i < m_renderables.size(); i++)
-        {
-            auto renderable = m_renderables[i];
-            auto camera_mat = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) *
-                sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
-                sopho::translate(0 - location(0), 0.5 * i - location(1), -i - 5 - location(2));
-            renderable->draw(sopho::RenderContext{.render_pass = renderPass,
-                                                  .command_buffer = command_buffer_raii.raw(),
-                                                  .camera_mat = camera_mat,
-                                                  .texture_wrapper = i == 0 ? m_texture_wrapper : nullptr});
-        }
+        auto renderable = m_renderables[0];
+        auto camera_mat = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) *
+            sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
+            sopho::translate(- location(0), - location(1), - 5 - location(2));
+        renderable->draw(sopho::RenderContext{.render_pass = renderPass,
+                                              .command_buffer = command_buffer_raii.raw(),
+                                              .camera_mat = camera_mat,
+                                              .texture_wrapper = m_texture_wrapper});
+        renderable = m_renderables[1];
+        camera_mat = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) * sopho::rotation_x(-pitch) *
+            sopho::rotation_y(yaw) * sopho::translate( - location(0), 0.5  - location(1),  -6 - location(2));
+        renderable->draw(sopho::RenderContext{.render_pass = renderPass,
+                                              .command_buffer = command_buffer_raii.raw(),
+                                              .camera_mat = camera_mat});
 
         SDL_EndGPURenderPass(renderPass);
 
