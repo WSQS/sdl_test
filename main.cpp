@@ -665,11 +665,12 @@ public:
             sopho::translate(-location(0), -location(1), -location(2));
         // Projection`
         camera_mat[2] = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 50);
-        renderable->draw(sopho::RenderContext{.render_pass = renderPass,
-                                              .command_buffer = command_buffer_raii.raw(),
-                                              .camera_mat = camera_mat,
-                                              .pos = std::array{sopho::Mat<float, 1, 4>{0.0f, 2.f, -6.0f}, location.resize<1,4>()},
-                                              .texture_wrapper = m_texture_wrapper});
+        renderable->draw(
+            sopho::RenderContext{.render_pass = renderPass,
+                                 .command_buffer = command_buffer_raii.raw(),
+                                 .camera_mat = camera_mat,
+                                 .pos = std::array{sopho::Mat<float, 1, 4>{0.0f, 2.f, -6.0f}, location.resize<1, 4>()},
+                                 .texture_wrapper = m_texture_wrapper});
         renderable = m_renderables[1];
         // Model
         camera_mat[0] = sopho::translate(0.0f, 2.f, -6.0f);
