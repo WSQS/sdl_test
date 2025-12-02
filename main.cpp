@@ -128,6 +128,7 @@ void main()
     FragColor = texture(uTexture, v_uv);
     if (FragColor.a <= 0.001)
         discard;
+    FragColor.rgb *= 0.1;
 })WSQ";
 
     std::string fragment_source2 =
