@@ -665,7 +665,7 @@ public:
                                               .texture_wrapper = m_texture_wrapper});
         renderable = m_renderables[1];
         // Model
-        camera_mat[0] = sopho::translate(0.0f, 0.5f, -6.0f);
+        camera_mat[0] = sopho::translate(0.0f, 2.f, -6.0f);
         // View
         camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
             sopho::translate(-location(0), -location(1), -location(2));

@@ -22,7 +22,7 @@ namespace sopho
         SDL_BindGPUGraphicsPipeline(render_contex.render_pass, procedural()->raw());
         SDL_PushGPUVertexUniformData(render_contex.command_buffer, 0, render_contex.camera_mat.data(),
                                      sizeof(Mat<float, 4, 4>) * 3);
-        SDL_PushGPUFragmentUniformData(render_contex.command_buffer, 0, Mat<float,1,3>{0.0f, 0.5f, -6.0f}.data(),
+        SDL_PushGPUFragmentUniformData(render_contex.command_buffer, 0, Mat<float,1,3>{0.0f, 2.f, -6.0f}.data(),
                                      sizeof(Mat<float, 1, 3>));
         SDL_BindGPUVertexBuffers(render_contex.render_pass, 0, data()->get_vertex_buffer_binding().data(),
                                  data()->get_vertex_buffer_binding().size());
