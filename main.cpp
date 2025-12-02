@@ -120,7 +120,7 @@ layout(std140, set = 1, binding = 0) uniform Camera
 void main()
 {
     gl_Position = uProjection * uView * uModel * vec4(a_position, 1.0f);
-    v_normal = mat3(transpose(inverse(uModel))) * a_normal;
+    v_normal = normalize(mat3(transpose(inverse(uModel))) * a_normal);
     v_pos = vec3(uModel * vec4(a_position, 1.0));
     v_uv = a_uv;
 })WSQ";
