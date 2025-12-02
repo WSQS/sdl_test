@@ -654,7 +654,7 @@ public:
         // View
         camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
             sopho::translate(-location(0), -location(1), -location(2));
-        // Projection
+        // Projection`
         camera_mat[2] = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10);
         renderable->draw(sopho::RenderContext{.render_pass = renderPass,
                                               .command_buffer = command_buffer_raii.raw(),
