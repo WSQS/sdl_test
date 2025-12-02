@@ -18,6 +18,7 @@ namespace sopho
         SDL_GPURenderPass* render_pass{};
         SDL_GPUCommandBuffer* command_buffer{};
         std::array<Mat<float, 4, 4>, 3> camera_mat{};
+        std::array<Mat<float, 1, 4>, 2> pos{};
         std::shared_ptr<TextureWrapper> texture_wrapper{};
     };
 

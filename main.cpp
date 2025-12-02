@@ -135,6 +135,7 @@ layout (location = 0) out vec4 FragColor;
 
 layout(std140, set = 3, binding = 0) uniform Params {
     vec3 lightPos;
+    vec3 viewPos;
 };
 layout(set = 2, binding = 0) uniform sampler2D uTexture;
 
@@ -662,6 +663,7 @@ public:
         renderable->draw(sopho::RenderContext{.render_pass = renderPass,
                                               .command_buffer = command_buffer_raii.raw(),
                                               .camera_mat = camera_mat,
+                                              .pos = std::array<sopho::Mat<float, 1, 4>, 2>{sopho::Mat<float, 1, 4>{0.0f, 2.f, -6.0f}, {0.0f}},
                                               .texture_wrapper = m_texture_wrapper});
         renderable = m_renderables[1];
         // Model
