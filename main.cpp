@@ -107,7 +107,8 @@ layout (location = 0) in vec3 a_position;
 layout (location = 1) in vec3 a_normal;
 layout (location = 2) in vec2 a_uv;
 layout (location = 0) out vec3 v_normal;
-layout (location = 1) out vec2 v_uv;
+layout (location = 1) out vec3 v_pos;
+layout (location = 2) out vec2 v_uv;
 
 layout(std140, set = 1, binding = 0) uniform Camera
 {
@@ -118,16 +119,18 @@ layout(std140, set = 1, binding = 0) uniform Camera
 
 void main()
 {
-    gl_Position = uProjection * uView*uModel * vec4(a_position, 1.0f);
-    v_uv = a_uv;
+    gl_Position = uProjection * uView * uModel * vec4(a_position, 1.0f);
     v_normal = a_normal;
+    v_pos = vec3(uModel * vec4(a_position, 1.0));
+    v_uv = a_uv;
 })WSQ";
 
     std::string fragment_source =
         R"WSQ(#version 460
 
 layout (location = 0) in vec3 v_normal;
-layout (location = 1) in vec2 v_uv;
+layout (location = 1) in vec3 v_pos;
+layout (location = 2) in vec2 v_uv;
 layout (location = 0) out vec4 FragColor;
 
 layout(std140, set = 3, binding = 0) uniform Params {
@@ -140,17 +143,17 @@ void main()
     FragColor = texture(uTexture, v_uv);
     if (FragColor.a <= 0.001)
         discard;
-    FragColor.rgb *= 0.1;
-    FragColor.r *= lightPos.r;
-    FragColor.g *= lightPos.g;
-    FragColor.b *= lightPos.b;
+    vec3 lightDir = normalize(lightPos - v_pos);
+    float diff = max(dot(v_normal, lightDir), 0.0);
+    FragColor.rgb *= 0.1 + diff;
 })WSQ";
 
     std::string fragment_source2 =
         R"WSQ(#version 460
 
 layout (location = 0) in vec3 v_normal;
-layout (location = 1) in vec2 v_uv;
+layout (location = 1) in vec3 v_pos;
+layout (location = 2) in vec2 v_uv;
 layout (location = 0) out vec4 FragColor;
 
 void main()
