@@ -84,7 +84,7 @@ namespace sopho
                                      .basic_type = to_basic_type(type->getBasicType()),
                                      .vector_size = type->getVectorSize()});
         }
-        for (const auto & vertex_info : pipes)
+        for (const auto& vertex_info : pipes)
         {
             result.inputs.emplace_back(vertex_info.second);
         }
@@ -138,6 +138,10 @@ namespace sopho
             if (basic_type == glslang::EbtSampler)
             {
                 result.sampler_count++;
+            }
+            else
+            {
+                result.uniform_count++;
             }
         }
         return result;
