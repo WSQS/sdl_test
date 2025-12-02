@@ -324,7 +324,7 @@ public:
         pitch = std::clamp<float>(pitch, -std::numbers::pi_v<float> / 2, +std::numbers::pi_v<float> / 2);
         yaw += yaw_speed * dt;
         location =
-            location + ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() * speed).resize<1, 3>() * 0.1;
+            location + ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() * speed).resize<1, 3>() * dt;
         return SDL_APP_CONTINUE;
     }
 
@@ -650,22 +650,22 @@ public:
                         yaw_speed = 0.5F;
                         break;
                     case SDLK_W:
-                        speed(2) = -1.F;
+                        speed(2) = -4.F;
                         break;
                     case SDLK_S:
-                        speed(2) = 1.F;
+                        speed(2) = 4.F;
                         break;
                     case SDLK_A:
-                        speed(0) = -1.F;
+                        speed(0) = -4.F;
                         break;
                     case SDLK_D:
-                        speed(0) = 1.F;
+                        speed(0) = 4.F;
                         break;
                     case SDLK_E:
-                        speed(1) = 1.F;
+                        speed(1) = 4.F;
                         break;
                     case SDLK_Q:
-                        speed(1) = -1.F;
+                        speed(1) = -4.F;
                         break;
                     default:
                         break;
