@@ -654,12 +654,12 @@ public:
         auto renderable = m_renderables[0];
         std::array<sopho::Mat<float, 4, 4>, 3> camera_mat{};
         // Model
-        camera_mat[0] = sopho::translate(0.0f, 0.0f, -5.0f) * sopho::rotation_y(1.6);
+        camera_mat[0] = sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(10);
         // View
         camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
             sopho::translate(-location(0), -location(1), -location(2));
         // Projection`
-        camera_mat[2] = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10);
+        camera_mat[2] = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 50);
         renderable->draw(sopho::RenderContext{.render_pass = renderPass,
                                               .command_buffer = command_buffer_raii.raw(),
                                               .camera_mat = camera_mat,
@@ -672,7 +672,7 @@ public:
         camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
             sopho::translate(-location(0), -location(1), -location(2));
         // Projection
-        camera_mat[2] = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10);
+        camera_mat[2] = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 50);
         renderable->draw(sopho::RenderContext{
             .render_pass = renderPass, .command_buffer = command_buffer_raii.raw(), .camera_mat = camera_mat});
 
