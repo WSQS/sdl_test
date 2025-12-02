@@ -746,12 +746,10 @@ public:
                     m_last_x = x;
                     m_last_y = y;
 
-                    // 你自己的 yaw/pitch 变量（示例）
                     yaw += dx * 0.01;
                     pitch -= dy * 0.01;
 
-                    // 可选：限制 pitch 防止翻转
-                    pitch = std::clamp(pitch, -1.55f, 1.55f); // ~(-89°, 89°)
+                    pitch = std::clamp<float>(pitch, -std::numbers::pi_v<float> / 2, +std::numbers::pi_v<float> / 2);
                 }
                 break;
             }
