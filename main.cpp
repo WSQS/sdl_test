@@ -146,7 +146,12 @@ void main()
         discard;
     vec3 lightDir = normalize(lightPos - v_pos);
     float diff = max(dot(v_normal, lightDir), 0.0);
-    FragColor.rgb *= 0.1 + diff;
+    float specularStrength = 0.5;
+    vec3 viewDir = normalize(viewPos - v_pos);
+    vec3 reflectDir = reflect(-lightDir, v_normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+    float specular = specularStrength * spec;
+    FragColor.rgb *= 0.1 + diff + specular;
 })WSQ";
 
     std::string fragment_source2 =
@@ -663,7 +668,7 @@ public:
         renderable->draw(sopho::RenderContext{.render_pass = renderPass,
                                               .command_buffer = command_buffer_raii.raw(),
                                               .camera_mat = camera_mat,
-                                              .pos = std::array<sopho::Mat<float, 1, 4>, 2>{sopho::Mat<float, 1, 4>{0.0f, 2.f, -6.0f}, {0.0f}},
+                                              .pos = std::array{sopho::Mat<float, 1, 4>{0.0f, 2.f, -6.0f}, location.resize<1,4>()},
                                               .texture_wrapper = m_texture_wrapper});
         renderable = m_renderables[1];
         // Model
