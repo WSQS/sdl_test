@@ -6,8 +6,8 @@ export module sdl_wrapper:decl;
 
 export namespace sopho
 {
-    class App;
     class GpuWrapper;
     class RenderProcedural;
     class RenderData;
+    class TextureWrapper;
 }

@@ -120,39 +120,6 @@ namespace sopho
     }
 
     /**
-     * @brief Releases owned GPU pipeline and shader resources and clears their handles.
-     *
-     * If a GPU wrapper is available, releases the graphics pipeline, vertex shader,
-     * and fragment shader held by this object (if present) and resets their pointers
-     * to nullptr.
-     */
-    RenderProcedural::~RenderProcedural() noexcept
-    {
-        if (!m_gpu)
-        {
-            return;
-        }
-
-        if (m_graphics_pipeline)
-        {
-            m_gpu->release_pipeline(m_graphics_pipeline);
-            m_graphics_pipeline = nullptr;
-        }
-
-        if (m_vertex_shader)
-        {
-            m_gpu->release_shader(m_vertex_shader);
-            m_vertex_shader = nullptr;
-        }
-
-        if (m_fragment_shader)
-        {
-            m_gpu->release_shader(m_fragment_shader);
-            m_fragment_shader = nullptr;
-        }
-    }
-
-    /**
      * @brief Ensures the GPU graphics pipeline matches the current pipeline description, creating or replacing the
      * pipeline if changes are pending.
      *
@@ -192,13 +159,7 @@ namespace sopho
 
         SDL_GPUGraphicsPipeline* new_pipeline = pipeline_result.value();
 
-        // Replace previous pipeline if any.
-        if (m_graphics_pipeline)
-        {
-            m_gpu->release_pipeline(m_graphics_pipeline);
-        }
-
-        m_graphics_pipeline = new_pipeline;
+        m_graphics_pipeline = GPUGraphicsPipelineRaii{m_gpu->device(), new_pipeline};
         m_modified = false;
 
         return std::monostate{};
@@ -237,13 +198,7 @@ namespace sopho
 
         SDL_GPUShader* new_shader = shader_result.value();
 
-        // Release previous shader, if any
-        if (m_vertex_shader)
-        {
-            m_gpu->release_shader(m_vertex_shader);
-        }
-
-        m_vertex_shader = new_shader;
+        m_vertex_shader = GpuShaderRaii{m_gpu->device(), new_shader};
         m_pipeline_info.vertex_shader = new_shader;
         m_modified = true;
 
@@ -290,13 +245,7 @@ namespace sopho
 
         SDL_GPUShader* new_shader = shader_result.value();
 
-        // Release previous shader, if any
-        if (m_fragment_shader)
-        {
-            m_gpu->release_shader(m_fragment_shader);
-        }
-
-        m_fragment_shader = new_shader;
+        m_fragment_shader = GpuShaderRaii{m_gpu->device(), new_shader};
         m_pipeline_info.fragment_shader = new_shader;
         m_modified = true;
 

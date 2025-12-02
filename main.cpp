@@ -8,6 +8,7 @@
 #include <format>
 #include <memory>
 #include <numbers>
+#include <span>
 #include <string>
 #include <variant>
 
@@ -21,12 +22,22 @@
 #include "SDL3/SDL_keycode.h"
 
 #define STB_IMAGE_IMPLEMENTATION
+#include <chrono>
+
+
 #include "stb_image.h"
 
+import lifecycle;
 import data_type;
+import sdl_raii;
 import glsl_reflector;
 import sdl_wrapper;
 import logos;
+
+struct VertexType
+{
+    float x{}, y{}, z{}, u{}, v{};
+};
 
 /**
  * @brief Loads image data from the test texture file.
@@ -61,10 +72,13 @@ sopho::ImageData load_image()
 
 class UserApp : public sopho::App
 {
+    std::chrono::steady_clock::time_point m_last_time{std::chrono::steady_clock::now()};
+    double m_fps_accumulator = 0.0;
+    int m_fps_frames = 0;
     // GPU + resources
     std::shared_ptr<sopho::GpuWrapper> m_gpu{};
 
-    std::shared_ptr<sopho::Renderable> m_renderable{};
+    std::vector<std::shared_ptr<sopho::Renderable>> m_renderables{};
 
     sopho::ImageData m_image_data;
     std::shared_ptr<sopho::TextureWrapper> m_texture_wrapper{};
@@ -72,7 +86,14 @@ class UserApp : public sopho::App
 
     // camera state
     float yaw = 0.0f;
+    float yaw_speed = 0.0f;
     float pitch = 0.0f;
+    float pitch_speed = 0.0f;
+
+    sopho::Mat<float, 1, 3> location{};
+    sopho::Mat<float, 1, 4> speed{};
+    bool m_dragging{};
+    float m_last_x{}, m_last_y{};
 
     int win_w = 0, win_h = 0;
 
@@ -105,7 +126,19 @@ layout(set = 2, binding = 0) uniform sampler2D uTexture;
 void main()
 {
     FragColor = texture(uTexture, v_uv);
-    FragColor.a = 1;
+    if (FragColor.a <= 0.001)
+        discard;
+})WSQ";
+
+    std::string fragment_source2 =
+        R"WSQ(#version 460
+
+layout (location = 0) in vec2 v_uv;
+layout (location = 0) out vec4 FragColor;
+
+void main()
+{
+    FragColor = vec4(1,1,1,1);
 })WSQ";
 
 public:
@@ -152,11 +185,21 @@ public:
             return SDL_APP_FAILURE;
         }
 
+        std::vector<VertexType> vertices{
+            {0.5, 0.5, 0.5, 0., 0.},  {-0.5, 0.5, 0.5, 1., 0.},  {0.5, -0.5, 0.5, 0., 1.},  {-0.5, -0.5, 0.5, 1., 1.},
+            {0.5, 0.5, -0.5, 1., 1.}, {-0.5, 0.5, -0.5, 0., 1.}, {0.5, -0.5, -0.5, 1., 0.}, {-0.5, -0.5, -0.5, 0., 0.},
+        };
+
+        std::vector<std::uint32_t> indices{0, 1, 2, 1, 2, 3, 0, 1, 4, 1, 4, 5, 0, 2, 4, 2, 4, 6,
+                                           2, 3, 6, 3, 6, 7, 1, 3, 5, 3, 5, 7, 4, 5, 6, 5, 6, 7};
+
         // 3. Create vertex buffer.
         auto render_data = sopho::RenderData::Builder{}
                                .set_vertex_layout(pw_result.value().vertex_layout())
                                .set_vertex_count(8)
                                .set_index_count(36)
+                               .set_vertices(std::span(vertices))
+                               .set_indices(std::span(indices))
                                .build(*m_gpu.get());
         if (!render_data)
         {
@@ -175,9 +218,23 @@ public:
             return SDL_APP_FAILURE;
         }
 
-        m_renderable = std::make_shared<sopho::Renderable>(sopho::Renderable{
+        m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
             .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result.value())),
-            .m_render_data = std::move(render_data.value())});
+            .m_render_data = std::move(render_data.value())}));
+
+        auto pw_result2 = m_gpu->create_render_procedural();
+        pipeline_init = pw_result2.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
+                            .and_then([&](std::monostate) { return pw_result2->set_fragment_shader(fragment_source2); })
+                            .and_then([&](std::monostate) { return pw_result2->submit(); });
+        if (!pipeline_init)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to initialize pipeline, error = %d",
+                         static_cast<int>(pipeline_init.error()));
+            return SDL_APP_FAILURE;
+        }
+        m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
+            .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result2.value())),
+            .m_render_data = m_renderables[0]->data()}));
 
         // 7. Setup Dear ImGui context.
         IMGUI_CHECKVERSION();
@@ -253,6 +310,24 @@ public:
         return SDL_APP_CONTINUE;
     }
 
+    SDL_AppResult update(float dt)
+    {
+        m_fps_frames++;
+        m_fps_accumulator += dt;
+        if (m_fps_accumulator >= 1)
+        {
+            SDL_Log("Fps: %f in %f s", m_fps_frames / m_fps_accumulator, m_fps_accumulator);
+            m_fps_frames = 0;
+            m_fps_accumulator = 0.0;
+        }
+        pitch += pitch_speed * dt;
+        pitch = std::clamp<float>(pitch, -std::numbers::pi_v<float> / 2, +std::numbers::pi_v<float> / 2);
+        yaw += yaw_speed * dt;
+        location =
+            location + ((sopho::rotation_x(-pitch) * sopho::rotation_y(yaw)).transpose() * speed).resize<1, 3>() * dt;
+        return SDL_APP_CONTINUE;
+    }
+
     /**
      * @brief Advance the UI frame and present editors for vertex data and shader sources.
      *
@@ -280,122 +355,131 @@ public:
         std::array<const char*, 3> items = {"Node", "Vertex", "Fragment"};
         ImGui::Combo("##Object", &current, items.data(), static_cast<int>(items.size()));
 
-        switch (current)
-        {
-        case 0: // Vertex Edit
-            {
-                bool changed = false;
-                auto editor_data = m_renderable->data()->vertex_view();
-                auto raw_ptr = editor_data.raw;
-                for (int vertex_index = 0; vertex_index < editor_data.vertex_count; ++vertex_index)
-                {
-                    for (const auto& format : editor_data.layout.get_vertex_reflection().inputs)
-                    {
-                        switch (format.basic_type)
-                        {
-                        case sopho::BasicType::FLOAT:
-                            {
-                                switch (format.vector_size)
-                                {
-                                case 2:
-                                    changed |= ImGui::DragFloat2(std::format("{}{}", format.name, vertex_index).data(),
-                                                                 reinterpret_cast<float*>(raw_ptr), 0.01f, -1.f, 1.f);
-                                    break;
-                                case 3:
-                                    changed |= ImGui::DragFloat3(std::format("{}{}", format.name, vertex_index).data(),
-                                                                 reinterpret_cast<float*>(raw_ptr), 0.01f, -1.f, 1.f);
-                                    break;
-                                case 4:
-                                    changed |= ImGui::DragFloat4(std::format("{}{}", format.name, vertex_index).data(),
-                                                                 reinterpret_cast<float*>(raw_ptr), 0.01f, -1.f, 1.f);
-                                    break;
-                                default:
-                                    SDL_Log("Not implemented size");
-                                    assert(false);
-                                    break;
-                                }
-                            }
-                            break;
-                        default:
-                            SDL_Log("Not implemented Basic type");
-                            assert(false);
-                            break;
-                        }
-                        auto size = sopho::get_size(sopho::to_sdl_format(format.basic_type, format.vector_size));
-                        raw_ptr += size;
-                    }
-                }
-                auto index_view = m_renderable->data()->index_view();
-                auto index_ptr = index_view.raw;
-                for (int index_index = 0; index_index < index_view.index_count; index_index += 3)
-                {
-                    changed |= ImGui::InputInt3(std::format("index_{}", index_index).data(),
-                                                reinterpret_cast<int*>(index_ptr));
-                    index_ptr += 3 * sizeof(int);
-                }
-                if (changed)
-                {
-                    auto upload_result = m_renderable->data()->upload();
-                    if (!upload_result)
-                    {
-                        SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to upload vertex buffer in tick(), error = %d",
-                                     static_cast<int>(upload_result.error()));
-                    }
-                }
-            }
-            break;
-
-        case 1: // Vertex shader editor
-            {
-                auto line_count = std::count(vertex_source.begin(), vertex_source.end(), '\n');
-                ImVec2 size(ImGui::GetContentRegionAvail().x,
-                            std::min(ImGui::GetTextLineHeight() * (line_count + 3), ImGui::GetContentRegionAvail().y));
-
-                if (ImGui::InputTextMultiline("##vertex editor", &vertex_source, size,
-                                              ImGuiInputTextFlags_AllowTabInput))
-                {
-                    auto result = m_renderable->procedural()->set_vertex_shader(vertex_source);
-                    if (!result)
-                    {
-                        SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to set vertex shader from editor, error = %d",
-                                     static_cast<int>(result.error()));
-                    }
-                    else
-                    {
-                        auto new_data = sopho::RenderData::Builder{}
-                                            .set_vertex_layout(m_renderable->procedural()->vertex_layout())
-                                            .set_vertex_count(8)
-                                            .set_index_count(36)
-                                            .build(*m_gpu.get());
-                        m_renderable->data() = std::move(new_data.value());
-                        m_renderable->data()->upload();
-                    }
-                }
-            }
-            break;
-
-        case 2: // Fragment shader editor
-            {
-                auto line_count = std::count(fragment_source.begin(), fragment_source.end(), '\n');
-                ImVec2 size(ImGui::GetContentRegionAvail().x,
-                            std::min(ImGui::GetTextLineHeight() * (line_count + 3), ImGui::GetContentRegionAvail().y));
-
-                if (ImGui::InputTextMultiline("##fragment editor", &fragment_source, size,
-                                              ImGuiInputTextFlags_AllowTabInput))
-                {
-                    auto result = m_renderable->procedural()->set_fragment_shader(fragment_source);
-                    if (!result)
-                    {
-                        SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to set fragment shader from editor, error = %d",
-                                     static_cast<int>(result.error()));
-                    }
-                }
-            }
-            break;
-
-        default:
-            break;
-        }
+        // switch (current)
+        // {
+        // case 0: // Vertex Edit
+        //     {
+        //         bool changed = false;
+        //         auto editor_data = m_renderable->data()->vertex_view();
+        //         auto raw_ptr = editor_data.raw;
+        //         for (int vertex_index = 0; vertex_index < editor_data.vertex_count; ++vertex_index)
+        //         {
+        //             for (const auto& format : editor_data.layout.get_vertex_reflection().inputs)
+        //             {
+        //                 switch (format.basic_type)
+        //                 {
+        //                 case sopho::BasicType::FLOAT:
+        //                     {
+        //                         switch (format.vector_size)
+        //                         {
+        //                         case 2:
+        //                             changed |= ImGui::DragFloat2(std::format("{}{}", format.name,
+        //                             vertex_index).data(),
+        //                                                          reinterpret_cast<float*>(raw_ptr), 0.01f,
+        //                                                          -1.f, 1.f);
+        //                             break;
+        //                         case 3:
+        //                             changed |= ImGui::DragFloat3(std::format("{}{}", format.name,
+        //                             vertex_index).data(),
+        //                                                          reinterpret_cast<float*>(raw_ptr), 0.01f,
+        //                                                          -1.f, 1.f);
+        //                             break;
+        //                         case 4:
+        //                             changed |= ImGui::DragFloat4(std::format("{}{}", format.name,
+        //                             vertex_index).data(),
+        //                                                          reinterpret_cast<float*>(raw_ptr), 0.01f,
+        //                                                          -1.f, 1.f);
+        //                             break;
+        //                         default:
+        //                             SDL_Log("Not implemented size");
+        //                             assert(false);
+        //                             break;
+        //                         }
+        //                     }
+        //                     break;
+        //                 default:
+        //                     SDL_Log("Not implemented Basic type");
+        //                     assert(false);
+        //                     break;
+        //                 }
+        //                 auto size = sopho::get_size(sopho::to_sdl_format(format.basic_type, format.vector_size));
+        //                 raw_ptr += size;
+        //             }
+        //         }
+        //         auto index_view = m_renderable->data()->index_view();
+        //         auto index_ptr = index_view.raw;
+        //         for (int index_index = 0; index_index < index_view.index_count; index_index += 3)
+        //         {
+        //             changed |= ImGui::InputInt3(std::format("index_{}", index_index).data(),
+        //                                         reinterpret_cast<int*>(index_ptr));
+        //             index_ptr += 3 * sizeof(int);
+        //         }
+        //         if (changed)
+        //         {
+        //             auto upload_result = m_renderable->data()->upload();
+        //             if (!upload_result)
+        //             {
+        //                 SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to upload vertex buffer in tick(), error = %d",
+        //                              static_cast<int>(upload_result.error()));
+        //             }
+        //         }
+        //     }
+        //     break;
+        //
+        // case 1: // Vertex shader editor
+        //     {
+        //         auto line_count = std::count(vertex_source.begin(), vertex_source.end(), '\n');
+        //         ImVec2 size(ImGui::GetContentRegionAvail().x,
+        //                     std::min(ImGui::GetTextLineHeight() * (line_count + 3),
+        //                     ImGui::GetContentRegionAvail().y));
+        //
+        //         if (ImGui::InputTextMultiline("##vertex editor", &vertex_source, size,
+        //                                       ImGuiInputTextFlags_AllowTabInput))
+        //         {
+        //             auto result = m_renderable->procedural()->set_vertex_shader(vertex_source);
+        //             if (!result)
+        //             {
+        //                 SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to set vertex shader from editor, error = %d",
+        //                              static_cast<int>(result.error()));
+        //             }
+        //             else
+        //             {
+        //                 auto new_data = sopho::RenderData::Builder{}
+        //                                     .set_vertex_layout(m_renderable->procedural()->vertex_layout())
+        //                                     .set_vertex_count(8)
+        //                                     .set_index_count(36)
+        //                                     .build(*m_gpu.get());
+        //                 m_renderable->data() = std::move(new_data.value());
+        //                 m_renderable->data()->upload();
+        //             }
+        //         }
+        //     }
+        //     break;
+        //
+        // case 2: // Fragment shader editor
+        //     {
+        //         auto line_count = std::count(fragment_source.begin(), fragment_source.end(), '\n');
+        //         ImVec2 size(ImGui::GetContentRegionAvail().x,
+        //                     std::min(ImGui::GetTextLineHeight() * (line_count + 3),
+        //                     ImGui::GetContentRegionAvail().y));
+        //
+        //         if (ImGui::InputTextMultiline("##fragment editor", &fragment_source, size,
+        //                                       ImGuiInputTextFlags_AllowTabInput))
+        //         {
+        //             auto result = m_renderable->procedural()->set_fragment_shader(fragment_source);
+        //             if (!result)
+        //             {
+        //                 SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to set fragment shader from editor, error =
+        //                 %d",
+        //                              static_cast<int>(result.error()));
+        //             }
+        //         }
+        //     }
+        //     break;
+        //
+        // default:
+        //     break;
+        // }
 
         ImGui::End();
         ImGui::EndFrame();
@@ -416,28 +500,22 @@ public:
         ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();
 
-        // Rebuild pipeline if needed.
-        auto pipeline_submit = m_renderable->procedural()->submit();
-        if (!pipeline_submit)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "Pipeline submit failed, error = %d",
-                         static_cast<int>(pipeline_submit.error()));
-            // Upload pipeline failed, no need to draw.
-            return SDL_APP_CONTINUE;
-        }
-
         SDL_GPUDevice* device = m_gpu->device();
         if (!device)
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "GpuWrapper::device() returned null in draw()");
             return SDL_APP_CONTINUE;
         }
-
-        SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(device);
-        if (!commandBuffer)
+        sopho::GpuCommandBufferRaii command_buffer_raii{};
         {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to acquire GPU command buffer");
-            return SDL_APP_CONTINUE;
+
+            SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(device);
+            if (!command_buffer)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to acquire GPU command buffer");
+                return SDL_APP_CONTINUE;
+            }
+            command_buffer_raii.reset(command_buffer);
         }
 
         SDL_GPUTexture* swapchainTexture = nullptr;
@@ -447,18 +525,17 @@ public:
         if (!window)
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "GpuWrapper::window() returned null in draw()");
-            SDL_SubmitGPUCommandBuffer(commandBuffer);
             return SDL_APP_CONTINUE;
         }
 
-        if (!SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, window, &swapchainTexture, &width, &height))
+        if (!SDL_WaitAndAcquireGPUSwapchainTexture(command_buffer_raii.raw(), window, &swapchainTexture, &width,
+                                                   &height))
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to acquire swapchain texture: %s", SDL_GetError());
-            SDL_SubmitGPUCommandBuffer(commandBuffer);
             return SDL_APP_CONTINUE;
         }
 
-        if (win_w != width || win_h != height)
+        if ((win_w != width || win_h != height) && width != 0 && height != 0)
         {
             SDL_GPUTextureCreateInfo ci = {
                 .type = SDL_GPU_TEXTURETYPE_2D,
@@ -479,15 +556,14 @@ public:
         if (swapchainTexture == nullptr)
         {
             // You must always submit the command buffer, even if no texture is available.
-            SDL_SubmitGPUCommandBuffer(commandBuffer);
             return SDL_APP_CONTINUE;
         }
 
-        ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, commandBuffer);
+        ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer_raii.raw());
 
         // Create the color target.
         SDL_GPUColorTargetInfo colorTargetInfo{};
-        colorTargetInfo.clear_color = {240 / 255.0F, 240 / 255.0F, 240 / 255.0F, 255 / 255.0F};
+        colorTargetInfo.clear_color = {135 / 255.0F, 135 / 255.0F, 135 / 255.0F, 255 / 255.0F};
         colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
         colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
         colorTargetInfo.texture = swapchainTexture;
@@ -503,52 +579,43 @@ public:
         depthStencilTargetInfo.stencil_store_op = SDL_GPU_STOREOP_STORE;
 
         SDL_GPURenderPass* renderPass =
-            SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, &depthStencilTargetInfo);
+            SDL_BeginGPURenderPass(command_buffer_raii.raw(), &colorTargetInfo, 1, &depthStencilTargetInfo);
 
-        // Bind pipeline if available.
 
-        SDL_BindGPUGraphicsPipeline(renderPass, m_renderable->procedural()->data());
-
-        // Compute camera matrix and upload as a vertex uniform.
-        SDL_PushGPUVertexUniformData(commandBuffer, 0,
-                                     (sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) *
-                                      sopho::translate(0, 0, -5) * sopho::rotation_x(-pitch) * sopho::rotation_y(yaw))
-                                         .data(),
-                                     sizeof(sopho::Mat<float, 4, 4>));
-
-        SDL_BindGPUVertexBuffers(renderPass, 0, m_renderable->data()->get_vertex_buffer_binding().data(),
-                                 m_renderable->data()->get_vertex_buffer_binding().size());
-
-        SDL_BindGPUIndexBuffer(renderPass, &m_renderable->data()->get_index_buffer_binding(),
-                               SDL_GPU_INDEXELEMENTSIZE_32BIT);
-        if (m_texture_wrapper)
+        for (int i = 0; i < m_renderables.size(); i++)
         {
-            SDL_BindGPUFragmentSamplers(renderPass, 0, m_texture_wrapper->get(), 1);
+            auto renderable = m_renderables[i];
+            auto camera_mat = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) *
+                sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
+                sopho::translate(0 - location(0), 0.5 * i - location(1), -i - 5 - location(2));
+            renderable->draw(sopho::RenderContext{.render_pass = renderPass,
+                                                  .command_buffer = command_buffer_raii.raw(),
+                                                  .camera_mat = camera_mat,
+                                                  .texture_wrapper = i == 0 ? m_texture_wrapper : nullptr});
         }
-        else
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "Texture not available, skip binding sampler");
-        }
-
-
-        SDL_DrawGPUIndexedPrimitives(renderPass, 36, 1, 0, 0, 0);
 
         SDL_EndGPURenderPass(renderPass);
 
         colorTargetInfo.load_op = SDL_GPU_LOADOP_LOAD;
 
-        renderPass = SDL_BeginGPURenderPass(commandBuffer, &colorTargetInfo, 1, nullptr);
-        ImGui_ImplSDLGPU3_RenderDrawData(draw_data, commandBuffer, renderPass);
+        renderPass = SDL_BeginGPURenderPass(command_buffer_raii.raw(), &colorTargetInfo, 1, nullptr);
+        ImGui_ImplSDLGPU3_RenderDrawData(draw_data, command_buffer_raii.raw(), renderPass);
 
         SDL_EndGPURenderPass(renderPass);
-        SDL_SubmitGPUCommandBuffer(commandBuffer);
 
         return SDL_APP_CONTINUE;
     }
 
     SDL_AppResult iterate() override
     {
-        auto result = tick();
+        auto now{std::chrono::steady_clock::now()};
+        std::chrono::duration<double> delta = now - m_last_time;
+        m_last_time = now;
+        auto result = update(delta.count());
+        if (result == SDL_APP_CONTINUE)
+        {
+            result = tick();
+        }
         if (result == SDL_APP_CONTINUE)
         {
             result = draw();
@@ -559,25 +626,131 @@ public:
     SDL_AppResult event(SDL_Event* event) override
     {
         ImGui_ImplSDL3_ProcessEvent(event);
-        if (event->type == SDL_EVENT_KEY_DOWN)
+
+        ImGuiIO& io = ImGui::GetIO();
+
+        if (!io.WantCaptureKeyboard)
         {
-            switch (event->key.key)
+            switch (event->type)
             {
-            case SDLK_UP:
-                pitch += 0.1F;
-                pitch = std::clamp<float>(pitch, -std::numbers::pi_v<float> / 2, +std::numbers::pi_v<float> / 2);
+            case SDL_EVENT_KEY_DOWN:
+                {
+                    switch (event->key.key)
+                    {
+                    case SDLK_UP:
+                        pitch_speed = 0.5F;
+                        break;
+                    case SDLK_DOWN:
+                        pitch_speed = -0.5F;
+                        break;
+                    case SDLK_LEFT:
+                        yaw_speed = -0.5F;
+                        break;
+                    case SDLK_RIGHT:
+                        yaw_speed = 0.5F;
+                        break;
+                    case SDLK_W:
+                        speed(2) = -4.F;
+                        break;
+                    case SDLK_S:
+                        speed(2) = 4.F;
+                        break;
+                    case SDLK_A:
+                        speed(0) = -4.F;
+                        break;
+                    case SDLK_D:
+                        speed(0) = 4.F;
+                        break;
+                    case SDLK_E:
+                        speed(1) = 4.F;
+                        break;
+                    case SDLK_Q:
+                        speed(1) = -4.F;
+                        break;
+                    default:
+                        break;
+                    }
+                }
                 break;
-            case SDLK_DOWN:
-                pitch -= 0.1F;
-                pitch = std::clamp<float>(pitch, -std::numbers::pi_v<float> / 2, +std::numbers::pi_v<float> / 2);
+            case SDL_EVENT_KEY_UP:
+                {
+                    switch (event->key.key)
+                    {
+                    case SDLK_UP:
+                        pitch_speed = 0.F;
+                        break;
+                    case SDLK_DOWN:
+                        pitch_speed = 0.F;
+                        break;
+                    case SDLK_LEFT:
+                        yaw_speed = 0.F;
+                        break;
+                    case SDLK_RIGHT:
+                        yaw_speed = 0.F;
+                        break;
+                    case SDLK_W:
+                        speed(2) = 0.F;
+                        break;
+                    case SDLK_S:
+                        speed(2) = 0.F;
+                        break;
+                    case SDLK_A:
+                        speed(0) = 0.F;
+                        break;
+                    case SDLK_D:
+                        speed(0) = 0.F;
+                        break;
+                    case SDLK_Q:
+                        speed(1) = 0.F;
+                        break;
+                    case SDLK_E:
+                        speed(1) = 0.F;
+                        break;
+                    default:
+                        break;
+                    }
+                }
                 break;
-            case SDLK_LEFT:
-                yaw -= 0.1F;
+            }
+        }
+
+        if (!io.WantCaptureMouse)
+        {
+            switch (event->type)
+            {
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                if (event->button.button == SDL_BUTTON_LEFT)
+                {
+                    m_dragging = true;
+                    m_last_x = event->button.x;
+                    m_last_y = event->button.y;
+                }
                 break;
-            case SDLK_RIGHT:
-                yaw += 0.1F;
+
+            case SDL_EVENT_MOUSE_BUTTON_UP:
+                if (event->button.button == SDL_BUTTON_LEFT)
+                {
+                    m_dragging = false;
+                }
                 break;
-            default:
+
+            case SDL_EVENT_MOUSE_MOTION:
+                if (m_dragging)
+                {
+                    float x = event->motion.x;
+                    float y = event->motion.y;
+
+                    float dx = x - m_last_x;
+                    float dy = y - m_last_y;
+
+                    m_last_x = x;
+                    m_last_y = y;
+
+                    yaw += dx * 0.01;
+                    pitch -= dy * 0.01;
+
+                    pitch = std::clamp<float>(pitch, -std::numbers::pi_v<float> / 2, +std::numbers::pi_v<float> / 2);
+                }
                 break;
             }
         }
@@ -605,7 +778,7 @@ public:
  *
  * @param argc Program argument count as passed to main.
  * @param argv Program argument vector as passed to main.
- * @return sopho::App* Pointer to a heap-allocated application object; the caller takes ownership and is responsible for
- * deleting it.
+ * @return sopho::App* Pointer to a heap-allocated application object; the caller takes ownership and is responsible
+ * for deleting it.
  */
 sopho::checkable<sopho::App*> create_app(int argc, char** argv) { return new UserApp(); }

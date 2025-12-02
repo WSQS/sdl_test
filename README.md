@@ -22,6 +22,11 @@ graph TD
         sdl_wrapper
         logos
     end
+    
+    subgraph sdl_wrapper
+        lifecycle
+        sdl_raii
+    end
 
     glslang --> shaderc
     SPIRVTools --> shaderc
@@ -44,7 +49,7 @@ graph TD
 
 ## Track
 
-- [ ] Getting started
+- [x] Getting started
     - [x] OpenGL
     - [x] Creating a window
     - [x] Hello Window
@@ -52,9 +57,15 @@ graph TD
     - [x] Shaders
     - [x] Textures
     - [x] Transformations
-    - [ ] Coordinate Systems
-    - [ ] Camera
+    - [x] Coordinate Systems
+    - [x] Camera
 - [ ] Lighting
+    - [x] Colors
+    - [ ] Basic Lighting
+    - [ ] Materials
+    - [ ] Lighting maps
+    - [ ] Light casters
+    - [ ] Multiple lights
 - [ ] Model Loading
 - [ ] Advanced OpenGL
 - [ ] Advanced Lighting

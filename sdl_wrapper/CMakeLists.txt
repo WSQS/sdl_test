@@ -7,9 +7,14 @@ add_library(sdl_wrapper STATIC)
 target_sources(sdl_wrapper
         PUBLIC
         FILE_SET cxx_modules TYPE CXX_MODULES FILES
+        modules/lifecycle.ixx
+        modules/sdl_raii/sdl_raii.ixx
+        modules/sdl_raii/sdl_raii.bound_raii.ixx
+        modules/sdl_raii/sdl_raii.bound_traits.ixx
+        modules/sdl_raii/sdl_raii.pure_raii.ixx
+        modules/sdl_raii/sdl_raii.pure_traits.ixx
         modules/sdl_wrapper.ixx
         modules/sdl_wrapper.buffer.ixx
-        modules/sdl_wrapper.app.ixx
         modules/sdl_wrapper.render_procedural.ixx
         modules/sdl_wrapper.render_data.ixx
         modules/sdl_wrapper.render_data_impl.ixx
@@ -20,13 +25,14 @@ target_sources(sdl_wrapper
         modules/sdl_wrapper.transfer_buffer.ixx
         modules/sdl_wrapper.texture.ixx
         PRIVATE
+        src/lifecycle.cpp
         src/sdl_wrapper.buffer.cpp
         src/sdl_wrapper.render_procedural.cpp
         src/sdl_wrapper.gpu.cpp
-        src/sdl_callback_implement.cpp
         src/sdl_wrapper.texture.cpp
         src/sdl_wrapper.transfer_buffer.cpp
         src/sdl_wrapper.render_data.cpp
+        src/sdl_wrapper.renderable.cpp
 )
 
-target_link_libraries(sdl_wrapper PUBLIC SDL3::SDL3 shaderc glsl_reflector data_type)
+target_link_libraries(sdl_wrapper PUBLIC SDL3::SDL3 shaderc glsl_reflector data_type logos)

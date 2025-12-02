@@ -9,6 +9,7 @@ module;
 #include <utility>
 export module sdl_wrapper:texture;
 import data_type;
+import sdl_raii;
 import :decl;
 
 namespace sopho
@@ -16,52 +17,26 @@ namespace sopho
     export class TextureWrapper
     {
         std::shared_ptr<GpuWrapper> m_gpu{};
-        SDL_GPUTexture* m_texture{};
-        SDL_GPUSampler* m_sampler{};
+        GpuTextureRaii m_texture{};
+        GPUSamplerRaii m_sampler{};
         SDL_GPUTextureSamplerBinding m_tex_binding{};
 
-        TextureWrapper(std::shared_ptr<GpuWrapper> gpu, SDL_GPUTexture* texture, SDL_GPUSampler* sampler) noexcept :
-            m_gpu(std::move(gpu)), m_texture(texture), m_sampler(sampler)
+        TextureWrapper(std::shared_ptr<GpuWrapper> gpu, GpuTextureRaii texture, GPUSamplerRaii sampler) noexcept :
+            m_gpu(std::move(gpu)), m_texture(std::move(texture)), m_sampler(std::move(sampler))
         {
-            m_tex_binding.texture = m_texture;
-            m_tex_binding.sampler = m_sampler;
+            m_tex_binding.texture = m_texture.raw();
+            m_tex_binding.sampler = m_sampler.raw();
         }
 
     public:
         TextureWrapper(const TextureWrapper&) = delete;
         TextureWrapper& operator=(const TextureWrapper&) = delete;
-        TextureWrapper(TextureWrapper&& other) noexcept : m_gpu(std::move(other.m_gpu)), m_texture(other.m_texture), m_sampler(other.m_sampler),m_tex_binding(other.m_tex_binding)
-        {
-            other.m_texture = nullptr;
-            other.m_sampler = nullptr;
-            other.m_tex_binding = {};
-        }
+        TextureWrapper(TextureWrapper&& other) noexcept = default;
+        TextureWrapper& operator=(TextureWrapper&& other) noexcept = default;
+        ~TextureWrapper() noexcept = default;
 
-        TextureWrapper& operator=(TextureWrapper&& other) noexcept
-        {
-            if (this != &other)
-            {
-                reset();
-                m_gpu = std::move(other.m_gpu);
-                m_texture = other.m_texture;
-                other.m_texture = nullptr;
-                m_sampler = other.m_sampler;
-                other.m_sampler = nullptr;
-                other.m_tex_binding = {};
-                m_tex_binding.texture = m_texture;
-                m_tex_binding.sampler = m_sampler;
-            }
-            return *this;
-        }
+        [[nodiscard]] const SDL_GPUTextureSamplerBinding* get() const noexcept { return &m_tex_binding; }
 
-        [[nodiscard]] const SDL_GPUTextureSamplerBinding* get() const noexcept
-        {
-            return &m_tex_binding;
-        }
-
-        void reset() noexcept;
-
-        ~TextureWrapper() noexcept { reset(); }
 
         struct Builder
         {

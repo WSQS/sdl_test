@@ -1,4 +1,4 @@
-// sdl_wrapper.pipeline.ixx
+// sdl_wrapper.render_procedural.ixx
 // Created by sophomore on 11/11/25.
 //
 module;
@@ -12,6 +12,7 @@ module;
 #include "shaderc/shaderc.hpp"
 export module sdl_wrapper:render_procedural;
 import data_type;
+import sdl_raii;
 import :decl; // GpuError, forward declarations, etc.
 import :vertex_layout;
 export namespace sopho
@@ -20,9 +21,9 @@ export namespace sopho
     {
         std::shared_ptr<GpuWrapper> m_gpu{};
 
-        SDL_GPUGraphicsPipeline* m_graphics_pipeline{};
-        SDL_GPUShader* m_vertex_shader{};
-        SDL_GPUShader* m_fragment_shader{};
+        GPUGraphicsPipelineRaii m_graphics_pipeline{};
+        GpuShaderRaii m_vertex_shader{};
+        GpuShaderRaii m_fragment_shader{};
 
         std::vector<SDL_GPUVertexBufferDescription> m_vertex_buffer_descriptions{};
         std::vector<SDL_GPUColorTargetDescription> m_color_target_descriptions{};
@@ -42,10 +43,10 @@ export namespace sopho
         RenderProcedural& operator=(const RenderProcedural&) = delete;
         RenderProcedural(RenderProcedural&&) noexcept = default;
         RenderProcedural& operator=(RenderProcedural&&) = delete;
-        ~RenderProcedural() noexcept;
+        ~RenderProcedural() noexcept = default;
 
         /// Returns the underlying SDL_GPUGraphicsPipeline*.
-        [[nodiscard]] SDL_GPUGraphicsPipeline* data() const noexcept { return m_graphics_pipeline; }
+        [[nodiscard]] SDL_GPUGraphicsPipeline* raw() const noexcept { return m_graphics_pipeline.raw(); }
 
         /// Rebuilds the graphics pipeline if any state has been modified.
         ///

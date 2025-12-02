@@ -17,27 +17,6 @@ import :gpu;
 namespace sopho
 {
     /**
-     * @brief Releases any owned GPU resources held by the wrapper.
-     *
-     * Ensures the associated GPU object is valid, then releases the GPU buffer and the
-     * GPU transfer buffer if they exist and clears their pointers.
-     */
-    BufferWrapper::~BufferWrapper() noexcept
-    {
-        if (!m_gpu)
-        {
-            return;
-        }
-
-        // Release gpu buffer
-        if (m_gpu_buffer)
-        {
-            m_gpu->release_buffer(m_gpu_buffer);
-            m_gpu_buffer = nullptr;
-        }
-    }
-
-    /**
      * @brief Uploads the internal CPU-side buffer to the GPU buffer via the transfer buffer and a GPU copy pass.
      *
      * Copies the contents of m_cpu_buffer into the existing transfer buffer, records a GPU copy pass that
@@ -63,24 +42,26 @@ namespace sopho
                          SDL_GetError());
             return std::unexpected(rst.error());
         }
-
-        // 3. Acquire a command buffer and enqueue the copy pass.
-        auto* command_buffer = SDL_AcquireGPUCommandBuffer(device);
-        if (!command_buffer)
+        GpuCommandBufferRaii command_buffer_raii;
         {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to acquire GPU command buffer: %s", __FILE__, __LINE__,
-                         SDL_GetError());
+            // 3. Acquire a command buffer and enqueue the copy pass.
+            auto* command_buffer = SDL_AcquireGPUCommandBuffer(device);
+            if (!command_buffer)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to acquire GPU command buffer: %s", __FILE__, __LINE__,
+                             SDL_GetError());
 
-            return std::unexpected(GpuError::ACQUIRE_COMMAND_BUFFER_FAILED);
+                return std::unexpected(GpuError::ACQUIRE_COMMAND_BUFFER_FAILED);
+            }
+            command_buffer_raii.reset(command_buffer);
         }
 
-        auto* copy_pass = SDL_BeginGPUCopyPass(command_buffer);
+        auto* copy_pass = SDL_BeginGPUCopyPass(command_buffer_raii.raw());
 
         if (!copy_pass)
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to begin GPU copy pass: %s", __FILE__, __LINE__,
                          SDL_GetError());
-            SDL_SubmitGPUCommandBuffer(command_buffer);
             return std::unexpected(GpuError::BEGIN_COPY_PASS_FAILED);
         }
 
@@ -89,18 +70,13 @@ namespace sopho
         location.offset = 0;
 
         SDL_GPUBufferRegion region{};
-        region.buffer = m_gpu_buffer;
+        region.buffer = m_gpu_buffer.raw();
         region.size = size;
         region.offset = 0;
 
         SDL_UploadToGPUBuffer(copy_pass, &location, &region, false);
 
         SDL_EndGPUCopyPass(copy_pass);
-        if (!SDL_SubmitGPUCommandBuffer(command_buffer))
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
-            return std::unexpected(GpuError::SUBMIT_COMMAND_FAILED);
-        }
 
         return std::monostate{};
     }
@@ -114,6 +90,7 @@ namespace sopho
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
             return std::unexpected(GpuError::CREATE_GPU_BUFFER_FAILED);
         }
+        GpuBufferRaii gpu_buffer_raii{gpu.device(), gpu_buffer};
         auto transfer_buffer = TransferBufferWrapper::Builder{}
                                    .set_size(size)
                                    .set_usage(SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD)
@@ -122,10 +99,10 @@ namespace sopho
         if (!transfer_buffer)
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
-            gpu.release_buffer(gpu_buffer);
             return std::unexpected(transfer_buffer.error());
         }
-        return BufferWrapper{gpu.shared_from_this(), gpu_buffer, (std::move(transfer_buffer.value())), size};
+        return BufferWrapper{gpu.shared_from_this(), std::move(gpu_buffer_raii), (std::move(transfer_buffer.value())),
+                             size};
     }
 
 } // namespace sopho
