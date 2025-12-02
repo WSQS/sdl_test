@@ -36,7 +36,9 @@ import logos;
 
 struct VertexType
 {
-    float x{}, y{}, z{}, u{}, v{};
+    float x{}, y{}, z{};
+    float nx{}, ny{}, nz{};
+    float u{}, v{};
 };
 
 /**
@@ -101,8 +103,10 @@ class UserApp : public sopho::App
         R"WSQ(#version 460
 
 layout (location = 0) in vec3 a_position;
-layout (location = 1) in vec2 a_uv;
-layout (location = 0) out vec2 v_uv;
+layout (location = 1) in vec3 a_normal;
+layout (location = 2) in vec2 a_uv;
+layout (location = 0) out vec3 v_normal;
+layout (location = 1) out vec2 v_uv;
 
 layout(std140, set = 1, binding = 0) uniform Camera
 {
@@ -111,14 +115,16 @@ layout(std140, set = 1, binding = 0) uniform Camera
 
 void main()
 {
-  gl_Position = uView * vec4(a_position, 1.0f);
-  v_uv = a_uv;
+    gl_Position = uView * vec4(a_position, 1.0f);
+    v_uv = a_uv;
+    v_normal = a_normal;
 })WSQ";
 
     std::string fragment_source =
         R"WSQ(#version 460
 
-layout (location = 0) in vec2 v_uv;
+layout (location = 0) in vec3 v_normal;
+layout (location = 1) in vec2 v_uv;
 layout (location = 0) out vec4 FragColor;
 
 layout(set = 2, binding = 0) uniform sampler2D uTexture;
@@ -128,13 +134,14 @@ void main()
     FragColor = texture(uTexture, v_uv);
     if (FragColor.a <= 0.001)
         discard;
-    FragColor.rgb *= 0.1;
+    //FragColor.rgb *= 0.1;
 })WSQ";
 
     std::string fragment_source2 =
         R"WSQ(#version 460
 
-layout (location = 0) in vec2 v_uv;
+layout (location = 0) in vec3 v_normal;
+layout (location = 1) in vec2 v_uv;
 layout (location = 0) out vec4 FragColor;
 
 void main()
