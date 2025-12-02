@@ -653,7 +653,7 @@ public:
         auto renderable = m_renderables[0];
         std::array<sopho::Mat<float, 4, 4>, 3> camera_mat{};
         // Model
-        camera_mat[0] = sopho::translate(0.0f, 0.0f, -5.0f);
+        camera_mat[0] = sopho::translate(0.0f, 0.0f, -5.0f) * sopho::rotation_y(1.6);
         // View
         camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
             sopho::translate(-location(0), -location(1), -location(2));
