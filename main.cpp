@@ -111,12 +111,14 @@ layout (location = 1) out vec2 v_uv;
 
 layout(std140, set = 1, binding = 0) uniform Camera
 {
+    mat4 uModel;
     mat4 uView;
+    mat4 uProjection;
 };
 
 void main()
 {
-    gl_Position = uView * vec4(a_position, 1.0f);
+    gl_Position = uProjection * uView*uModel * vec4(a_position, 1.0f);
     v_uv = a_uv;
     v_normal = a_normal;
 })WSQ";
@@ -646,19 +648,28 @@ public:
             SDL_BeginGPURenderPass(command_buffer_raii.raw(), &colorTargetInfo, 1, &depthStencilTargetInfo);
 
         auto renderable = m_renderables[0];
-        auto camera_mat = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) *
-            sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
-            sopho::translate(- location(0), - location(1), - 5 - location(2));
+        std::array<sopho::Mat<float, 4, 4>, 3> camera_mat{};
+        // Model
+        camera_mat[0] = sopho::translate(0.0f, 0.0f, -5.0f);
+        // View
+        camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
+            sopho::translate(-location(0), -location(1), -location(2));
+        // Projection
+        camera_mat[2] = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10);
         renderable->draw(sopho::RenderContext{.render_pass = renderPass,
                                               .command_buffer = command_buffer_raii.raw(),
                                               .camera_mat = camera_mat,
                                               .texture_wrapper = m_texture_wrapper});
         renderable = m_renderables[1];
-        camera_mat = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) * sopho::rotation_x(-pitch) *
-            sopho::rotation_y(yaw) * sopho::translate( - location(0), 0.5  - location(1),  -6 - location(2));
-        renderable->draw(sopho::RenderContext{.render_pass = renderPass,
-                                              .command_buffer = command_buffer_raii.raw(),
-                                              .camera_mat = camera_mat});
+        // Model
+        camera_mat[0] = sopho::translate(0.0f, 0.5f, -6.0f);
+        // View
+        camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
+            sopho::translate(-location(0), -location(1), -location(2));
+        // Projection
+        camera_mat[2] = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10);
+        renderable->draw(sopho::RenderContext{
+            .render_pass = renderPass, .command_buffer = command_buffer_raii.raw(), .camera_mat = camera_mat});
 
         SDL_EndGPURenderPass(renderPass);
 
