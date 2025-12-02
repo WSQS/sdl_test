@@ -61,7 +61,7 @@ graph TD
     - [x] Camera
 - [ ] Lighting
     - [x] Colors
-    - [ ] Basic Lighting
+    - [x] Basic Lighting
     - [ ] Materials
     - [ ] Lighting maps
     - [ ] Light casters
