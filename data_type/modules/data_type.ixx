@@ -66,6 +66,7 @@ export namespace sopho
     struct FragmentReflection
     {
         std::uint32_t sampler_count{};
+        std::uint32_t uniform_count{};
     };
 
 } // namespace sopho

@@ -36,7 +36,9 @@ import logos;
 
 struct VertexType
 {
-    float x{}, y{}, z{}, u{}, v{};
+    float x{}, y{}, z{};
+    float nx{}, ny{}, nz{};
+    float u{}, v{};
 };
 
 /**
@@ -97,30 +99,44 @@ class UserApp : public sopho::App
 
     int win_w = 0, win_h = 0;
 
+    // see: https://wiki.libsdl.org/SDL3/SDL_CreateGPUShader for uniform layout
     std::string vertex_source =
         R"WSQ(#version 460
 
 layout (location = 0) in vec3 a_position;
-layout (location = 1) in vec2 a_uv;
-layout (location = 0) out vec2 v_uv;
+layout (location = 1) in vec3 a_normal;
+layout (location = 2) in vec2 a_uv;
+layout (location = 0) out vec3 v_normal;
+layout (location = 1) out vec3 v_pos;
+layout (location = 2) out vec2 v_uv;
 
 layout(std140, set = 1, binding = 0) uniform Camera
 {
+    mat4 uModel;
     mat4 uView;
+    mat4 uProjection;
 };
 
 void main()
 {
-  gl_Position = uView * vec4(a_position, 1.0f);
-  v_uv = a_uv;
+    gl_Position = uProjection * uView * uModel * vec4(a_position, 1.0f);
+    v_normal = normalize(mat3(transpose(inverse(uModel))) * a_normal);
+    v_pos = vec3(uModel * vec4(a_position, 1.0));
+    v_uv = a_uv;
 })WSQ";
 
     std::string fragment_source =
         R"WSQ(#version 460
 
-layout (location = 0) in vec2 v_uv;
+layout (location = 0) in vec3 v_normal;
+layout (location = 1) in vec3 v_pos;
+layout (location = 2) in vec2 v_uv;
 layout (location = 0) out vec4 FragColor;
 
+layout(std140, set = 3, binding = 0) uniform Params {
+    vec3 lightPos;
+    vec3 viewPos;
+};
 layout(set = 2, binding = 0) uniform sampler2D uTexture;
 
 void main()
@@ -128,12 +144,22 @@ void main()
     FragColor = texture(uTexture, v_uv);
     if (FragColor.a <= 0.001)
         discard;
+    vec3 lightDir = normalize(lightPos - v_pos);
+    float diff = max(dot(v_normal, lightDir), 0.0);
+    float specularStrength = 0.5;
+    vec3 viewDir = normalize(viewPos - v_pos);
+    vec3 reflectDir = reflect(-lightDir, v_normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+    float specular = specularStrength * spec;
+    FragColor.rgb *= 0.1 + diff + specular;
 })WSQ";
 
     std::string fragment_source2 =
         R"WSQ(#version 460
 
-layout (location = 0) in vec2 v_uv;
+layout (location = 0) in vec3 v_normal;
+layout (location = 1) in vec3 v_pos;
+layout (location = 2) in vec2 v_uv;
 layout (location = 0) out vec4 FragColor;
 
 void main()
@@ -186,17 +212,66 @@ public:
         }
 
         std::vector<VertexType> vertices{
-            {0.5, 0.5, 0.5, 0., 0.},  {-0.5, 0.5, 0.5, 1., 0.},  {0.5, -0.5, 0.5, 0., 1.},  {-0.5, -0.5, 0.5, 1., 1.},
-            {0.5, 0.5, -0.5, 1., 1.}, {-0.5, 0.5, -0.5, 0., 1.}, {0.5, -0.5, -0.5, 1., 0.}, {-0.5, -0.5, -0.5, 0., 0.},
+            // +Z (front)  2 triangles
+            {.x = 0.5f, .y = 0.5f, .z = 0.5f, .nx = 0, .ny = 0, .nz = 1, .u = 0, .v = 0},
+            {.x = -0.5f, .y = 0.5f, .z = 0.5f, .nx = 0, .ny = 0, .nz = 1, .u = 1, .v = 0},
+            {.x = 0.5f, .y = -0.5f, .z = 0.5f, .nx = 0, .ny = 0, .nz = 1, .u = 0, .v = 1},
+            {.x = -0.5f, .y = 0.5f, .z = 0.5f, .nx = 0, .ny = 0, .nz = 1, .u = 1, .v = 0},
+            {.x = -0.5f, .y = -0.5f, .z = 0.5f, .nx = 0, .ny = 0, .nz = 1, .u = 1, .v = 1},
+            {.x = 0.5f, .y = -0.5f, .z = 0.5f, .nx = 0, .ny = 0, .nz = 1, .u = 0, .v = 1},
+
+            // -Z (back)
+            {.x = -0.5f, .y = 0.5f, .z = -0.5f, .nx = 0, .ny = 0, .nz = -1, .u = 0, .v = 0},
+            {.x = 0.5f, .y = 0.5f, .z = -0.5f, .nx = 0, .ny = 0, .nz = -1, .u = 1, .v = 0},
+            {.x = -0.5f, .y = -0.5f, .z = -0.5f, .nx = 0, .ny = 0, .nz = -1, .u = 0, .v = 1},
+            {.x = 0.5f, .y = 0.5f, .z = -0.5f, .nx = 0, .ny = 0, .nz = -1, .u = 1, .v = 0},
+            {.x = 0.5f, .y = -0.5f, .z = -0.5f, .nx = 0, .ny = 0, .nz = -1, .u = 1, .v = 1},
+            {.x = -0.5f, .y = -0.5f, .z = -0.5f, .nx = 0, .ny = 0, .nz = -1, .u = 0, .v = 1},
+
+            // +X (right)
+            {.x = 0.5f, .y = 0.5f, .z = -0.5f, .nx = 1, .ny = 0, .nz = 0, .u = 0, .v = 0},
+            {.x = 0.5f, .y = 0.5f, .z = 0.5f, .nx = 1, .ny = 0, .nz = 0, .u = 1, .v = 0},
+            {.x = 0.5f, .y = -0.5f, .z = -0.5f, .nx = 1, .ny = 0, .nz = 0, .u = 0, .v = 1},
+            {.x = 0.5f, .y = 0.5f, .z = 0.5f, .nx = 1, .ny = 0, .nz = 0, .u = 1, .v = 0},
+            {.x = 0.5f, .y = -0.5f, .z = 0.5f, .nx = 1, .ny = 0, .nz = 0, .u = 1, .v = 1},
+            {.x = 0.5f, .y = -0.5f, .z = -0.5f, .nx = 1, .ny = 0, .nz = 0, .u = 0, .v = 1},
+
+            // -X (left)
+            {.x = -0.5f, .y = 0.5f, .z = 0.5f, .nx = -1, .ny = 0, .nz = 0, .u = 0, .v = 0},
+            {.x = -0.5f, .y = 0.5f, .z = -0.5f, .nx = -1, .ny = 0, .nz = 0, .u = 1, .v = 0},
+            {.x = -0.5f, .y = -0.5f, .z = 0.5f, .nx = -1, .ny = 0, .nz = 0, .u = 0, .v = 1},
+            {.x = -0.5f, .y = 0.5f, .z = -0.5f, .nx = -1, .ny = 0, .nz = 0, .u = 1, .v = 0},
+            {.x = -0.5f, .y = -0.5f, .z = -0.5f, .nx = -1, .ny = 0, .nz = 0, .u = 1, .v = 1},
+            {.x = -0.5f, .y = -0.5f, .z = 0.5f, .nx = -1, .ny = 0, .nz = 0, .u = 0, .v = 1},
+
+            // +Y (top)
+            {.x = 0.5f, .y = 0.5f, .z = -0.5f, .nx = 0, .ny = 1, .nz = 0, .u = 0, .v = 0},
+            {.x = -0.5f, .y = 0.5f, .z = -0.5f, .nx = 0, .ny = 1, .nz = 0, .u = 1, .v = 0},
+            {.x = 0.5f, .y = 0.5f, .z = 0.5f, .nx = 0, .ny = 1, .nz = 0, .u = 0, .v = 1},
+            {.x = -0.5f, .y = 0.5f, .z = -0.5f, .nx = 0, .ny = 1, .nz = 0, .u = 1, .v = 0},
+            {.x = -0.5f, .y = 0.5f, .z = 0.5f, .nx = 0, .ny = 1, .nz = 0, .u = 1, .v = 1},
+            {.x = 0.5f, .y = 0.5f, .z = 0.5f, .nx = 0, .ny = 1, .nz = 0, .u = 0, .v = 1},
+
+            // -Y (bottom)
+            {.x = 0.5f, .y = -0.5f, .z = 0.5f, .nx = 0, .ny = -1, .nz = 0, .u = 0, .v = 0},
+            {.x = -0.5f, .y = -0.5f, .z = 0.5f, .nx = 0, .ny = -1, .nz = 0, .u = 1, .v = 0},
+            {.x = 0.5f, .y = -0.5f, .z = -0.5f, .nx = 0, .ny = -1, .nz = 0, .u = 0, .v = 1},
+            {.x = -0.5f, .y = -0.5f, .z = 0.5f, .nx = 0, .ny = -1, .nz = 0, .u = 1, .v = 0},
+            {.x = -0.5f, .y = -0.5f, .z = -0.5f, .nx = 0, .ny = -1, .nz = 0, .u = 1, .v = 1},
+            {.x = 0.5f, .y = -0.5f, .z = -0.5f, .nx = 0, .ny = -1, .nz = 0, .u = 0, .v = 1},
         };
 
-        std::vector<std::uint32_t> indices{0, 1, 2, 1, 2, 3, 0, 1, 4, 1, 4, 5, 0, 2, 4, 2, 4, 6,
-                                           2, 3, 6, 3, 6, 7, 1, 3, 5, 3, 5, 7, 4, 5, 6, 5, 6, 7};
+        std::vector<std::uint32_t> indices{};
+
+        for (int i = 0; i < 36; ++i)
+        {
+            indices.push_back(i);
+        }
 
         // 3. Create vertex buffer.
         auto render_data = sopho::RenderData::Builder{}
                                .set_vertex_layout(pw_result.value().vertex_layout())
-                               .set_vertex_count(8)
+                               .set_vertex_count(36)
                                .set_index_count(36)
                                .set_vertices(std::span(vertices))
                                .set_indices(std::span(indices))
@@ -581,18 +656,31 @@ public:
         SDL_GPURenderPass* renderPass =
             SDL_BeginGPURenderPass(command_buffer_raii.raw(), &colorTargetInfo, 1, &depthStencilTargetInfo);
 
-
-        for (int i = 0; i < m_renderables.size(); i++)
-        {
-            auto renderable = m_renderables[i];
-            auto camera_mat = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 10) *
-                sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
-                sopho::translate(0 - location(0), 0.5 * i - location(1), -i - 5 - location(2));
-            renderable->draw(sopho::RenderContext{.render_pass = renderPass,
-                                                  .command_buffer = command_buffer_raii.raw(),
-                                                  .camera_mat = camera_mat,
-                                                  .texture_wrapper = i == 0 ? m_texture_wrapper : nullptr});
-        }
+        auto renderable = m_renderables[0];
+        std::array<sopho::Mat<float, 4, 4>, 3> camera_mat{};
+        // Model
+        camera_mat[0] = sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(10);
+        // View
+        camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
+            sopho::translate(-location(0), -location(1), -location(2));
+        // Projection`
+        camera_mat[2] = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 50);
+        renderable->draw(
+            sopho::RenderContext{.render_pass = renderPass,
+                                 .command_buffer = command_buffer_raii.raw(),
+                                 .camera_mat = camera_mat,
+                                 .pos = std::array{sopho::Mat<float, 1, 4>{0.0f, 2.f, -6.0f}, location.resize<1, 4>()},
+                                 .texture_wrapper = m_texture_wrapper});
+        renderable = m_renderables[1];
+        // Model
+        camera_mat[0] = sopho::translate(0.0f, 2.f, -6.0f);
+        // View
+        camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
+            sopho::translate(-location(0), -location(1), -location(2));
+        // Projection
+        camera_mat[2] = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 50);
+        renderable->draw(sopho::RenderContext{
+            .render_pass = renderPass, .command_buffer = command_buffer_raii.raw(), .camera_mat = camera_mat});
 
         SDL_EndGPURenderPass(renderPass);
 

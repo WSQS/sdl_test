@@ -3,6 +3,7 @@
 //
 module;
 #include <SDL3/SDL_gpu.h>
+#include <array>
 #include <memory>
 #include <variant>
 export module sdl_wrapper:renderable;
@@ -16,7 +17,8 @@ namespace sopho
     {
         SDL_GPURenderPass* render_pass{};
         SDL_GPUCommandBuffer* command_buffer{};
-        Mat<float, 4, 4> camera_mat{};
+        std::array<Mat<float, 4, 4>, 3> camera_mat{};
+        std::array<Mat<float, 1, 4>, 2> pos{};
         std::shared_ptr<TextureWrapper> texture_wrapper{};
     };
 

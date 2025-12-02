@@ -3,6 +3,7 @@
 //
 module;
 #include <SDL3/SDL_gpu.h>
+#include <array>
 #include <expected>
 #include <variant>
 module sdl_wrapper;
@@ -21,7 +22,9 @@ namespace sopho
         }
         SDL_BindGPUGraphicsPipeline(render_contex.render_pass, procedural()->raw());
         SDL_PushGPUVertexUniformData(render_contex.command_buffer, 0, render_contex.camera_mat.data(),
-                                     sizeof(Mat<float, 4, 4>));
+                                     sizeof(Mat<float, 4, 4>) * 3);
+        SDL_PushGPUFragmentUniformData(render_contex.command_buffer, 0, render_contex.pos.data(),
+                                       sizeof(std::array<Mat<float, 1, 4>, 2>));
         SDL_BindGPUVertexBuffers(render_contex.render_pass, 0, data()->get_vertex_buffer_binding().data(),
                                  data()->get_vertex_buffer_binding().size());
 

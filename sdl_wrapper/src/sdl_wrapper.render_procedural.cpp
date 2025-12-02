@@ -236,7 +236,8 @@ namespace sopho
         std::vector<std::uint8_t> code = spv_result_to_bytes(result);
 
         auto reflect_result = reflect_fragment(source);
-        auto shader_result = m_gpu->create_shader(code, SDL_GPU_SHADERSTAGE_FRAGMENT, 0, reflect_result.sampler_count);
+        auto shader_result = m_gpu->create_shader(code, SDL_GPU_SHADERSTAGE_FRAGMENT, reflect_result.uniform_count,
+                                                  reflect_result.sampler_count);
 
         if (!shader_result)
         {

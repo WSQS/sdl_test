@@ -67,6 +67,7 @@ namespace sopho
         }
         program.buildReflection();
         auto count = program.getNumPipeInputs();
+        std::map<std::uint32_t, VertexInfo> pipes{};
         for (auto i = 0; i < count; i++)
         {
             const auto& var = program.getPipeInput(i);
@@ -77,10 +78,15 @@ namespace sopho
             std::string name = var.name.c_str();
             auto vector = type->getVectorSize();
             std::cout << name << vector << std::endl;
-            result.inputs.emplace_back(VertexInfo{.location = var.layoutLocation(),
-                                                  .name = var.name,
-                                                  .basic_type = to_basic_type(type->getBasicType()),
-                                                  .vector_size = type->getVectorSize()});
+            pipes.emplace(var.layoutLocation(),
+                          VertexInfo{.location = var.layoutLocation(),
+                                     .name = var.name,
+                                     .basic_type = to_basic_type(type->getBasicType()),
+                                     .vector_size = type->getVectorSize()});
+        }
+        for (const auto& vertex_info : pipes)
+        {
+            result.inputs.emplace_back(vertex_info.second);
         }
         count = program.getNumUniformVariables();
         for (auto i = 0; i < count; i++)
@@ -132,6 +138,10 @@ namespace sopho
             if (basic_type == glslang::EbtSampler)
             {
                 result.sampler_count++;
+            }
+            else
+            {
+                result.uniform_count++;
             }
         }
         return result;
