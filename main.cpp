@@ -99,6 +99,7 @@ class UserApp : public sopho::App
 
     int win_w = 0, win_h = 0;
 
+    // see: https://wiki.libsdl.org/SDL3/SDL_CreateGPUShader for uniform layout
     std::string vertex_source =
         R"WSQ(#version 460
 
@@ -127,6 +128,9 @@ layout (location = 0) in vec3 v_normal;
 layout (location = 1) in vec2 v_uv;
 layout (location = 0) out vec4 FragColor;
 
+layout(std140, set = 3, binding = 0) uniform Params {
+    vec3 lightPos;
+};
 layout(set = 2, binding = 0) uniform sampler2D uTexture;
 
 void main()
@@ -134,7 +138,10 @@ void main()
     FragColor = texture(uTexture, v_uv);
     if (FragColor.a <= 0.001)
         discard;
-    //FragColor.rgb *= 0.1;
+    FragColor.rgb *= 0.1;
+    FragColor.r *= lightPos.r;
+    FragColor.g *= lightPos.g;
+    FragColor.b *= lightPos.b;
 })WSQ";
 
     std::string fragment_source2 =
