@@ -8,7 +8,7 @@ module;
 #include <memory>
 #include <variant>
 export module sdl_primitive_renderer;
-export import primitive_renderer;
+import primitive_renderer;
 import data_type;
 import sdl_raii;
 import sdl_wrapper;
@@ -26,7 +26,7 @@ namespace sopho
         GpuTextureRaii m_depth_texture{};
 
     public:
-        static checkable<SDLPrimitiveRenderer*> create()
+        static checkable<PrimitiveRenderer*> create()
         {
             auto gpu_result = GpuWrapper::create();
             if (!gpu_result)
