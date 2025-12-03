@@ -197,8 +197,6 @@ public:
             return SDL_APP_FAILURE;
         }
         m_primitive_renderer = c_primitive_renderer.value();
-        m_primitive_renderer->begin_frame();
-        m_primitive_renderer->end_frame();
 
         // 2. Create pipeline wrapper.
         auto pw_result = m_primitive_renderer->get_gpu().create_render_procedural();
