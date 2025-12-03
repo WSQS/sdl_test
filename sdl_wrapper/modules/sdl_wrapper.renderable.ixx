@@ -9,6 +9,7 @@ module;
 export module sdl_wrapper:renderable;
 import logos;
 import data_type;
+import primitive_renderer;
 import :decl;
 namespace sopho
 {
@@ -25,7 +26,7 @@ namespace sopho
     export class Renderable
     {
     public:
-        std::shared_ptr<RenderProcedural> m_render_procedural{};
+        RenderProcedureHandle m_render_procedural{};
         std::shared_ptr<RenderData> m_render_data{};
         auto& procedural() { return m_render_procedural; }
         std::shared_ptr<RenderData>& data() { return m_render_data; }

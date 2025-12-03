@@ -20,7 +20,7 @@ namespace sopho
         SDLPrimitiveRenderer(std::shared_ptr<GpuWrapper> gpu) : m_gpu(std::move(gpu)) {}
         GpuCommandBufferRaii m_gpu_command_buffer{};
         GpuRenderPassRaii m_gpu_render_pass{};
-        std::map<RenderProcedureHandle, RenderProcedural> m_render_procedures{};
+        std::map<RenderProcedureHandle, std::shared_ptr<RenderProcedural>> m_render_procedures{};
         std::map<TextureHandle, GpuTextureRaii> m_textures{};
         SDL_GPUTexture* m_swapchain_texture{};
         GpuTextureRaii m_depth_texture{};
@@ -126,7 +126,15 @@ namespace sopho
                 handle = static_cast<RenderProcedureHandle>(
                     static_cast<std::uint32_t>(m_render_procedures.rbegin()->first) + 1);
             }
+            m_render_procedures[handle] = std::make_shared<RenderProcedural>(std::move(pw_result.value()));
             return handle;
+        }
+        void bind_render_procedure(const RenderProcedureHandle& render_procedure_handle) override
+        {
+            if (m_render_procedures.contains(render_procedure_handle))
+            {
+                SDL_BindGPUGraphicsPipeline(m_gpu_render_pass.raw(), m_render_procedures[render_procedure_handle]->raw());
+            }
         }
         auto& get_gpu() { return *m_gpu; }
         auto& get_command_buffer() { return m_gpu_command_buffer; }

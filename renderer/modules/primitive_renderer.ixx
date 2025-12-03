@@ -35,5 +35,6 @@ export namespace sopho
         virtual void end_render_pass() = 0;
         virtual checkable<RenderProcedureHandle>
         create_render_procedure(const RenderProcedureDescriptor& render_procedure_descriptor) = 0;
+        virtual void bind_render_procedure(const RenderProcedureHandle& render_procedure_handle) = 0;
     };
 } // namespace sopho

@@ -294,8 +294,7 @@ public:
         }
 
         m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
-            .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result.value())),
-            .m_render_data = std::move(render_data.value())}));
+            .m_render_procedural = pipeline_handle.value(), .m_render_data = std::move(render_data.value())}));
 
         auto pw_result2 = m_primitive_renderer->get_gpu().create_render_procedural();
         pipeline_init = pw_result2.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
@@ -307,9 +306,10 @@ public:
                          static_cast<int>(pipeline_init.error()));
             return SDL_APP_FAILURE;
         }
+        auto pipeline_handle2 = m_primitive_renderer->create_render_procedure(
+            {.vert_shader = vertex_source, .frag_shader = fragment_source2});
         m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
-            .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result2.value())),
-            .m_render_data = m_renderables[0]->data()}));
+            .m_render_procedural = pipeline_handle2.value(), .m_render_data = m_renderables[0]->data()}));
 
         // 7. Setup Dear ImGui context.
         IMGUI_CHECKVERSION();
@@ -599,6 +599,7 @@ public:
             sopho::translate(-location(0), -location(1), -location(2));
         // Projection`
         camera_mat[2] = sopho::perspective(1, static_cast<float>(w) / h, 0.1, 50);
+        m_primitive_renderer->bind_render_procedure(renderable->procedural());
         renderable->draw(
             sopho::RenderContext{.render_pass = m_primitive_renderer->get_render_pass().raw(),
                                  .command_buffer = m_primitive_renderer->get_command_buffer().raw(),
@@ -613,6 +614,7 @@ public:
             sopho::translate(-location(0), -location(1), -location(2));
         // Projection
         camera_mat[2] = sopho::perspective(1, static_cast<float>(w) / h, 0.1, 50);
+        m_primitive_renderer->bind_render_procedure(renderable->procedural());
         renderable->draw(sopho::RenderContext{.render_pass = m_primitive_renderer->get_render_pass().raw(),
                                               .command_buffer = m_primitive_renderer->get_command_buffer().raw(),
                                               .camera_mat = camera_mat});

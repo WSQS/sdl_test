@@ -15,12 +15,6 @@ namespace sopho
 {
     checkable<std::monostate> Renderable::draw(RenderContext render_contex)
     {
-        auto submit_result = procedural()->submit();
-        if (!submit_result)
-        {
-            return std::unexpected(submit_result.error());
-        }
-        SDL_BindGPUGraphicsPipeline(render_contex.render_pass, procedural()->raw());
         SDL_PushGPUVertexUniformData(render_contex.command_buffer, 0, render_contex.camera_mat.data(),
                                      sizeof(Mat<float, 4, 4>) * 3);
         SDL_PushGPUFragmentUniformData(render_contex.command_buffer, 0, render_contex.pos.data(),
