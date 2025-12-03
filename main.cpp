@@ -582,6 +582,8 @@ public:
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "GpuWrapper::device() returned null in draw()");
             return SDL_APP_CONTINUE;
         }
+        int w{}, h{};
+        SDL_GetWindowSize(m_primitive_renderer->get_gpu().window(), &w, &h);
         m_primitive_renderer->begin_frame();
 
         ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, m_primitive_renderer->get_command_buffer().raw());
@@ -596,7 +598,7 @@ public:
         camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
             sopho::translate(-location(0), -location(1), -location(2));
         // Projection`
-        camera_mat[2] = sopho::perspective(1, static_cast<float>(1) / 1, 0.1, 50);
+        camera_mat[2] = sopho::perspective(1, static_cast<float>(w) / h, 0.1, 50);
         renderable->draw(
             sopho::RenderContext{.render_pass = m_primitive_renderer->get_render_pass().raw(),
                                  .command_buffer = m_primitive_renderer->get_command_buffer().raw(),
@@ -610,7 +612,7 @@ public:
         camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
             sopho::translate(-location(0), -location(1), -location(2));
         // Projection
-        camera_mat[2] = sopho::perspective(1, static_cast<float>(1) / 1, 0.1, 50);
+        camera_mat[2] = sopho::perspective(1, static_cast<float>(w) / h, 0.1, 50);
         renderable->draw(sopho::RenderContext{.render_pass = m_primitive_renderer->get_render_pass().raw(),
                                               .command_buffer = m_primitive_renderer->get_command_buffer().raw(),
                                               .camera_mat = camera_mat});
