@@ -630,6 +630,10 @@ public:
         m_primitive_renderer->bind_render_procedure(renderable->procedural());
         m_primitive_renderer->bind_vertex_buffer(m_vertex_buffer);
         m_primitive_renderer->bind_index_buffer(m_index_buffer);
+        SDL_PushGPUVertexUniformData(m_primitive_renderer->get_command_buffer().raw(), 0, camera_mat.data(),
+                             sizeof(sopho::Mat<float, 4, 4>) * 3);
+        SDL_PushGPUFragmentUniformData(m_primitive_renderer->get_command_buffer().raw(), 0, std::array{sopho::Mat<float, 1, 4>{0.0f, 2.f, -6.0f}, location.resize<1, 4>()}.data(),
+                                       sizeof(std::array<sopho::Mat<float, 1, 4>, 2>));
         renderable->draw(
             sopho::RenderContext{.render_pass = m_primitive_renderer->get_render_pass().raw(),
                                  .command_buffer = m_primitive_renderer->get_command_buffer().raw(),
@@ -647,6 +651,8 @@ public:
         m_primitive_renderer->bind_render_procedure(renderable->procedural());
         m_primitive_renderer->bind_vertex_buffer(m_vertex_buffer);
         m_primitive_renderer->bind_index_buffer(m_index_buffer);
+        SDL_PushGPUVertexUniformData(m_primitive_renderer->get_command_buffer().raw(), 0, camera_mat.data(),
+                             sizeof(sopho::Mat<float, 4, 4>) * 3);
         renderable->draw(sopho::RenderContext{.render_pass = m_primitive_renderer->get_render_pass().raw(),
                                               .command_buffer = m_primitive_renderer->get_command_buffer().raw(),
                                               .camera_mat = camera_mat});

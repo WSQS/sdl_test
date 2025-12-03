@@ -15,10 +15,6 @@ namespace sopho
 {
     checkable<std::monostate> Renderable::draw(RenderContext render_contex)
     {
-        SDL_PushGPUVertexUniformData(render_contex.command_buffer, 0, render_contex.camera_mat.data(),
-                                     sizeof(Mat<float, 4, 4>) * 3);
-        SDL_PushGPUFragmentUniformData(render_contex.command_buffer, 0, render_contex.pos.data(),
-                                       sizeof(std::array<Mat<float, 1, 4>, 2>));
         if (render_contex.texture_wrapper)
         {
             SDL_BindGPUFragmentSamplers(render_contex.render_pass, 0, render_contex.texture_wrapper->get(), 1);
