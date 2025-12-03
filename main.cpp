@@ -194,25 +194,7 @@ public:
         m_primitive_renderer = dynamic_cast<sopho::SDLPrimitiveRenderer*>(c_primitive_renderer.value());
         auto pipeline_handle = m_primitive_renderer->create_render_procedure(
             {.vert_shader = vertex_source, .frag_shader = fragment_source});
-        auto pw_result = m_primitive_renderer->get_gpu().create_render_procedural();
-        if (!pw_result)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create pipeline wrapper, error = %d",
-                         static_cast<int>(pw_result.error()));
-            return SDL_APP_FAILURE;
-        }
 
-        auto pipeline_init =
-            pw_result.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
-                .and_then([&](std::monostate) { return pw_result->set_fragment_shader(fragment_source); })
-                .and_then([&](std::monostate) { return pw_result->submit(); });
-
-        if (!pipeline_init)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to initialize pipeline, error = %d",
-                         static_cast<int>(pipeline_init.error()));
-            return SDL_APP_FAILURE;
-        }
 
         std::vector<VertexType> vertices{
             // +Z (front)  2 triangles
@@ -299,16 +281,6 @@ public:
         m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
             .m_render_procedural = pipeline_handle.value()}));
 
-        auto pw_result2 = m_primitive_renderer->get_gpu().create_render_procedural();
-        pipeline_init = pw_result2.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
-                            .and_then([&](std::monostate) { return pw_result2->set_fragment_shader(fragment_source2); })
-                            .and_then([&](std::monostate) { return pw_result2->submit(); });
-        if (!pipeline_init)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to initialize pipeline, error = %d",
-                         static_cast<int>(pipeline_init.error()));
-            return SDL_APP_FAILURE;
-        }
         auto pipeline_handle2 = m_primitive_renderer->create_render_procedure(
             {.vert_shader = vertex_source, .frag_shader = fragment_source2});
         m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
