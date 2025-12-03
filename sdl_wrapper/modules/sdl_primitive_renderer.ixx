@@ -102,7 +102,7 @@ namespace sopho
         checkable<RenderProcedureHandle>
         create_render_procedure(const RenderProcedureDescriptor& render_procedure_descriptor) override
         {
-            auto pw_result = get_gpu().create_render_procedural();
+            auto pw_result = m_gpu->create_render_procedural();
             if (!pw_result)
             {
                 return std::unexpected(pw_result.error());
