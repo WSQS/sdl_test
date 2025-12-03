@@ -243,6 +243,11 @@ namespace sopho
             bindings.emplace_back(SDL_GPUBufferBinding{m_buffers[buffer_handle].raw(), 0});
             SDL_BindGPUIndexBuffer(m_gpu_render_pass.raw(), bindings.data(), SDL_GPU_INDEXELEMENTSIZE_32BIT);
         }
+        void push_vertex_uniform(const UniformDescriptor& uniform_descriptor) override
+        {
+            SDL_PushGPUVertexUniformData(m_gpu_command_buffer.raw(), uniform_descriptor.slot_index,
+                                         uniform_descriptor.data.data(), uniform_descriptor.data.size());
+        }
         auto& get_gpu() { return *m_gpu; }
         auto& get_command_buffer() { return m_gpu_command_buffer; }
         auto& get_render_pass() { return m_gpu_render_pass; }

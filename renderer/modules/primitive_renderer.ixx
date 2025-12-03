@@ -3,6 +3,7 @@
 //
 module;
 #include <cstdint>
+#include <span>
 #include <string>
 #include <vector>
 export module primitive_renderer;
@@ -39,6 +40,11 @@ export namespace sopho
         bool clear{};
         bool depth{};
     };
+    struct UniformDescriptor
+    {
+        std::int32_t slot_index{};
+        std::span<std::byte> data{};
+    };
     class PrimitiveRenderer
     {
     public:
@@ -53,5 +59,6 @@ export namespace sopho
         virtual checkable<BufferHandle> create_buffer(const BufferDescriptor& buffer_descriptor) = 0;
         virtual void bind_vertex_buffer(const BufferHandle& buffer_handle) = 0;
         virtual void bind_index_buffer(const BufferHandle& buffer_handle) = 0;
+        virtual void push_vertex_uniform(const UniformDescriptor& uniform_descriptor)=0;
     };
 } // namespace sopho
