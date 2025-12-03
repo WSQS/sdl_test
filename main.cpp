@@ -83,6 +83,7 @@ class UserApp : public sopho::App
     // GPU + resources
     sopho::SDLPrimitiveRenderer* m_primitive_renderer{};
     sopho::BufferHandle m_vertex_buffer{};
+    sopho::BufferHandle m_index_buffer{};
 
     std::vector<std::shared_ptr<sopho::Renderable>> m_renderables{};
 
@@ -281,6 +282,18 @@ public:
         if (verti)
         {
             m_vertex_buffer = verti.value();
+        }
+
+        buffer_descriptor.buffer_usage = sopho::BufferUsage::INDEX;
+        auto indices_span = std::span(indices);
+        buffer_descriptor.data =
+            std::vector<std::byte>{reinterpret_cast<const std::byte*>(indices_span.data()),
+                                   reinterpret_cast<const std::byte*>(indices_span.data()) + indices_span.size_bytes()};
+
+        verti = m_primitive_renderer->create_buffer(buffer_descriptor);
+        if (verti)
+        {
+            m_index_buffer = verti.value();
         }
 
         // 3. Create vertex buffer.
@@ -616,6 +629,7 @@ public:
         camera_mat[2] = sopho::perspective(1, static_cast<float>(w) / h, 0.1, 50);
         m_primitive_renderer->bind_render_procedure(renderable->procedural());
         m_primitive_renderer->bind_vertex_buffer(m_vertex_buffer);
+        m_primitive_renderer->bind_index_buffer(m_index_buffer);
         renderable->draw(
             sopho::RenderContext{.render_pass = m_primitive_renderer->get_render_pass().raw(),
                                  .command_buffer = m_primitive_renderer->get_command_buffer().raw(),
@@ -632,6 +646,7 @@ public:
         camera_mat[2] = sopho::perspective(1, static_cast<float>(w) / h, 0.1, 50);
         m_primitive_renderer->bind_render_procedure(renderable->procedural());
         m_primitive_renderer->bind_vertex_buffer(m_vertex_buffer);
+        m_primitive_renderer->bind_index_buffer(m_index_buffer);
         renderable->draw(sopho::RenderContext{.render_pass = m_primitive_renderer->get_render_pass().raw(),
                                               .command_buffer = m_primitive_renderer->get_command_buffer().raw(),
                                               .camera_mat = camera_mat});

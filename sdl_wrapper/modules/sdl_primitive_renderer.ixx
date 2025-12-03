@@ -237,6 +237,12 @@ namespace sopho
             bindings.emplace_back(SDL_GPUBufferBinding{m_buffers[buffer_handle].raw(), 0});
             SDL_BindGPUVertexBuffers(m_gpu_render_pass.raw(), 0, bindings.data(), bindings.size());
         }
+        void bind_index_buffer(const BufferHandle& buffer_handle) override
+        {
+            std::vector<SDL_GPUBufferBinding> bindings;
+            bindings.emplace_back(SDL_GPUBufferBinding{m_buffers[buffer_handle].raw(), 0});
+            SDL_BindGPUIndexBuffer(m_gpu_render_pass.raw(), bindings.data(), SDL_GPU_INDEXELEMENTSIZE_32BIT);
+        }
         auto& get_gpu() { return *m_gpu; }
         auto& get_command_buffer() { return m_gpu_command_buffer; }
         auto& get_render_pass() { return m_gpu_render_pass; }
