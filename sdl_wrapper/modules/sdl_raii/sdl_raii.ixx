@@ -20,6 +20,7 @@ export namespace sopho
     using GpuTransferBufferRaii = BoundRaii<SDL_GPUTransferBuffer>;
     using ClaimWindowRaii = BoundRaii<SDL_Window>;
     using GpuCommandBufferRaii = PureRaii<SDL_GPUCommandBuffer>;
+    using GpuRenderPassRaii = PureRaii<SDL_GPURenderPass>;
     using GpuDeviceRaii = PureRaii<SDL_GPUDevice>;
     using WindowRaii = PureRaii<SDL_Window>;
 } // namespace sopho

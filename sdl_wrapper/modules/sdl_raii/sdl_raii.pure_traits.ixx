@@ -26,4 +26,9 @@ namespace sopho
     {
         static void release(SDL_Window* raw) noexcept { SDL_DestroyWindow(raw); }
     };
+    template <>
+    struct PureTraits<SDL_GPURenderPass>
+    {
+        static void release(SDL_GPURenderPass* raw) noexcept { SDL_EndGPURenderPass(raw); }
+    };
 } // namespace sopho
