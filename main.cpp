@@ -296,33 +296,8 @@ public:
             m_index_buffer = verti.value();
         }
 
-        // 3. Create vertex buffer.
-        auto render_data = sopho::RenderData::Builder{}
-                               .set_vertex_layout(pw_result.value().vertex_layout())
-                               .set_vertex_count(36)
-                               .set_index_count(36)
-                               .set_vertices(std::span(vertices))
-                               .set_indices(std::span(indices))
-                               .build(m_primitive_renderer->get_gpu());
-        if (!render_data)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
-                         static_cast<int>(render_data.error()));
-            return SDL_APP_FAILURE;
-        }
-
-        // 5. Upload initial vertex data.
-        auto upload_result = render_data.and_then([&](auto& vertex_buffer) { return vertex_buffer->upload(); });
-
-        if (!upload_result)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to upload initial vertex data, error = %d",
-                         static_cast<int>(upload_result.error()));
-            return SDL_APP_FAILURE;
-        }
-
         m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
-            .m_render_procedural = pipeline_handle.value(), .m_render_data = std::move(render_data.value())}));
+            .m_render_procedural = pipeline_handle.value()}));
 
         auto pw_result2 = m_primitive_renderer->get_gpu().create_render_procedural();
         pipeline_init = pw_result2.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
@@ -337,7 +312,7 @@ public:
         auto pipeline_handle2 = m_primitive_renderer->create_render_procedure(
             {.vert_shader = vertex_source, .frag_shader = fragment_source2});
         m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
-            .m_render_procedural = pipeline_handle2.value(), .m_render_data = m_renderables[0]->data()}));
+            .m_render_procedural = pipeline_handle2.value()}));
 
         // 7. Setup Dear ImGui context.
         IMGUI_CHECKVERSION();
