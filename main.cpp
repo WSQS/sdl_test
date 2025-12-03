@@ -582,80 +582,11 @@ public:
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "GpuWrapper::device() returned null in draw()");
             return SDL_APP_CONTINUE;
         }
-        sopho::GpuCommandBufferRaii command_buffer_raii{};
-        {
+        m_primitive_renderer->begin_frame();
 
-            SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(device);
-            if (!command_buffer)
-            {
-                SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to acquire GPU command buffer");
-                return SDL_APP_CONTINUE;
-            }
-            command_buffer_raii.reset(command_buffer);
-        }
+        ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, m_primitive_renderer->get_command_buffer().raw());
 
-        SDL_GPUTexture* swapchainTexture = nullptr;
-        Uint32 width = 0, height = 0;
-
-        SDL_Window* window = m_primitive_renderer->get_gpu().window();
-        if (!window)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "GpuWrapper::window() returned null in draw()");
-            return SDL_APP_CONTINUE;
-        }
-
-        if (!SDL_WaitAndAcquireGPUSwapchainTexture(command_buffer_raii.raw(), window, &swapchainTexture, &width,
-                                                   &height))
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to acquire swapchain texture: %s", SDL_GetError());
-            return SDL_APP_CONTINUE;
-        }
-
-        if ((win_w != width || win_h != height) && width != 0 && height != 0)
-        {
-            SDL_GPUTextureCreateInfo ci = {
-                .type = SDL_GPU_TEXTURETYPE_2D,
-                .format = SDL_GPU_TEXTUREFORMAT_D16_UNORM,
-                .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
-                .width = static_cast<std::uint32_t>(width),
-                .height = static_cast<std::uint32_t>(height),
-                .layer_count_or_depth = 1,
-                .num_levels = 1,
-                .sample_count = SDL_GPU_SAMPLECOUNT_1,
-            };
-            SDL_ReleaseGPUTexture(m_primitive_renderer->get_gpu().device(), SceneDepthTexture);
-            SceneDepthTexture = SDL_CreateGPUTexture(m_primitive_renderer->get_gpu().device(), &ci);
-            win_w = width;
-            win_h = height;
-        }
-
-        if (swapchainTexture == nullptr)
-        {
-            // You must always submit the command buffer, even if no texture is available.
-            return SDL_APP_CONTINUE;
-        }
-
-        ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer_raii.raw());
-
-        // Create the color target.
-        SDL_GPUColorTargetInfo colorTargetInfo{};
-        colorTargetInfo.clear_color = {135 / 255.0F, 135 / 255.0F, 135 / 255.0F, 255 / 255.0F};
-        colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
-        colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
-        colorTargetInfo.texture = swapchainTexture;
-
-        SDL_GPUDepthStencilTargetInfo depthStencilTargetInfo{};
-        depthStencilTargetInfo.texture = SceneDepthTexture;
-        depthStencilTargetInfo.cycle = true;
-        depthStencilTargetInfo.clear_depth = 1;
-        depthStencilTargetInfo.clear_stencil = 0;
-        depthStencilTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
-        depthStencilTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
-        depthStencilTargetInfo.stencil_load_op = SDL_GPU_LOADOP_CLEAR;
-        depthStencilTargetInfo.stencil_store_op = SDL_GPU_STOREOP_STORE;
-
-        SDL_GPURenderPass* renderPass =
-            SDL_BeginGPURenderPass(command_buffer_raii.raw(), &colorTargetInfo, 1, &depthStencilTargetInfo);
+        m_primitive_renderer->begin_render_pass({.clear = true, .depth = true});
 
         auto renderable = m_renderables[0];
         std::array<sopho::Mat<float, 4, 4>, 3> camera_mat{};
@@ -665,10 +596,10 @@ public:
         camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
             sopho::translate(-location(0), -location(1), -location(2));
         // Projection`
-        camera_mat[2] = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 50);
+        camera_mat[2] = sopho::perspective(1, static_cast<float>(1) / 1, 0.1, 50);
         renderable->draw(
-            sopho::RenderContext{.render_pass = renderPass,
-                                 .command_buffer = command_buffer_raii.raw(),
+            sopho::RenderContext{.render_pass = m_primitive_renderer->get_render_pass().raw(),
+                                 .command_buffer = m_primitive_renderer->get_command_buffer().raw(),
                                  .camera_mat = camera_mat,
                                  .pos = std::array{sopho::Mat<float, 1, 4>{0.0f, 2.f, -6.0f}, location.resize<1, 4>()},
                                  .texture_wrapper = m_texture_wrapper});
@@ -679,19 +610,19 @@ public:
         camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
             sopho::translate(-location(0), -location(1), -location(2));
         // Projection
-        camera_mat[2] = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 50);
-        renderable->draw(sopho::RenderContext{
-            .render_pass = renderPass, .command_buffer = command_buffer_raii.raw(), .camera_mat = camera_mat});
+        camera_mat[2] = sopho::perspective(1, static_cast<float>(1) / 1, 0.1, 50);
+        renderable->draw(sopho::RenderContext{.render_pass = m_primitive_renderer->get_render_pass().raw(),
+                                              .command_buffer = m_primitive_renderer->get_command_buffer().raw(),
+                                              .camera_mat = camera_mat});
 
-        SDL_EndGPURenderPass(renderPass);
+        m_primitive_renderer->end_render_pass();
+        m_primitive_renderer->begin_render_pass({.clear = false, .depth = false});
 
-        colorTargetInfo.load_op = SDL_GPU_LOADOP_LOAD;
+        ImGui_ImplSDLGPU3_RenderDrawData(draw_data, m_primitive_renderer->get_command_buffer().raw(),
+                                         m_primitive_renderer->get_render_pass().raw());
 
-        renderPass = SDL_BeginGPURenderPass(command_buffer_raii.raw(), &colorTargetInfo, 1, nullptr);
-        ImGui_ImplSDLGPU3_RenderDrawData(draw_data, command_buffer_raii.raw(), renderPass);
-
-        SDL_EndGPURenderPass(renderPass);
-
+        m_primitive_renderer->end_render_pass();
+        m_primitive_renderer->end_frame();
         return SDL_APP_CONTINUE;
     }
 
