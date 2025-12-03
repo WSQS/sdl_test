@@ -188,7 +188,7 @@ public:
                          static_cast<int>(c_primitive_renderer.error()));
             return SDL_APP_FAILURE;
         }
-        m_primitive_renderer = c_primitive_renderer.value();
+        m_primitive_renderer = dynamic_cast<sopho::SDLPrimitiveRenderer*>(c_primitive_renderer.value());
         auto pipeline_handle = m_primitive_renderer->create_render_procedure(
             {.vert_shader = vertex_source, .frag_shader = fragment_source});
         auto pw_result = m_primitive_renderer->get_gpu().create_render_procedural();
