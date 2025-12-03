@@ -250,8 +250,12 @@ namespace sopho
         }
         void push_fragment_uniform(const UniformDescriptor& uniform_descriptor) override
         {
-            SDL_PushGPUFragmentUniformData( m_gpu_command_buffer.raw(), uniform_descriptor.slot_index,
-                                         uniform_descriptor.data.data(), uniform_descriptor.data.size());
+            SDL_PushGPUFragmentUniformData(m_gpu_command_buffer.raw(), uniform_descriptor.slot_index,
+                                           uniform_descriptor.data.data(), uniform_descriptor.data.size());
+        }
+        void draw_index(std::int32_t num_indices) override
+        {
+            SDL_DrawGPUIndexedPrimitives(m_gpu_render_pass.raw(), num_indices, 1, 0, 0, 0);
         }
         auto& get_gpu() { return *m_gpu; }
         auto& get_command_buffer() { return m_gpu_command_buffer; }

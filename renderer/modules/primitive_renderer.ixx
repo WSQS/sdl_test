@@ -59,7 +59,8 @@ export namespace sopho
         virtual checkable<BufferHandle> create_buffer(const BufferDescriptor& buffer_descriptor) = 0;
         virtual void bind_vertex_buffer(const BufferHandle& buffer_handle) = 0;
         virtual void bind_index_buffer(const BufferHandle& buffer_handle) = 0;
-        virtual void push_vertex_uniform(const UniformDescriptor& uniform_descriptor)=0;
-        virtual void push_fragment_uniform(const UniformDescriptor& uniform_descriptor)=0;
+        virtual void push_vertex_uniform(const UniformDescriptor& uniform_descriptor) = 0;
+        virtual void push_fragment_uniform(const UniformDescriptor& uniform_descriptor) = 0;
+        virtual void draw_index(std::int32_t num_indices) = 0;
     };
 } // namespace sopho
