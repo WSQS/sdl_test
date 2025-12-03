@@ -19,9 +19,6 @@ namespace sopho
                                      sizeof(Mat<float, 4, 4>) * 3);
         SDL_PushGPUFragmentUniformData(render_contex.command_buffer, 0, render_contex.pos.data(),
                                        sizeof(std::array<Mat<float, 1, 4>, 2>));
-        SDL_BindGPUVertexBuffers(render_contex.render_pass, 0, data()->get_vertex_buffer_binding().data(),
-                                 data()->get_vertex_buffer_binding().size());
-
         SDL_BindGPUIndexBuffer(render_contex.render_pass, &data()->get_index_buffer_binding(),
                                SDL_GPU_INDEXELEMENTSIZE_32BIT);
         if (render_contex.texture_wrapper)

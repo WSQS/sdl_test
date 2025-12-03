@@ -3,10 +3,13 @@
 //
 module;
 #include <SDL3/SDL_gpu.h>
+#include <SDL3/SDL_log.h>
+#include <cassert>
 #include <expected>
 #include <map>
 #include <memory>
 #include <variant>
+#include <vector>
 export module sdl_primitive_renderer;
 import primitive_renderer;
 import data_type;
@@ -22,6 +25,7 @@ namespace sopho
         GpuRenderPassRaii m_gpu_render_pass{};
         std::map<RenderProcedureHandle, std::shared_ptr<RenderProcedural>> m_render_procedures{};
         std::map<TextureHandle, GpuTextureRaii> m_textures{};
+        std::map<BufferHandle, GpuBufferRaii> m_buffers{};
         SDL_GPUTexture* m_swapchain_texture{};
         GpuTextureRaii m_depth_texture{};
 
@@ -133,8 +137,105 @@ namespace sopho
         {
             if (m_render_procedures.contains(render_procedure_handle))
             {
-                SDL_BindGPUGraphicsPipeline(m_gpu_render_pass.raw(), m_render_procedures[render_procedure_handle]->raw());
+                SDL_BindGPUGraphicsPipeline(m_gpu_render_pass.raw(),
+                                            m_render_procedures[render_procedure_handle]->raw());
             }
+        }
+        checkable<BufferHandle> create_buffer(const BufferDescriptor& buffer_descriptor) override
+        {
+            SDL_GPUBufferUsageFlags usage{};
+            switch (buffer_descriptor.buffer_usage)
+            {
+            case BufferUsage::VERTEX:
+                usage = SDL_GPU_BUFFERUSAGE_VERTEX;
+                break;
+            case BufferUsage::INDEX:
+                usage = SDL_GPU_BUFFERUSAGE_INDEX;
+                break;
+            default:
+                assert(!"Invalid buffer usage");
+                break;
+            }
+            SDL_GPUBufferCreateInfo create_info{.usage = usage,
+                                                .size = static_cast<std::uint32_t>(buffer_descriptor.data.size())};
+            auto gpu_buffer = SDL_CreateGPUBuffer(m_gpu->device(), &create_info);
+            if (!gpu_buffer)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
+                return std::unexpected(GpuError::CREATE_GPU_BUFFER_FAILED);
+            }
+            GpuBufferRaii gpu_buffer_raii{m_gpu->device(), gpu_buffer};
+            SDL_GPUTransferBufferCreateInfo transfer_buffer_create_info{};
+            transfer_buffer_create_info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+            transfer_buffer_create_info.size = buffer_descriptor.data.size();
+
+            auto* transfer_buffer = SDL_CreateGPUTransferBuffer(m_gpu->device(), &transfer_buffer_create_info);
+            if (!transfer_buffer)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d %s", __FILE__, __LINE__, SDL_GetError());
+                return std::unexpected(GpuError::CREATE_TRANSFER_BUFFER_FAILED);
+            }
+            GpuTransferBufferRaii tb_raii{m_gpu->device(), transfer_buffer};
+
+            void* dst = SDL_MapGPUTransferBuffer(m_gpu->device(), tb_raii.raw(), false);
+            if (!dst)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to map transfer buffer: %s", __FILE__, __LINE__,
+                             SDL_GetError());
+
+                return std::unexpected(GpuError::MAP_TRANSFER_BUFFER_FAILED);
+            }
+
+            SDL_memcpy(dst, buffer_descriptor.data.data(), buffer_descriptor.data.size());
+            SDL_UnmapGPUTransferBuffer(m_gpu->device(), tb_raii.raw());
+            GpuCommandBufferRaii command_buffer_raii;
+            {
+                // 3. Acquire a command buffer and enqueue the copy pass.
+                auto* command_buffer = SDL_AcquireGPUCommandBuffer(m_gpu->device());
+                if (!command_buffer)
+                {
+                    SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to acquire GPU command buffer: %s", __FILE__,
+                                 __LINE__, SDL_GetError());
+
+                    return std::unexpected(GpuError::ACQUIRE_COMMAND_BUFFER_FAILED);
+                }
+                command_buffer_raii.reset(command_buffer);
+            }
+
+            auto* copy_pass = SDL_BeginGPUCopyPass(command_buffer_raii.raw());
+
+            if (!copy_pass)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_GPU, "%s:%d failed to begin GPU copy pass: %s", __FILE__, __LINE__,
+                             SDL_GetError());
+                return std::unexpected(GpuError::BEGIN_COPY_PASS_FAILED);
+            }
+
+            SDL_GPUTransferBufferLocation location{};
+            location.transfer_buffer = tb_raii.raw();
+            location.offset = 0;
+
+            SDL_GPUBufferRegion region{};
+            region.buffer = gpu_buffer_raii.raw();
+            region.size = buffer_descriptor.data.size();
+            region.offset = 0;
+
+            SDL_UploadToGPUBuffer(copy_pass, &location, &region, false);
+
+            SDL_EndGPUCopyPass(copy_pass);
+            BufferHandle handle{};
+            if (!m_buffers.empty())
+            {
+                handle = static_cast<BufferHandle>(static_cast<std::uint32_t>(m_buffers.rbegin()->first) + 1);
+            }
+            m_buffers[handle] = std::move(gpu_buffer_raii);
+            return handle;
+        }
+        void bind_vertex_buffer(const BufferHandle& buffer_handle) override
+        {
+            std::vector<SDL_GPUBufferBinding> bindings;
+            bindings.emplace_back(SDL_GPUBufferBinding{m_buffers[buffer_handle].raw(), 0});
+            SDL_BindGPUVertexBuffers(m_gpu_render_pass.raw(), 0, bindings.data(), bindings.size());
         }
         auto& get_gpu() { return *m_gpu; }
         auto& get_command_buffer() { return m_gpu_command_buffer; }

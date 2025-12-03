@@ -2,8 +2,9 @@
 // Created by wsqsy on 12/3/2025.
 //
 module;
-#include <string>
 #include <cstdint>
+#include <string>
+#include <vector>
 export module primitive_renderer;
 import data_type;
 
@@ -19,6 +20,19 @@ export namespace sopho
     };
     enum class TextureHandle : std::uint32_t
     {
+    };
+    enum class BufferHandle : std::uint32_t
+    {
+    };
+    enum class BufferUsage : std::uint32_t
+    {
+        VERTEX,
+        INDEX,
+    };
+    struct BufferDescriptor
+    {
+        BufferUsage buffer_usage{};
+        std::vector<std::byte> data{};
     };
     struct RenderPassDescriptor
     {
@@ -36,5 +50,7 @@ export namespace sopho
         virtual checkable<RenderProcedureHandle>
         create_render_procedure(const RenderProcedureDescriptor& render_procedure_descriptor) = 0;
         virtual void bind_render_procedure(const RenderProcedureHandle& render_procedure_handle) = 0;
+        virtual checkable<BufferHandle> create_buffer(const BufferDescriptor& buffer_descriptor) = 0;
+        virtual void bind_vertex_buffer(const BufferHandle& buffer_handle) = 0;
     };
 } // namespace sopho

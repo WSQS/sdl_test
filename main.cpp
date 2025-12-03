@@ -34,6 +34,7 @@ import glsl_reflector;
 import sdl_wrapper;
 import logos;
 import renderer_factory;
+import primitive_renderer;
 import sdl_primitive_renderer;
 
 struct VertexType
@@ -81,6 +82,7 @@ class UserApp : public sopho::App
     int m_fps_frames = 0;
     // GPU + resources
     sopho::SDLPrimitiveRenderer* m_primitive_renderer{};
+    sopho::BufferHandle m_vertex_buffer{};
 
     std::vector<std::shared_ptr<sopho::Renderable>> m_renderables{};
 
@@ -266,6 +268,19 @@ public:
         for (int i = 0; i < 36; ++i)
         {
             indices.push_back(i);
+        }
+
+        sopho::BufferDescriptor buffer_descriptor{};
+        buffer_descriptor.buffer_usage = sopho::BufferUsage::VERTEX;
+        auto vertex_span = std::span(vertices);
+        buffer_descriptor.data =
+            std::vector<std::byte>{reinterpret_cast<const std::byte*>(vertex_span.data()),
+                                   reinterpret_cast<const std::byte*>(vertex_span.data()) + vertex_span.size_bytes()};
+
+        auto verti = m_primitive_renderer->create_buffer(buffer_descriptor);
+        if (verti)
+        {
+            m_vertex_buffer = verti.value();
         }
 
         // 3. Create vertex buffer.
@@ -600,6 +615,7 @@ public:
         // Projection`
         camera_mat[2] = sopho::perspective(1, static_cast<float>(w) / h, 0.1, 50);
         m_primitive_renderer->bind_render_procedure(renderable->procedural());
+        m_primitive_renderer->bind_vertex_buffer(m_vertex_buffer);
         renderable->draw(
             sopho::RenderContext{.render_pass = m_primitive_renderer->get_render_pass().raw(),
                                  .command_buffer = m_primitive_renderer->get_command_buffer().raw(),
@@ -615,6 +631,7 @@ public:
         // Projection
         camera_mat[2] = sopho::perspective(1, static_cast<float>(w) / h, 0.1, 50);
         m_primitive_renderer->bind_render_procedure(renderable->procedural());
+        m_primitive_renderer->bind_vertex_buffer(m_vertex_buffer);
         renderable->draw(sopho::RenderContext{.render_pass = m_primitive_renderer->get_render_pass().raw(),
                                               .command_buffer = m_primitive_renderer->get_command_buffer().raw(),
                                               .camera_mat = camera_mat});
