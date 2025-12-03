@@ -2,11 +2,11 @@
 // Created by wsqsy on 12/3/2025.
 //
 module;
+#include <SDL3/SDL_gpu.h>
 #include <expected>
 #include <map>
 #include <memory>
-
-#include "SDL3/SDL_gpu.h"
+#include <variant>
 export module sdl_primitive_renderer;
 export import primitive_renderer;
 import data_type;
@@ -42,8 +42,8 @@ namespace sopho
             auto p_buffer = SDL_AcquireGPUCommandBuffer(m_gpu->device());
             m_gpu_command_buffer.reset(p_buffer);
             std::uint32_t width = 0, height = 0;
-            SDL_WaitAndAcquireGPUSwapchainTexture(m_gpu_command_buffer.raw(), m_gpu->window(), &m_swapchain_texture, &width,
-                                                  &height);
+            SDL_WaitAndAcquireGPUSwapchainTexture(m_gpu_command_buffer.raw(), m_gpu->window(), &m_swapchain_texture,
+                                                  &width, &height);
             SDL_GPUTextureCreateInfo ci = {
                 .type = SDL_GPU_TEXTURETYPE_2D,
                 .format = SDL_GPU_TEXTUREFORMAT_D16_UNORM,
