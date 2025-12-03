@@ -535,12 +535,6 @@ public:
         ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();
 
-        SDL_GPUDevice* device = m_primitive_renderer->get_gpu().device();
-        if (!device)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "GpuWrapper::device() returned null in draw()");
-            return SDL_APP_CONTINUE;
-        }
         int w{}, h{};
         SDL_GetWindowSize(m_primitive_renderer->get_gpu().window(), &w, &h);
         m_primitive_renderer->begin_frame();
