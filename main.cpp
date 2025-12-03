@@ -89,7 +89,6 @@ class UserApp : public sopho::App
 
     sopho::ImageData m_image_data;
     sopho::TextureHandle m_texture_wrapper{};
-    SDL_GPUTexture* SceneDepthTexture{};
 
     // camera state
     float yaw = 0.0f;
@@ -343,20 +342,6 @@ public:
             SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to create texture: error = %d",
                         static_cast<int>(texture.error()));
         }
-
-        SDL_GetWindowSizeInPixels(m_primitive_renderer->get_gpu().window(), &win_w, &win_h);
-        SDL_GPUTextureCreateInfo ci = {
-            .type = SDL_GPU_TEXTURETYPE_2D,
-            .format = SDL_GPU_TEXTUREFORMAT_D16_UNORM,
-            .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
-            .width = static_cast<std::uint32_t>(win_w),
-            .height = static_cast<std::uint32_t>(win_h),
-            .layer_count_or_depth = 1,
-            .num_levels = 1,
-            .sample_count = SDL_GPU_SAMPLECOUNT_1,
-        };
-
-        SceneDepthTexture = SDL_CreateGPUTexture(m_primitive_renderer->get_gpu().device(), &ci);
         return SDL_APP_CONTINUE;
     }
 
@@ -768,7 +753,6 @@ public:
     void quit(SDL_AppResult result) override
     {
         (void)result;
-        SDL_ReleaseGPUTexture(m_primitive_renderer->get_gpu().device(), SceneDepthTexture);
         ImGui_ImplSDL3_Shutdown();
         ImGui_ImplSDLGPU3_Shutdown();
         ImGui::DestroyContext();
