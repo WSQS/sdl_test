@@ -9,3 +9,4 @@ target_sources(renderer
         FILE_SET cxx_modules TYPE CXX_MODULES FILES
         modules/primitive_renderer.ixx
 )
+target_link_libraries(renderer PRIVATE data_type)

@@ -189,8 +189,8 @@ public:
             return SDL_APP_FAILURE;
         }
         m_primitive_renderer = c_primitive_renderer.value();
-
-        // 2. Create pipeline wrapper.
+        auto pipeline_handle = m_primitive_renderer->create_render_procedure(
+            {.vert_shader = vertex_source, .frag_shader = fragment_source});
         auto pw_result = m_primitive_renderer->get_gpu().create_render_procedural();
         if (!pw_result)
         {
@@ -199,7 +199,6 @@ public:
             return SDL_APP_FAILURE;
         }
 
-        // 4. Compile shaders and build initial pipeline.
         auto pipeline_init =
             pw_result.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
                 .and_then([&](std::monostate) { return pw_result->set_fragment_shader(fragment_source); })
