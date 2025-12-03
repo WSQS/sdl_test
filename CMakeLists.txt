@@ -98,9 +98,11 @@ add_subdirectory(data_type)
 add_subdirectory(sdl_wrapper)
 add_subdirectory(glsl_reflector)
 add_subdirectory(logos)
+add_subdirectory(renderer)
+add_subdirectory(renderer_factory)
 
 add_executable(SDL_TEST main.cpp)
-target_link_libraries(SDL_TEST PRIVATE imgui sdl_wrapper stb logos)
+target_link_libraries(SDL_TEST PRIVATE imgui sdl_wrapper stb logos renderer_factory)
 
 include(GNUInstallDirs)
 install(TARGETS SDL_TEST

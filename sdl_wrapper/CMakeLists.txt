@@ -24,6 +24,7 @@ target_sources(sdl_wrapper
         modules/sdl_wrapper.vertex_layout.ixx
         modules/sdl_wrapper.transfer_buffer.ixx
         modules/sdl_wrapper.texture.ixx
+        modules/sdl_primitive_renderer.ixx
         PRIVATE
         src/lifecycle.cpp
         src/sdl_wrapper.buffer.cpp
@@ -35,4 +36,4 @@ target_sources(sdl_wrapper
         src/sdl_wrapper.renderable.cpp
 )
 
-target_link_libraries(sdl_wrapper PUBLIC SDL3::SDL3 shaderc glsl_reflector data_type logos)
+target_link_libraries(sdl_wrapper PRIVATE SDL3::SDL3 shaderc glsl_reflector data_type logos renderer)

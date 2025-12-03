@@ -33,6 +33,8 @@ import sdl_raii;
 import glsl_reflector;
 import sdl_wrapper;
 import logos;
+import renderer_factory;
+import sdl_primitive_renderer;
 
 struct VertexType
 {
@@ -78,7 +80,7 @@ class UserApp : public sopho::App
     double m_fps_accumulator = 0.0;
     int m_fps_frames = 0;
     // GPU + resources
-    std::shared_ptr<sopho::GpuWrapper> m_gpu{};
+    sopho::SDLPrimitiveRenderer* m_primitive_renderer{};
 
     std::vector<std::shared_ptr<sopho::Renderable>> m_renderables{};
 
@@ -187,10 +189,19 @@ public:
                          static_cast<int>(gpu_result.error()));
             return SDL_APP_FAILURE;
         }
-        m_gpu = std::move(gpu_result.value());
+        auto c_primitive_renderer = sopho::SDLPrimitiveRenderer::create(std::move(gpu_result.value()));
+        if (!c_primitive_renderer)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create Primitive Renderer, error = %d",
+                         static_cast<int>(c_primitive_renderer.error()));
+            return SDL_APP_FAILURE;
+        }
+        m_primitive_renderer = c_primitive_renderer.value();
+        m_primitive_renderer->begin_frame();
+        m_primitive_renderer->end_frame();
 
         // 2. Create pipeline wrapper.
-        auto pw_result = m_gpu->create_render_procedural();
+        auto pw_result = m_primitive_renderer->get_gpu().create_render_procedural();
         if (!pw_result)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create pipeline wrapper, error = %d",
@@ -275,7 +286,7 @@ public:
                                .set_index_count(36)
                                .set_vertices(std::span(vertices))
                                .set_indices(std::span(indices))
-                               .build(*m_gpu.get());
+                               .build(m_primitive_renderer->get_gpu());
         if (!render_data)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
@@ -297,7 +308,7 @@ public:
             .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result.value())),
             .m_render_data = std::move(render_data.value())}));
 
-        auto pw_result2 = m_gpu->create_render_procedural();
+        auto pw_result2 = m_primitive_renderer->get_gpu().create_render_procedural();
         pipeline_init = pw_result2.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
                             .and_then([&](std::monostate) { return pw_result2->set_fragment_shader(fragment_source2); })
                             .and_then([&](std::monostate) { return pw_result2->submit(); });
@@ -328,7 +339,7 @@ public:
         style.FontScaleDpi = main_scale;
 
         // 8. Initialize ImGui SDL3 backend.
-        if (SDL_Window* window = m_gpu->window())
+        if (SDL_Window* window = m_primitive_renderer->get_gpu().window())
         {
             ImGui_ImplSDL3_InitForSDLGPU(window);
         }
@@ -340,7 +351,7 @@ public:
         }
 
         // 9. Initialize ImGui SDLGPU backend.
-        auto format_result = m_gpu->get_texture_format();
+        auto format_result = m_primitive_renderer->get_gpu().get_texture_format();
         if (!format_result)
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to get swapchain texture format, error = %d",
@@ -349,7 +360,7 @@ public:
         }
 
         ImGui_ImplSDLGPU3_InitInfo init_info{};
-        init_info.Device = m_gpu->device();
+        init_info.Device = m_primitive_renderer->get_gpu().device();
         init_info.ColorTargetFormat = format_result.value();
         init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1;
         init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR;
@@ -358,7 +369,8 @@ public:
         ImGui_ImplSDLGPU3_Init(&init_info);
         m_image_data = load_image();
 
-        auto texture = sopho::TextureWrapper::Builder{}.set_image_data(m_image_data).build(*m_gpu.get());
+        auto texture =
+            sopho::TextureWrapper::Builder{}.set_image_data(m_image_data).build(m_primitive_renderer->get_gpu());
         if (texture)
         {
             m_texture_wrapper = std::make_shared<sopho::TextureWrapper>(std::move(texture.value()));
@@ -369,7 +381,7 @@ public:
                         static_cast<int>(texture.error()));
         }
 
-        SDL_GetWindowSizeInPixels(m_gpu->window(), &win_w, &win_h);
+        SDL_GetWindowSizeInPixels(m_primitive_renderer->get_gpu().window(), &win_w, &win_h);
         SDL_GPUTextureCreateInfo ci = {
             .type = SDL_GPU_TEXTURETYPE_2D,
             .format = SDL_GPU_TEXTUREFORMAT_D16_UNORM,
@@ -381,7 +393,7 @@ public:
             .sample_count = SDL_GPU_SAMPLECOUNT_1,
         };
 
-        SceneDepthTexture = SDL_CreateGPUTexture(m_gpu->device(), &ci);
+        SceneDepthTexture = SDL_CreateGPUTexture(m_primitive_renderer->get_gpu().device(), &ci);
         return SDL_APP_CONTINUE;
     }
 
@@ -575,7 +587,7 @@ public:
         ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();
 
-        SDL_GPUDevice* device = m_gpu->device();
+        SDL_GPUDevice* device = m_primitive_renderer->get_gpu().device();
         if (!device)
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "GpuWrapper::device() returned null in draw()");
@@ -596,7 +608,7 @@ public:
         SDL_GPUTexture* swapchainTexture = nullptr;
         Uint32 width = 0, height = 0;
 
-        SDL_Window* window = m_gpu->window();
+        SDL_Window* window = m_primitive_renderer->get_gpu().window();
         if (!window)
         {
             SDL_LogError(SDL_LOG_CATEGORY_GPU, "GpuWrapper::window() returned null in draw()");
@@ -622,8 +634,8 @@ public:
                 .num_levels = 1,
                 .sample_count = SDL_GPU_SAMPLECOUNT_1,
             };
-            SDL_ReleaseGPUTexture(m_gpu->device(), SceneDepthTexture);
-            SceneDepthTexture = SDL_CreateGPUTexture(m_gpu->device(), &ci);
+            SDL_ReleaseGPUTexture(m_primitive_renderer->get_gpu().device(), SceneDepthTexture);
+            SceneDepthTexture = SDL_CreateGPUTexture(m_primitive_renderer->get_gpu().device(), &ci);
             win_w = width;
             win_h = height;
         }
@@ -854,7 +866,7 @@ public:
     void quit(SDL_AppResult result) override
     {
         (void)result;
-        SDL_ReleaseGPUTexture(m_gpu->device(), SceneDepthTexture);
+        SDL_ReleaseGPUTexture(m_primitive_renderer->get_gpu().device(), SceneDepthTexture);
         ImGui_ImplSDL3_Shutdown();
         ImGui_ImplSDLGPU3_Shutdown();
         ImGui::DestroyContext();

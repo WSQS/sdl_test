@@ -14,7 +14,7 @@ target_link_libraries(glsl_reflector PUBLIC glslang glslang::glslang-default-res
 
 add_executable(glslr test/test.cpp)
 
-target_link_libraries(glslr PUBLIC glsl_reflector gtest gtest_main)
+target_link_libraries(glslr PRIVATE glsl_reflector gtest gtest_main)
 
 gtest_discover_tests(glslr
         DISCOVERY_TIMEOUT 60)

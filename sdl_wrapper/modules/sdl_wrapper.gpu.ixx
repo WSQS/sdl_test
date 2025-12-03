@@ -85,8 +85,8 @@ export namespace sopho
         GpuWrapper(const GpuWrapper&) = delete;
         GpuWrapper& operator=(const GpuWrapper&) = delete;
 
-        GpuWrapper(GpuWrapper&&) = delete;
-        GpuWrapper& operator=(GpuWrapper&&) = delete;
+        GpuWrapper(GpuWrapper&&) = default;
+        GpuWrapper& operator=(GpuWrapper&&) = default;
 
         [[nodiscard]] auto device() const { return m_ctx.device.raw(); }
         [[nodiscard]] SDL_Window* window() const { return m_ctx.window.raw(); }
