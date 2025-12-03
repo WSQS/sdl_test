@@ -20,9 +20,14 @@ namespace sopho
         GpuCommandBufferRaii m_gpu_command_buffer;
 
     public:
-        static checkable<SDLPrimitiveRenderer*> create(std::shared_ptr<GpuWrapper> gpu_wrapper)
+        static checkable<SDLPrimitiveRenderer*> create()
         {
-            return new SDLPrimitiveRenderer{gpu_wrapper};
+            auto gpu_result = sopho::GpuWrapper::create();
+            if (!gpu_result)
+            {
+                return std::unexpected(gpu_result.error());
+            }
+            return new SDLPrimitiveRenderer{gpu_result.value()};
         }
         ~SDLPrimitiveRenderer() override = default;
 

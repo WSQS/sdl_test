@@ -10,6 +10,6 @@ namespace sopho
 {
     export checkable<PrimitiveRenderer*> create_primitive_renderer()
     {
-        return SDLPrimitiveRenderer::create({});
+        return SDLPrimitiveRenderer::create();
     }
 }

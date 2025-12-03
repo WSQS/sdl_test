@@ -181,15 +181,7 @@ public:
      */
     SDL_AppResult init(int argc, char** argv) override
     {
-        // 1. Create GPU wrapper (device + window + claim), monadic style.
-        auto gpu_result = sopho::GpuWrapper::create();
-        if (!gpu_result)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create GpuWrapper, error = %d",
-                         static_cast<int>(gpu_result.error()));
-            return SDL_APP_FAILURE;
-        }
-        auto c_primitive_renderer = sopho::SDLPrimitiveRenderer::create(std::move(gpu_result.value()));
+        auto c_primitive_renderer = sopho::SDLPrimitiveRenderer::create();
         if (!c_primitive_renderer)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create Primitive Renderer, error = %d",
