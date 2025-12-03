@@ -24,7 +24,7 @@ namespace sopho
         GpuCommandBufferRaii m_gpu_command_buffer{};
         GpuRenderPassRaii m_gpu_render_pass{};
         std::map<RenderProcedureHandle, std::shared_ptr<RenderProcedural>> m_render_procedures{};
-        std::map<TextureHandle, GpuTextureRaii> m_textures{};
+        std::map<TextureHandle, std::shared_ptr<TextureWrapper>> m_textures{};
         std::map<BufferHandle, GpuBufferRaii> m_buffers{};
         SDL_GPUTexture* m_swapchain_texture{};
         GpuTextureRaii m_depth_texture{};
@@ -140,6 +140,25 @@ namespace sopho
                 SDL_BindGPUGraphicsPipeline(m_gpu_render_pass.raw(),
                                             m_render_procedures[render_procedure_handle]->raw());
             }
+        }
+        checkable<TextureHandle> create_texture(const ImageData& image_data) override
+        {
+            auto texture = TextureWrapper::Builder{}.set_image_data(image_data).build(*m_gpu);
+            if (!texture)
+            {
+                return std::unexpected(texture.error());
+            }
+            TextureHandle handle{};
+            if (!m_textures.empty())
+            {
+                handle = static_cast<TextureHandle>(static_cast<std::uint32_t>(m_textures.rbegin()->first) + 1);
+            }
+            m_textures[handle] = std::make_shared<TextureWrapper>(std::move(texture.value()));
+            return handle;
+        }
+        void bind_texture(const TextureHandle& texture_handle) override
+        {
+            SDL_BindGPUFragmentSamplers(m_gpu_render_pass.raw(), 0, m_textures[texture_handle]->get(), 1);
         }
         checkable<BufferHandle> create_buffer(const BufferDescriptor& buffer_descriptor) override
         {

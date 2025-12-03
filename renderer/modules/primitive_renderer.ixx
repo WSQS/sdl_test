@@ -56,6 +56,8 @@ export namespace sopho
         virtual checkable<RenderProcedureHandle>
         create_render_procedure(const RenderProcedureDescriptor& render_procedure_descriptor) = 0;
         virtual void bind_render_procedure(const RenderProcedureHandle& render_procedure_handle) = 0;
+        virtual checkable<TextureHandle> create_texture(const ImageData& image_data) = 0;
+        virtual void bind_texture(const TextureHandle& texture_handle) = 0;
         virtual checkable<BufferHandle> create_buffer(const BufferDescriptor& buffer_descriptor) = 0;
         virtual void bind_vertex_buffer(const BufferHandle& buffer_handle) = 0;
         virtual void bind_index_buffer(const BufferHandle& buffer_handle) = 0;

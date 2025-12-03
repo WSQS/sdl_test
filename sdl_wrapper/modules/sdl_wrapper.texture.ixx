@@ -33,7 +33,6 @@ namespace sopho
         TextureWrapper& operator=(const TextureWrapper&) = delete;
         TextureWrapper(TextureWrapper&& other) noexcept = default;
         TextureWrapper& operator=(TextureWrapper&& other) noexcept = default;
-        ~TextureWrapper() noexcept = default;
 
         [[nodiscard]] const SDL_GPUTextureSamplerBinding* get() const noexcept { return &m_tex_binding; }
 

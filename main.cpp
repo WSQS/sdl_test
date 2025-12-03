@@ -88,7 +88,7 @@ class UserApp : public sopho::App
     std::vector<std::shared_ptr<sopho::Renderable>> m_renderables{};
 
     sopho::ImageData m_image_data;
-    std::shared_ptr<sopho::TextureWrapper> m_texture_wrapper{};
+    sopho::TextureHandle m_texture_wrapper{};
     SDL_GPUTexture* SceneDepthTexture{};
 
     // camera state
@@ -386,11 +386,10 @@ public:
         ImGui_ImplSDLGPU3_Init(&init_info);
         m_image_data = load_image();
 
-        auto texture =
-            sopho::TextureWrapper::Builder{}.set_image_data(m_image_data).build(m_primitive_renderer->get_gpu());
+        auto texture = m_primitive_renderer->create_texture(m_image_data);
         if (texture)
         {
-            m_texture_wrapper = std::make_shared<sopho::TextureWrapper>(std::move(texture.value()));
+            m_texture_wrapper = texture.value();
         }
         else
         {
@@ -635,7 +634,7 @@ public:
         auto frag_data = std::array{sopho::Mat<float, 1, 4>{0.0f, 2.f, -6.0f}, location.resize<1, 4>()};
         m_primitive_renderer->push_fragment_uniform(
             {0, std::span{reinterpret_cast<std::byte*>(frag_data.data()), std::span(frag_data).size_bytes()}});
-        SDL_BindGPUFragmentSamplers(m_primitive_renderer->get_render_pass().raw(), 0, m_texture_wrapper->get(), 1);
+        m_primitive_renderer->bind_texture(m_texture_wrapper);
         m_primitive_renderer->draw_index(36);
         renderable = m_renderables[1];
         // Model
