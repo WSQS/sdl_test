@@ -8,8 +8,8 @@ module;
 
 #include "SDL3/SDL_gpu.h"
 export module sdl_primitive_renderer;
+export import primitive_renderer;
 import data_type;
-import primitive_renderer;
 import sdl_raii;
 import sdl_wrapper;
 namespace sopho
