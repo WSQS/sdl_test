@@ -60,6 +60,10 @@ namespace sopho
         void end_frame() override { m_gpu_command_buffer.reset(); }
         void begin_render_pass(const RenderPassDescriptor& render_pass_descriptor) override
         {
+            if (!m_swapchain_texture)
+            {
+                return;
+            }
             SDL_GPUColorTargetInfo colorTargetInfo{};
             colorTargetInfo.clear_color = {135 / 255.0F, 135 / 255.0F, 135 / 255.0F, 255 / 255.0F};
             if (render_pass_descriptor.clear)
