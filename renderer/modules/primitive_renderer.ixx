@@ -3,6 +3,7 @@
 //
 module;
 #include <string>
+#include <cstdint>
 export module primitive_renderer;
 import data_type;
 
