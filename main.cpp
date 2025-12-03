@@ -632,10 +632,9 @@ public:
         m_primitive_renderer->bind_index_buffer(m_index_buffer);
         m_primitive_renderer->push_vertex_uniform(
             {0, std::span{reinterpret_cast<std::byte*>(camera_mat.data()), std::span(camera_mat).size_bytes()}});
-        SDL_PushGPUFragmentUniformData(
-            m_primitive_renderer->get_command_buffer().raw(), 0,
-            std::array{sopho::Mat<float, 1, 4>{0.0f, 2.f, -6.0f}, location.resize<1, 4>()}.data(),
-            sizeof(std::array<sopho::Mat<float, 1, 4>, 2>));
+        auto frag_data = std::array{sopho::Mat<float, 1, 4>{0.0f, 2.f, -6.0f}, location.resize<1, 4>()};
+        m_primitive_renderer->push_fragment_uniform(
+            {0, std::span{reinterpret_cast<std::byte*>(frag_data.data()), std::span(frag_data).size_bytes()}});
         SDL_BindGPUFragmentSamplers(m_primitive_renderer->get_render_pass().raw(), 0, m_texture_wrapper->get(), 1);
         SDL_DrawGPUIndexedPrimitives(m_primitive_renderer->get_render_pass().raw(), 36, 1, 0, 0, 0);
         renderable = m_renderables[1];

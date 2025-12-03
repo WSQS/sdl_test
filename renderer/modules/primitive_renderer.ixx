@@ -60,5 +60,6 @@ export namespace sopho
         virtual void bind_vertex_buffer(const BufferHandle& buffer_handle) = 0;
         virtual void bind_index_buffer(const BufferHandle& buffer_handle) = 0;
         virtual void push_vertex_uniform(const UniformDescriptor& uniform_descriptor)=0;
+        virtual void push_fragment_uniform(const UniformDescriptor& uniform_descriptor)=0;
     };
 } // namespace sopho

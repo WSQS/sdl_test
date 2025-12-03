@@ -248,6 +248,11 @@ namespace sopho
             SDL_PushGPUVertexUniformData(m_gpu_command_buffer.raw(), uniform_descriptor.slot_index,
                                          uniform_descriptor.data.data(), uniform_descriptor.data.size());
         }
+        void push_fragment_uniform(const UniformDescriptor& uniform_descriptor) override
+        {
+            SDL_PushGPUFragmentUniformData( m_gpu_command_buffer.raw(), uniform_descriptor.slot_index,
+                                         uniform_descriptor.data.data(), uniform_descriptor.data.size());
+        }
         auto& get_gpu() { return *m_gpu; }
         auto& get_command_buffer() { return m_gpu_command_buffer; }
         auto& get_render_pass() { return m_gpu_render_pass; }
