@@ -94,8 +94,22 @@ FetchContent_MakeAvailable(googletest)
 include(CTest)
 include(GoogleTest)
 
+FetchContent_Declare(
+        glad
+        URL https://github.com/Dav1dde/glad/archive/refs/tags/v2.0.8.zip
+)
+FetchContent_MakeAvailable(glad)
+
+add_subdirectory("${glad_SOURCE_DIR}/cmake" "${glad_BINARY_DIR}")
+
+glad_add_library(glad_gl_core_46
+        REPRODUCIBLE
+        API gl:core=4.6
+)
+
 add_subdirectory(data_type)
 add_subdirectory(sdl_wrapper)
+add_subdirectory(sdl_gl_primitive_renderer)
 add_subdirectory(glsl_reflector)
 add_subdirectory(logos)
 add_subdirectory(renderer)
