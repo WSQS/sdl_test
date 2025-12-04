@@ -23,13 +23,17 @@ graph TD
         sdl_wrapper
         logos
         render
+        render_factory
         sdl_gl_primitive_render
         sdl_lifecycle
+        window
+        window_factory
     end
     
     subgraph sdl_wrapper
         sdl_raii
         sdl_primitive_render
+        sdl_window
     end
 
     glslang --> shaderc
@@ -49,11 +53,19 @@ graph TD
     
     gl --> sdl_gl_primitive_render
     SDL3 --> sdl_gl_primitive_render
-    
-    sdl_primitive_render --> render
-    sdl_gl_primitive_render --> render
-    
 
+    render --> sdl_primitive_render
+    render --> sdl_gl_primitive_render
+    sdl_primitive_render --> render_factory
+    sdl_gl_primitive_render --> render_factory
+    render_factory --> SDL_TEST
+    
+    window --> sdl_window
+    sdl_window --> window_factory
+    window_factory --> SDL_TEST
+    
+    SDL3 --> sdl_lifecycle
+    
     sdl_lifecycle --> SDL_TEST
     render --> SDL_TEST
     imgui --> SDL_TEST
