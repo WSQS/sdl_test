@@ -21,7 +21,6 @@
 #include "stb_image.h"
 
 
-
 import lifecycle;
 import data_type;
 import sdl_raii;
@@ -177,7 +176,7 @@ public:
      */
     SDL_AppResult init(int argc, char** argv) override
     {
-        auto c_primitive_renderer = sopho::create_primitive_renderer();
+        auto c_primitive_renderer = sopho::create_primitive_renderer("SDL");
         if (!c_primitive_renderer)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create Primitive Renderer, error = %d",
@@ -271,13 +270,13 @@ public:
             m_index_buffer = verti.value();
         }
 
-        m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
-            .m_render_procedural = pipeline_handle.value()}));
+        m_renderables.emplace_back(
+            std::make_shared<sopho::Renderable>(sopho::Renderable{.m_render_procedural = pipeline_handle.value()}));
 
         auto pipeline_handle2 = m_primitive_renderer->create_render_procedure(
             {.vert_shader = vertex_source, .frag_shader = fragment_source2});
-        m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
-            .m_render_procedural = pipeline_handle2.value()}));
+        m_renderables.emplace_back(
+            std::make_shared<sopho::Renderable>(sopho::Renderable{.m_render_procedural = pipeline_handle2.value()}));
 
         // 7. Setup Dear ImGui context.
         // IMGUI_CHECKVERSION();

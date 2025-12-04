@@ -10,4 +10,4 @@ target_sources(renderer_factory
         modules/renderer_factory.ixx
 )
 
-target_link_libraries(renderer_factory PRIVATE data_type renderer sdl_wrapper)
+target_link_libraries(renderer_factory PRIVATE data_type renderer sdl_wrapper sdl_gl_primitive_renderer)
