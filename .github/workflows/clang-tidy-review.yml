@@ -24,20 +24,24 @@ jobs:
               libxkbcommon-dev wayland-protocols libwayland-dev \
               libdrm-dev mesa-common-dev mesa-utils
 
-      - name: Install jinja2 only
+      - name: Create venv & install jinja2
+        shell: bash
         run: |
-          python -m pip install --upgrade pip
+          python -m venv .venv
+          source .venv/bin/activate || .venv/Scripts/activate
+          pip install --upgrade pip
           pip install jinja2
 
       - name: Configure CMake
-        run: |
-          cmake -S ${{ github.workspace }} \
-              -B build \
-              -G Ninja \
-              -DCMAKE_CXX_COMPILER=clang++ \
-              -DCMAKE_C_COMPILER=clang \
-              -DCMAKE_BUILD_TYPE=Release \
+        run: >
+          cmake -S ${{ github.workspace }} 
+              -B build 
+              -G Ninja 
+              -DCMAKE_CXX_COMPILER=clang++ 
+              -DCMAKE_C_COMPILER=clang 
+              -DCMAKE_BUILD_TYPE=Release 
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+              -DPython3_EXECUTABLE="${PWD}/.venv/bin/python"
 
       - name: Run clang-tidy-review
         uses: ZedThree/clang-tidy-review@v0.22.1
