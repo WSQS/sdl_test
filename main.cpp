@@ -30,7 +30,6 @@ import sdl_wrapper;
 import logos;
 import renderer_factory;
 import primitive_renderer;
-import sdl_primitive_renderer;
 
 struct VertexType
 {
@@ -178,14 +177,14 @@ public:
      */
     SDL_AppResult init(int argc, char** argv) override
     {
-        auto c_primitive_renderer = sopho::SDLPrimitiveRenderer::create();
+        auto c_primitive_renderer = sopho::create_primitive_renderer();
         if (!c_primitive_renderer)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create Primitive Renderer, error = %d",
                          static_cast<int>(c_primitive_renderer.error()));
             return SDL_APP_FAILURE;
         }
-        m_primitive_renderer = dynamic_cast<sopho::SDLPrimitiveRenderer*>(c_primitive_renderer.value());
+        m_primitive_renderer = c_primitive_renderer.value();
         auto pipeline_handle = m_primitive_renderer->create_render_procedure(
             {.vert_shader = vertex_source, .frag_shader = fragment_source});
 
