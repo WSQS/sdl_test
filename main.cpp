@@ -131,7 +131,7 @@ layout (location = 1) in vec3 v_pos;
 layout (location = 2) in vec2 v_uv;
 layout (location = 0) out vec4 FragColor;
 
-layout(std140, set = 3, binding = 0) uniform Params {
+layout(std140, set = 3, binding = 1) uniform Params {
     vec3 lightPos;
     vec3 viewPos;
 };
@@ -553,7 +553,7 @@ public:
             {0, std::span{reinterpret_cast<std::byte*>(camera_mat.data()), std::span(camera_mat).size_bytes()}});
         auto frag_data = std::array{sopho::Mat<float, 1, 4>{0.0f, 2.f, -6.0f}, location.resize<1, 4>()};
         m_primitive_renderer->push_fragment_uniform(
-            {0, std::span{reinterpret_cast<std::byte*>(frag_data.data()), std::span(frag_data).size_bytes()}});
+            {1, std::span{reinterpret_cast<std::byte*>(frag_data.data()), std::span(frag_data).size_bytes()}});
         m_primitive_renderer->bind_texture(m_texture_wrapper);
         m_primitive_renderer->draw_index(36);
         renderable = m_renderables[1];
