@@ -29,6 +29,8 @@ import sdl_wrapper;
 import logos;
 import renderer_factory;
 import primitive_renderer;
+import window_factory;
+import window;
 
 struct VertexType
 {
@@ -77,6 +79,7 @@ class UserApp : public sopho::App
     sopho::PrimitiveRenderer* m_primitive_renderer{};
     sopho::BufferHandle m_vertex_buffer{};
     sopho::BufferHandle m_index_buffer{};
+    sopho::Window* m_window{};
 
     std::vector<std::shared_ptr<sopho::Renderable>> m_renderables{};
 
@@ -176,7 +179,7 @@ public:
      */
     SDL_AppResult init(int argc, char** argv) override
     {
-        auto c_primitive_renderer = sopho::create_primitive_renderer(sopho::RendererBackend::SDL_GL);
+        auto c_primitive_renderer = sopho::create_primitive_renderer(sopho::RendererBackend::SDL_GPU);
         if (!c_primitive_renderer)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create Primitive Renderer, error = %d",
@@ -184,6 +187,11 @@ public:
             return SDL_APP_FAILURE;
         }
         m_primitive_renderer = c_primitive_renderer.value();
+        auto c_window = sopho::create_window(sopho::WindowBackend::SDL);
+        if (c_window)
+        {
+            m_window = c_window.value();
+        }
         auto pipeline_handle = m_primitive_renderer->create_render_procedure(
             {.vert_shader = vertex_source, .frag_shader = fragment_source});
 
@@ -248,9 +256,9 @@ public:
         sopho::BufferDescriptor buffer_descriptor{};
         buffer_descriptor.buffer_usage = sopho::BufferUsage::VERTEX;
         auto vertex_span = std::span(vertices);
-        buffer_descriptor.data =
-            std::span<const std::byte>{reinterpret_cast<const std::byte*>(vertex_span.data()),
-                                   reinterpret_cast<const std::byte*>(vertex_span.data()) + vertex_span.size_bytes()};
+        buffer_descriptor.data = std::span<const std::byte>{reinterpret_cast<const std::byte*>(vertex_span.data()),
+                                                            reinterpret_cast<const std::byte*>(vertex_span.data()) +
+                                                                vertex_span.size_bytes()};
 
         auto verti = m_primitive_renderer->create_buffer(buffer_descriptor);
         if (verti)
@@ -260,9 +268,9 @@ public:
 
         buffer_descriptor.buffer_usage = sopho::BufferUsage::INDEX;
         auto indices_span = std::span(indices);
-        buffer_descriptor.data =
-            std::span<const std::byte>{reinterpret_cast<const std::byte*>(indices_span.data()),
-                                   reinterpret_cast<const std::byte*>(indices_span.data()) + indices_span.size_bytes()};
+        buffer_descriptor.data = std::span<const std::byte>{reinterpret_cast<const std::byte*>(indices_span.data()),
+                                                            reinterpret_cast<const std::byte*>(indices_span.data()) +
+                                                                indices_span.size_bytes()};
 
         verti = m_primitive_renderer->create_buffer(buffer_descriptor);
         if (verti)

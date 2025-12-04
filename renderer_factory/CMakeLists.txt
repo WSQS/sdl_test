@@ -8,6 +8,7 @@ target_sources(renderer_factory
         PUBLIC
         FILE_SET cxx_modules TYPE CXX_MODULES FILES
         modules/renderer_factory.ixx
+        modules/window_factory.ixx
 )
 
 target_link_libraries(renderer_factory PRIVATE data_type renderer sdl_wrapper sdl_gl_primitive_renderer)
