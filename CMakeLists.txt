@@ -99,7 +99,7 @@ FetchContent_Declare(
         URL https://github.com/Dav1dde/glad/archive/refs/tags/v2.0.8.zip
 )
 FetchContent_MakeAvailable(glad)
-
+set(Python_EXECUTABLE "${Python3_EXECUTABLE}" CACHE FILEPATH "Python interpreter for glad" FORCE)
 add_subdirectory("${glad_SOURCE_DIR}/cmake" "${glad_BINARY_DIR}")
 
 glad_add_library(glad_gl_core_46
