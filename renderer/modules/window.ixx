@@ -1,9 +1,10 @@
 ﻿// window.ixx
 // Created by wsqsy on 12/4/2025.
 //
+module;
+#include <cstdint>;
 export module window;
 import data_type;
-import <cstdint>;
 export namespace sopho
 {
     struct WindowSize

@@ -24,6 +24,7 @@ target_sources(sdl_wrapper
         modules/sdl_wrapper.transfer_buffer.ixx
         modules/sdl_wrapper.texture.ixx
         modules/sdl_primitive_renderer.ixx
+        modules/sdl_window.ixx
         PRIVATE
         src/sdl_wrapper.buffer.cpp
         src/sdl_wrapper.render_procedural.cpp
