@@ -50,11 +50,15 @@ jobs:
         run: |
           pacman -Syu --noconfirm
           pacman -S --noconfirm --needed \
-              base-devel cmake ninja pkgconf gcc clang git python3\
+              base-devel cmake ninja pkgconf gcc clang git python3 python-pip \
               alsa-lib jack libpulse \
               xorgproto libx11 libxext libxrandr libxcursor libxfixes libxi libxss libxtst \
               libxkbcommon wayland wayland-protocols \
               libdrm mesa mesa-utils
+
+      - name: Install Python dependencies
+        run: |
+          pip install jinja2
 
       - name: Configure CMake
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
