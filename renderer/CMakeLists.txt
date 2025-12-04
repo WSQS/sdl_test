@@ -9,5 +9,6 @@ target_sources(renderer
         FILE_SET cxx_modules TYPE CXX_MODULES FILES
         modules/primitive_renderer.ixx
         modules/window.ixx
+        modules/standard_scene_renderer.ixx
 )
-target_link_libraries(renderer PRIVATE data_type)
+target_link_libraries(renderer PRIVATE data_type logos)
