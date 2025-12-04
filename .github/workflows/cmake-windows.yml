@@ -48,6 +48,11 @@ jobs:
           echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
           echo "install-dir=${{ github.workspace }}/install/${{ matrix.os }}-${{ matrix.c_compiler }}-${{ matrix.build_type }}" >> "$GITHUB_OUTPUT"
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
       - name: Install jinja2 only
         run: |
           python -m pip install --upgrade pip
