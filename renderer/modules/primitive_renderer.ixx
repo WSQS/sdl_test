@@ -7,6 +7,7 @@ module;
 #include <string>
 #include <vector>
 export module primitive_renderer;
+import window;
 import data_type;
 
 export namespace sopho
@@ -49,10 +50,14 @@ export namespace sopho
     {
     public:
         virtual ~PrimitiveRenderer() = default;
+
         virtual void begin_frame() = 0;
         virtual void end_frame() = 0;
         virtual void begin_render_pass(const RenderPassDescriptor& render_pass_descriptor) = 0;
         virtual void end_render_pass() = 0;
+
+        virtual void bind_window(const NativeWindowHandle& native_window_handle) = 0;
+
         virtual checkable<RenderProcedureHandle>
         create_render_procedure(const RenderProcedureDescriptor& render_procedure_descriptor) = 0;
         virtual void bind_render_procedure(const RenderProcedureHandle& render_procedure_handle) = 0;

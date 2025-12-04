@@ -15,6 +15,7 @@ import primitive_renderer;
 import data_type;
 import sdl_raii;
 import sdl_wrapper;
+import window;
 namespace sopho
 {
     export class SDLPrimitiveRenderer : public PrimitiveRenderer
@@ -103,6 +104,14 @@ namespace sopho
             }
         }
         void end_render_pass() override { m_gpu_render_pass.reset(); }
+        void bind_window(const ::sopho::NativeWindowHandle& native_window_handle) override
+        {
+            if (native_window_handle.window_backend!=WindowBackend::SDL)
+            {
+                return;
+            }
+            m_gpu->set_window(reinterpret_cast<SDL_Window*>(native_window_handle.ptr));
+        }
         checkable<RenderProcedureHandle>
         create_render_procedure(const RenderProcedureDescriptor& render_procedure_descriptor) override
         {
@@ -276,8 +285,5 @@ namespace sopho
         {
             SDL_DrawGPUIndexedPrimitives(m_gpu_render_pass.raw(), num_indices, 1, 0, 0, 0);
         }
-        auto& get_gpu() { return *m_gpu; }
-        auto& get_command_buffer() { return m_gpu_command_buffer; }
-        auto& get_render_pass() { return m_gpu_render_pass; }
     };
 } // namespace sopho

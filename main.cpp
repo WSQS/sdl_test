@@ -192,6 +192,7 @@ public:
         {
             m_window = c_window.value();
         }
+        m_primitive_renderer->bind_window(m_window->native_handle());
         auto pipeline_handle = m_primitive_renderer->create_render_procedure(
             {.vert_shader = vertex_source, .frag_shader = fragment_source});
 

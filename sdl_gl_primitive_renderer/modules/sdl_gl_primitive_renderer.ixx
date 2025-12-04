@@ -19,7 +19,7 @@ export module sdl_gl_primitive_renderer;
 
 import primitive_renderer; // PrimitiveRenderer / RenderProcedureHandle / BufferHandle ...
 import data_type; // checkable / GpuError / ImageData 等
-
+import window;
 namespace sopho
 {
     struct GLRenderProcedure
@@ -185,6 +185,10 @@ namespace sopho
         }
 
         void end_render_pass() override {}
+        void bind_window(const ::sopho::NativeWindowHandle& native_window_handle) override
+        {
+
+        }
 
         checkable<RenderProcedureHandle>
         create_render_procedure(const RenderProcedureDescriptor& render_procedure_descriptor) override

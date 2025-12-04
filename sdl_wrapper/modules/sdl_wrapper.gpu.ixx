@@ -89,6 +89,12 @@ export namespace sopho
         GpuWrapper& operator=(GpuWrapper&&) = default;
 
         [[nodiscard]] auto device() const { return m_ctx.device.raw(); }
+        void set_window(SDL_Window* window)
+        {
+            m_ctx.claimed.reset(m_ctx.device_raw(), window);
+            SDL_ClaimWindowForGPUDevice(m_ctx.device_raw(), window);
+            m_ctx.window.reset(window);
+        }
         [[nodiscard]] SDL_Window* window() const { return m_ctx.window.raw(); }
 
         [[nodiscard]] std::expected<RenderProcedural, GpuError> create_render_procedural();
