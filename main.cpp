@@ -100,7 +100,7 @@ class UserApp : public sopho::App
     // see: https://wiki.libsdl.org/SDL3/SDL_CreateGPUShader for uniform layout
     std::string vertex_source =
         R"WSQ(#version 460
-
+#extension GL_KHR_vulkan_glsl : enable
 layout (location = 0) in vec3 a_position;
 layout (location = 1) in vec3 a_normal;
 layout (location = 2) in vec2 a_uv;
@@ -125,7 +125,7 @@ void main()
 
     std::string fragment_source =
         R"WSQ(#version 460
-
+#extension GL_KHR_vulkan_glsl : enable
 layout (location = 0) in vec3 v_normal;
 layout (location = 1) in vec3 v_pos;
 layout (location = 2) in vec2 v_uv;
@@ -154,7 +154,7 @@ void main()
 
     std::string fragment_source2 =
         R"WSQ(#version 460
-
+#extension GL_KHR_vulkan_glsl : enable
 layout (location = 0) in vec3 v_normal;
 layout (location = 1) in vec3 v_pos;
 layout (location = 2) in vec2 v_uv;
