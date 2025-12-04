@@ -33,7 +33,7 @@ export namespace sopho
     struct BufferDescriptor
     {
         BufferUsage buffer_usage{};
-        std::vector<std::byte> data{};
+        std::span<const std::byte> data{};
     };
     struct RenderPassDescriptor
     {
@@ -43,7 +43,7 @@ export namespace sopho
     struct UniformDescriptor
     {
         std::int32_t slot_index{};
-        std::span<std::byte> data{};
+        std::span<const std::byte> data{};
     };
     class PrimitiveRenderer
     {

@@ -249,7 +249,7 @@ public:
         buffer_descriptor.buffer_usage = sopho::BufferUsage::VERTEX;
         auto vertex_span = std::span(vertices);
         buffer_descriptor.data =
-            std::vector<std::byte>{reinterpret_cast<const std::byte*>(vertex_span.data()),
+            std::span<const std::byte>{reinterpret_cast<const std::byte*>(vertex_span.data()),
                                    reinterpret_cast<const std::byte*>(vertex_span.data()) + vertex_span.size_bytes()};
 
         auto verti = m_primitive_renderer->create_buffer(buffer_descriptor);
@@ -261,7 +261,7 @@ public:
         buffer_descriptor.buffer_usage = sopho::BufferUsage::INDEX;
         auto indices_span = std::span(indices);
         buffer_descriptor.data =
-            std::vector<std::byte>{reinterpret_cast<const std::byte*>(indices_span.data()),
+            std::span<const std::byte>{reinterpret_cast<const std::byte*>(indices_span.data()),
                                    reinterpret_cast<const std::byte*>(indices_span.data()) + indices_span.size_bytes()};
 
         verti = m_primitive_renderer->create_buffer(buffer_descriptor);
