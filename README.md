@@ -14,6 +14,7 @@ graph TD
         SDL3
         stb
         imgui
+        gl
     end
 
     subgraph Modules
@@ -21,11 +22,14 @@ graph TD
         glsl_reflector
         sdl_wrapper
         logos
+        render
+        sdl_gl_primitive_render
+        sdl_lifecycle
     end
     
     subgraph sdl_wrapper
-        lifecycle
         sdl_raii
+        sdl_primitive_render
     end
 
     glslang --> shaderc
@@ -42,8 +46,18 @@ graph TD
     glsl_reflector --> sdl_wrapper
     data_type --> sdl_wrapper
     
+    sdl_raii --> sdl_primitive_render
+    
+    gl --> sdl_gl_primitive_render
+    SDL3 --> sdl_gl_primitive_render
+    
+    sdl_primitive_render --> render
+    sdl_gl_primitive_render --> render
+    
+
+    sdl_lifecycle --> SDL_TEST
+    render --> SDL_TEST
     imgui --> SDL_TEST
-    sdl_wrapper --> SDL_TEST
     stb --> SDL_TEST
     logos --> SDL_TEST
 ```

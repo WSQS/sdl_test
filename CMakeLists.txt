@@ -110,13 +110,14 @@ glad_add_library(glad_gl_core_46
 add_subdirectory(data_type)
 add_subdirectory(sdl_wrapper)
 add_subdirectory(sdl_gl_primitive_renderer)
+add_subdirectory(sdl_lifecycle)
 add_subdirectory(glsl_reflector)
 add_subdirectory(logos)
 add_subdirectory(renderer)
 add_subdirectory(renderer_factory)
 
 add_executable(SDL_TEST main.cpp)
-target_link_libraries(SDL_TEST PRIVATE imgui sdl_wrapper stb logos renderer_factory)
+target_link_libraries(SDL_TEST PRIVATE imgui sdl_wrapper stb logos renderer_factory sdl_lifecycle)
 
 include(GNUInstallDirs)
 install(TARGETS SDL_TEST

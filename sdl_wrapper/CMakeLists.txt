@@ -7,7 +7,6 @@ add_library(sdl_wrapper STATIC)
 target_sources(sdl_wrapper
         PUBLIC
         FILE_SET cxx_modules TYPE CXX_MODULES FILES
-        modules/lifecycle.ixx
         modules/sdl_raii/sdl_raii.ixx
         modules/sdl_raii/sdl_raii.bound_raii.ixx
         modules/sdl_raii/sdl_raii.bound_traits.ixx
@@ -26,7 +25,6 @@ target_sources(sdl_wrapper
         modules/sdl_wrapper.texture.ixx
         modules/sdl_primitive_renderer.ixx
         PRIVATE
-        src/lifecycle.cpp
         src/sdl_wrapper.buffer.cpp
         src/sdl_wrapper.render_procedural.cpp
         src/sdl_wrapper.gpu.cpp
