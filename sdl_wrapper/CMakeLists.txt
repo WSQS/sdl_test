@@ -34,4 +34,4 @@ target_sources(sdl_wrapper
         src/sdl_wrapper.renderable.cpp
 )
 
-target_link_libraries(sdl_wrapper PRIVATE SDL3::SDL3 shaderc glsl_reflector data_type logos renderer)
+target_link_libraries(sdl_wrapper PRIVATE SDL3::SDL3 shaderc glsl_reflector data_type renderer)

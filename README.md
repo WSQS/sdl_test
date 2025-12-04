@@ -40,7 +40,6 @@ graph TD
     glslang --> glsl_reflector
     data_type --> glsl_reflector
 
-    logos --> sdl_wrapper
     shaderc --> sdl_wrapper
     SDL3 --> sdl_wrapper
     glsl_reflector --> sdl_wrapper
