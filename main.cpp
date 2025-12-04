@@ -12,20 +12,15 @@
 #include <string>
 #include <variant>
 
-#include "imgui.h"
-#include "imgui_impl_sdl3.h"
-#include "imgui_impl_sdlgpu3.h"
-#include "misc/cpp/imgui_stdlib.h"
-
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_keycode.h"
 
-#define STB_IMAGE_IMPLEMENTATION
 #include <chrono>
-
-
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
+
 
 import lifecycle;
 import data_type;
@@ -81,7 +76,7 @@ class UserApp : public sopho::App
     double m_fps_accumulator = 0.0;
     int m_fps_frames = 0;
     // GPU + resources
-    sopho::SDLPrimitiveRenderer* m_primitive_renderer{};
+    sopho::PrimitiveRenderer* m_primitive_renderer{};
     sopho::BufferHandle m_vertex_buffer{};
     sopho::BufferHandle m_index_buffer{};
 
@@ -286,50 +281,50 @@ public:
             .m_render_procedural = pipeline_handle2.value()}));
 
         // 7. Setup Dear ImGui context.
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO();
-        (void)io;
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-
-        ImGui::StyleColorsDark();
-
-        float main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
-
-        ImGuiStyle& style = ImGui::GetStyle();
-        style.ScaleAllSizes(main_scale);
-        style.FontScaleDpi = main_scale;
+        // IMGUI_CHECKVERSION();
+        // ImGui::CreateContext();
+        // ImGuiIO& io = ImGui::GetIO();
+        // (void)io;
+        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+        //
+        // ImGui::StyleColorsDark();
+        //
+        // float main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+        //
+        // ImGuiStyle& style = ImGui::GetStyle();
+        // style.ScaleAllSizes(main_scale);
+        // style.FontScaleDpi = main_scale;
 
         // 8. Initialize ImGui SDL3 backend.
-        if (SDL_Window* window = m_primitive_renderer->get_gpu().window())
-        {
-            ImGui_ImplSDL3_InitForSDLGPU(window);
-        }
-        else
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_ERROR,
-                         "GpuWrapper::window() returned null; ImGui SDL3 backend not initialized");
-            return SDL_APP_FAILURE;
-        }
+        // if (SDL_Window* window = m_primitive_renderer->get_gpu().window())
+        // {
+        //     ImGui_ImplSDL3_InitForSDLGPU(window);
+        // }
+        // else
+        // {
+        //     SDL_LogError(SDL_LOG_CATEGORY_ERROR,
+        //                  "GpuWrapper::window() returned null; ImGui SDL3 backend not initialized");
+        //     return SDL_APP_FAILURE;
+        // }
 
-        // 9. Initialize ImGui SDLGPU backend.
-        auto format_result = m_primitive_renderer->get_gpu().get_texture_format();
-        if (!format_result)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to get swapchain texture format, error = %d",
-                         static_cast<int>(format_result.error()));
-            return SDL_APP_FAILURE;
-        }
+        // // 9. Initialize ImGui SDLGPU backend.
+        // auto format_result = m_primitive_renderer->get_gpu().get_texture_format();
+        // if (!format_result)
+        // {
+        //     SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to get swapchain texture format, error = %d",
+        //                  static_cast<int>(format_result.error()));
+        //     return SDL_APP_FAILURE;
+        // }
 
-        ImGui_ImplSDLGPU3_InitInfo init_info{};
-        init_info.Device = m_primitive_renderer->get_gpu().device();
-        init_info.ColorTargetFormat = format_result.value();
-        init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1;
-        init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR;
-        init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
+        // ImGui_ImplSDLGPU3_InitInfo init_info{};
+        // init_info.Device = m_primitive_renderer->get_gpu().device();
+        // init_info.ColorTargetFormat = format_result.value();
+        // init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1;
+        // init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR;
+        // init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
 
-        ImGui_ImplSDLGPU3_Init(&init_info);
+        // ImGui_ImplSDLGPU3_Init(&init_info);
         m_image_data = load_image();
 
         auto texture = m_primitive_renderer->create_texture(m_image_data);
@@ -379,16 +374,16 @@ public:
      */
     SDL_AppResult tick()
     {
-        ImGui_ImplSDLGPU3_NewFrame();
-        ImGui_ImplSDL3_NewFrame();
-        ImGui::NewFrame();
-
-        ImGui::ShowDemoWindow();
-
-        ImGui::Begin("Editor");
-        static int current = 0;
-        std::array<const char*, 3> items = {"Node", "Vertex", "Fragment"};
-        ImGui::Combo("##Object", &current, items.data(), static_cast<int>(items.size()));
+        // ImGui_ImplSDLGPU3_NewFrame();
+        // ImGui_ImplSDL3_NewFrame();
+        // ImGui::NewFrame();
+        //
+        // ImGui::ShowDemoWindow();
+        //
+        // ImGui::Begin("Editor");
+        // static int current = 0;
+        // std::array<const char*, 3> items = {"Node", "Vertex", "Fragment"};
+        // ImGui::Combo("##Object", &current, items.data(), static_cast<int>(items.size()));
 
         // switch (current)
         // {
@@ -516,8 +511,8 @@ public:
         //     break;
         // }
 
-        ImGui::End();
-        ImGui::EndFrame();
+        // ImGui::End();
+        // ImGui::EndFrame();
         return SDL_APP_CONTINUE;
     }
 
@@ -532,14 +527,14 @@ public:
      */
     SDL_AppResult draw()
     {
-        ImGui::Render();
-        ImDrawData* draw_data = ImGui::GetDrawData();
+        // ImGui::Render();
+        // ImDrawData* draw_data = ImGui::GetDrawData();
 
-        int w{}, h{};
-        SDL_GetWindowSize(m_primitive_renderer->get_gpu().window(), &w, &h);
+        int w{1}, h{1};
+        // SDL_GetWindowSize(m_primitive_renderer->get_gpu().window(), &w, &h);
         m_primitive_renderer->begin_frame();
 
-        ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, m_primitive_renderer->get_command_buffer().raw());
+        // ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, m_primitive_renderer->get_command_buffer().raw());
 
         m_primitive_renderer->begin_render_pass({.clear = true, .depth = true});
 
@@ -579,8 +574,8 @@ public:
         m_primitive_renderer->end_render_pass();
         m_primitive_renderer->begin_render_pass({.clear = false, .depth = false});
 
-        ImGui_ImplSDLGPU3_RenderDrawData(draw_data, m_primitive_renderer->get_command_buffer().raw(),
-                                         m_primitive_renderer->get_render_pass().raw());
+        // ImGui_ImplSDLGPU3_RenderDrawData(draw_data, m_primitive_renderer->get_command_buffer().raw(),
+        //                                  m_primitive_renderer->get_render_pass().raw());
 
         m_primitive_renderer->end_render_pass();
         m_primitive_renderer->end_frame();
@@ -606,11 +601,11 @@ public:
 
     SDL_AppResult event(SDL_Event* event) override
     {
-        ImGui_ImplSDL3_ProcessEvent(event);
+        // ImGui_ImplSDL3_ProcessEvent(event);
 
-        ImGuiIO& io = ImGui::GetIO();
+        // ImGuiIO& io = ImGui::GetIO();
 
-        if (!io.WantCaptureKeyboard)
+        if (true)
         {
             switch (event->type)
             {
@@ -695,7 +690,7 @@ public:
             }
         }
 
-        if (!io.WantCaptureMouse)
+        if (true)
         {
             switch (event->type)
             {
@@ -747,9 +742,9 @@ public:
     void quit(SDL_AppResult result) override
     {
         (void)result;
-        ImGui_ImplSDL3_Shutdown();
-        ImGui_ImplSDLGPU3_Shutdown();
-        ImGui::DestroyContext();
+        // ImGui_ImplSDL3_Shutdown();
+        // ImGui_ImplSDLGPU3_Shutdown();
+        // ImGui::DestroyContext();
     }
 };
 
