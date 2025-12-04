@@ -176,7 +176,7 @@ public:
      */
     SDL_AppResult init(int argc, char** argv) override
     {
-        auto c_primitive_renderer = sopho::create_primitive_renderer("SDL");
+        auto c_primitive_renderer = sopho::create_primitive_renderer(sopho::RendererBackend::SDL_GL);
         if (!c_primitive_renderer)
         {
             SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create Primitive Renderer, error = %d",

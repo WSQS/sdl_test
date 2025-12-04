@@ -36,6 +36,17 @@ export namespace sopho
     template <typename T>
     using checkable = std::expected<T, TError>;
 
+    enum class RendererBackend
+    {
+        SDL_GPU,
+        SDL_GL
+    };
+
+    enum class WindowBackend
+    {
+        SDL
+    };
+
     struct ImageData
     {
         int width{};
