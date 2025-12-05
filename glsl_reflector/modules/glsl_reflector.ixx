@@ -128,7 +128,7 @@ namespace sopho
             std::cerr << "Link failed:\n" << program.getInfoLog() << std::endl;
             return result;
         }
-        program.buildReflection();
+        program.buildReflection(EShReflectionAllBlockVariables);
         auto count = program.getNumUniformVariables();
         for (auto i = 0; i < count; i++)
         {
