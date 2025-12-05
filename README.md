@@ -6,7 +6,6 @@ This is a personal learning project following [Learn OpenGL](https://learnopengl
 
 ```mermaid
 graph TD
-
     subgraph ThirdParty
         glslang
         shaderc
@@ -28,49 +27,40 @@ graph TD
         window_factory
         renderer
     end
-    
+
     subgraph sdl_wrapper
         sdl_raii
         sdl_primitive_render
         sdl_window
     end
 
-  subgraph renderer
-    window
-    primitive_render
-    standard_scene_renderer
-  end
+    subgraph renderer
+        window
+        primitive_render
+        standard_scene_renderer
+    end
 
     glslang --> shaderc
     SPIRVTools --> shaderc
-
     SDL3 --> imgui
-
     glslang --> glsl_reflector
     data_type --> glsl_reflector
-
     shaderc --> sdl_wrapper
     SDL3 --> sdl_wrapper
     glsl_reflector --> sdl_wrapper
     data_type --> sdl_wrapper
-    
     sdl_raii --> sdl_primitive_render
-    
     gl --> sdl_gl_primitive_render
     SDL3 --> sdl_gl_primitive_render
-
     primitive_render --> sdl_primitive_render
     primitive_render --> sdl_gl_primitive_render
     sdl_primitive_render --> render_factory
     sdl_gl_primitive_render --> render_factory
     render_factory --> SDL_TEST
-    
     window --> sdl_window
     sdl_window --> window_factory
     window_factory --> SDL_TEST
-    
     SDL3 --> sdl_lifecycle
-
     renderer --> SDL_TEST
     sdl_lifecycle --> SDL_TEST
     imgui --> SDL_TEST
@@ -98,6 +88,9 @@ graph TD
     - [ ] Light casters
     - [ ] Multiple lights
 - [ ] Model Loading
+    - [ ] Assimp
+    - [ ] Mesh
+    - [ ] Model
 - [ ] Advanced OpenGL
 - [ ] Advanced Lighting
 - [ ] PBR
