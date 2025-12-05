@@ -548,17 +548,27 @@ public:
         cam_matrices.view = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
             sopho::translate(-location(0), -location(1), -location(2));
         // Projection
-        cam_matrices.projection = sopho::perspective(1, static_cast<float>(window_size.width) / window_size.height, 0.1, 50);
+        cam_matrices.projection =
+            sopho::perspective(1, static_cast<float>(window_size.width) / window_size.height, 0.1, 50);
         cam_matrices.location = location;
 
         // 2. Begin Scene Collection
-        m_scene_renderer.begin_scene(cam_matrices, {.light_pos = {0.0f, 2.f, -6.0f},.view_pos = location.resize<1, 4>()});
+        m_scene_renderer.begin_scene(cam_matrices,
+                                     {.light_pos = {0.0f, 2.f, -6.0f}, .view_pos = location.resize<1, 4>()});
 
         // 3. Submit Renderables
 
         // Entity 1: Textured Cube
         // Model Matrix: translate(0.0f, -4.f, -5.0f) * rotation_y(1.6) * scale(10)
-        sopho::Mat<float, 4, 4> model1 = sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(10);
+        sopho::Mat<float, 4, 4> model1 =
+            sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(10);
+        m_scene_renderer.submit(m_mesh, m_materials[0], model1);
+
+        model1 = sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(8);
+        m_scene_renderer.submit(m_mesh, m_materials[0], model1);
+        model1 = sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(7);
+        m_scene_renderer.submit(m_mesh, m_materials[0], model1);
+        model1 = sopho::translate(0.0f, -4.f, 5.0f) * sopho::rotation_y(1.6) * sopho::scale(7);
         m_scene_renderer.submit(m_mesh, m_materials[0], model1);
 
         // Entity 2: Solid Cube
