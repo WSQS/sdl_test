@@ -139,8 +139,15 @@ namespace sopho
             {
                 result.sampler_count++;
             }
-            else
+        }
+        count = program.getNumUniformBlocks();
+        for (auto i = 0; i < count; i++)
+        {
+            auto block = program.getUniformBlock(i);
+            auto type = block.getType();
+            if (type->getQualifier().storage == glslang::EvqUniform)
             {
+                result.max_uniform_bindings = std::max<std::int32_t>(result.max_uniform_bindings, block.getBinding());
                 result.uniform_count++;
             }
         }
