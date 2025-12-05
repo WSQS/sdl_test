@@ -20,7 +20,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-
 import lifecycle;
 import data_type;
 import sdl_raii;
@@ -31,13 +30,7 @@ import renderer_factory;
 import primitive_renderer;
 import window_factory;
 import window;
-
-struct VertexType
-{
-    float x{}, y{}, z{};
-    float nx{}, ny{}, nz{};
-    float u{}, v{};
-};
+import standard_scene_renderer;
 
 /**
  * @brief Loads image data from the test texture file.
@@ -77,11 +70,11 @@ class UserApp : public sopho::App
     int m_fps_frames = 0;
     // GPU + resources
     sopho::PrimitiveRenderer* m_primitive_renderer{};
-    sopho::BufferHandle m_vertex_buffer{};
-    sopho::BufferHandle m_index_buffer{};
+    sopho::StandardSceneRenderer m_scene_renderer{};
     sopho::Window* m_window{};
 
-    std::vector<std::shared_ptr<sopho::Renderable>> m_renderables{};
+    sopho::Mesh m_mesh{};
+    std::vector<sopho::StandardMaterial> m_materials{};
 
     sopho::ImageData m_image_data;
     sopho::TextureHandle m_texture_wrapper{};
@@ -112,9 +105,14 @@ layout (location = 2) out vec2 v_uv;
 
 layout(std140, set = 1, binding = 0) uniform Camera
 {
-    mat4 uModel;
     mat4 uView;
     mat4 uProjection;
+    vec3 uCameraPos; // Matches CameraMatrices::location
+};
+
+layout(std140, set = 1, binding = 1) uniform Object
+{
+    mat4 uModel;
 };
 
 void main()
@@ -133,10 +131,17 @@ layout (location = 1) in vec3 v_pos;
 layout (location = 2) in vec2 v_uv;
 layout (location = 0) out vec4 FragColor;
 
-layout(std140, set = 3, binding = 1) uniform Params {
+layout(std140, set = 3, binding = 2) uniform SceneContex {
     vec3 lightPos;
     vec3 viewPos;
 };
+
+layout(std140, set = 3, binding = 3) uniform Material {
+    vec4 baseColorFactor;
+    float roughness;
+    float metallic;
+};
+
 layout(set = 2, binding = 0) uniform sampler2D uTexture;
 
 void main()
@@ -162,21 +167,22 @@ layout (location = 1) in vec3 v_pos;
 layout (location = 2) in vec2 v_uv;
 layout (location = 0) out vec4 FragColor;
 
+layout(std140, set = 3, binding = 2) uniform SceneContex {
+    vec3 lightPos;
+    vec3 viewPos;
+};
+
+layout(std140, set = 3, binding = 3) uniform Material {
+    vec4 baseColorFactor;
+    float roughness;
+    float metallic;
+};
 void main()
 {
     FragColor = vec4(1,1,1,1);
 })WSQ";
 
 public:
-    /**
-     * @brief Initialize application GPU resources, shaders, vertex data, camera, and Dear ImGui.
-     *
-     * Performs creation of the GPU wrapper and render procedural, compiles and submits the vertex
-     * and fragment shaders, creates and uploads initial render data, sets the camera uniform to the
-     * identity matrix, and initializes Dear ImGui with SDL3 and SDLGPU backends.
-     *
-     * @return SDL_AppResult `SDL_APP_CONTINUE` on successful initialization, `SDL_APP_FAILURE` on error.
-     */
     SDL_AppResult init(int argc, char** argv) override
     {
         auto c_primitive_renderer = sopho::create_primitive_renderer(sopho::RendererBackend::SDL_GPU);
@@ -187,6 +193,7 @@ public:
             return SDL_APP_FAILURE;
         }
         m_primitive_renderer = c_primitive_renderer.value();
+        m_scene_renderer.set_primitive_renderer(m_primitive_renderer);
         auto c_window = sopho::create_window(sopho::WindowBackend::SDL);
         if (c_window)
         {
@@ -196,8 +203,10 @@ public:
         auto pipeline_handle = m_primitive_renderer->create_render_procedure(
             {.vert_shader = vertex_source, .frag_shader = fragment_source});
 
+        auto pipeline_handle2 = m_primitive_renderer->create_render_procedure(
+            {.vert_shader = vertex_source, .frag_shader = fragment_source2});
 
-        std::vector<VertexType> vertices{
+        std::vector<sopho::VertexType> vertices{
             // +Z (front)  2 triangles
             {.x = 0.5f, .y = 0.5f, .z = 0.5f, .nx = 0, .ny = 0, .nz = 1, .u = 0, .v = 0},
             {.x = -0.5f, .y = 0.5f, .z = 0.5f, .nx = 0, .ny = 0, .nz = 1, .u = 1, .v = 0},
@@ -264,7 +273,7 @@ public:
         auto verti = m_primitive_renderer->create_buffer(buffer_descriptor);
         if (verti)
         {
-            m_vertex_buffer = verti.value();
+            m_mesh.vertex_buffer = verti.value();
         }
 
         buffer_descriptor.buffer_usage = sopho::BufferUsage::INDEX;
@@ -276,16 +285,9 @@ public:
         verti = m_primitive_renderer->create_buffer(buffer_descriptor);
         if (verti)
         {
-            m_index_buffer = verti.value();
+            m_mesh.index_buffer = verti.value();
         }
-
-        m_renderables.emplace_back(
-            std::make_shared<sopho::Renderable>(sopho::Renderable{.m_render_procedural = pipeline_handle.value()}));
-
-        auto pipeline_handle2 = m_primitive_renderer->create_render_procedure(
-            {.vert_shader = vertex_source, .frag_shader = fragment_source2});
-        m_renderables.emplace_back(
-            std::make_shared<sopho::Renderable>(sopho::Renderable{.m_render_procedural = pipeline_handle2.value()}));
+        m_mesh.index_count = 36;
 
         // 7. Setup Dear ImGui context.
         // IMGUI_CHECKVERSION();
@@ -344,6 +346,25 @@ public:
             SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to create texture: error = %d",
                         static_cast<int>(texture.error()));
         }
+
+        // Create Materials
+        // Material 1: Textured
+        sopho::StandardMaterial mat1{};
+        mat1.pipeline = pipeline_handle.value();
+        mat1.albedo_map = m_texture_wrapper;
+        mat1.params.base_color_factor = {1.0f, 1.0f, 1.0f, 1.0f};
+        mat1.params.roughness = 0.5f;
+        mat1.params.metallic = 0.0f;
+        m_materials.push_back(mat1);
+
+        // Material 2: Solid Color (Reddish/Pink from old code {0.0f, 2.f, -6.0f}? No that was position.
+        // Old shader2 output vec4(1,1,1,1). We'll set base color to white.
+        sopho::StandardMaterial mat2{};
+        mat2.pipeline = pipeline_handle2.value();
+        mat2.albedo_map = m_texture_wrapper; // Bind something even if unused, or use dummy
+        mat2.params.base_color_factor = {1.0f, 1.0f, 1.0f, 1.0f};
+        m_materials.push_back(mat2);
+
         return SDL_APP_CONTINUE;
     }
 
@@ -365,20 +386,6 @@ public:
         return SDL_APP_CONTINUE;
     }
 
-    /**
-     * @brief Advance the UI frame and present editors for vertex data and shader sources.
-     *
-     * Displays the ImGui demo and an "Editor" window with three modes:
-     * - Node/Vertex editing: exposes per-vertex attributes for editing and uploads the vertex buffer when modified.
-     * - Vertex shader editing: allows editing the vertex GLSL source and applies it to the procedural pipeline when
-     * changed.
-     * - Fragment shader editing: allows editing the fragment GLSL source and applies it to the procedural pipeline when
-     * changed.
-     *
-     * Any failures to upload vertex data or update shaders are logged.
-     *
-     * @return SDL_AppResult SDL_APP_CONTINUE to indicate the application should continue running.
-     */
     SDL_AppResult tick()
     {
         // ImGui_ImplSDLGPU3_NewFrame();
@@ -524,13 +531,7 @@ public:
     }
 
     /**
-     * @brief Render the scene (triangle and ImGui) into the current swapchain image and present it.
-     *
-     * Performs pipeline submission if needed, prepares ImGui draw data, records GPU commands
-     * to clear and render the color target, uploads the camera uniform, binds vertex buffers
-     * and the graphics pipeline, issues the draw call, renders ImGui, and submits the command buffer.
-     *
-     * @return SDL_AppResult `SDL_APP_CONTINUE` to keep the application running.
+     * @brief Render the scene using StandardSceneRenderer
      */
     SDL_AppResult draw()
     {
@@ -538,54 +539,44 @@ public:
         // ImDrawData* draw_data = ImGui::GetDrawData();
 
         auto window_size = m_window->size();
-        // SDL_GetWindowSize(m_primitive_renderer->get_gpu().window(), &w, &h);
-        m_primitive_renderer->begin_frame();
 
         // ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, m_primitive_renderer->get_command_buffer().raw());
 
-        m_primitive_renderer->begin_render_pass({.clear = true, .depth = true});
-
-        auto renderable = m_renderables[0];
-        std::array<sopho::Mat<float, 4, 4>, 3> camera_mat{};
-        // Model
-        camera_mat[0] = sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(10);
+        // 1. Prepare Camera Matrices
+        sopho::CameraMatrices cam_matrices{};
         // View
-        camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
-            sopho::translate(-location(0), -location(1), -location(2));
-        // Projection`
-        camera_mat[2] = sopho::perspective(1, static_cast<float>(window_size.width) / window_size.height, 0.1, 50);
-        m_primitive_renderer->bind_render_procedure(renderable->procedural());
-        m_primitive_renderer->bind_vertex_buffer(m_vertex_buffer);
-        m_primitive_renderer->bind_index_buffer(m_index_buffer);
-        m_primitive_renderer->push_vertex_uniform(
-            {0, std::span{reinterpret_cast<std::byte*>(camera_mat.data()), std::span(camera_mat).size_bytes()}});
-        auto frag_data = std::array{sopho::Mat<float, 1, 4>{0.0f, 2.f, -6.0f}, location.resize<1, 4>()};
-        m_primitive_renderer->push_fragment_uniform(
-            {1, std::span{reinterpret_cast<std::byte*>(frag_data.data()), std::span(frag_data).size_bytes()}});
-        m_primitive_renderer->bind_texture(m_texture_wrapper);
-        m_primitive_renderer->draw_index(36);
-        renderable = m_renderables[1];
-        // Model
-        camera_mat[0] = sopho::translate(0.0f, 2.f, -6.0f);
-        // View
-        camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
+        cam_matrices.view = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
             sopho::translate(-location(0), -location(1), -location(2));
         // Projection
-        camera_mat[2] = sopho::perspective(1, static_cast<float>(window_size.width) / window_size.height, 0.1, 50);
-        m_primitive_renderer->bind_render_procedure(renderable->procedural());
-        m_primitive_renderer->bind_vertex_buffer(m_vertex_buffer);
-        m_primitive_renderer->bind_index_buffer(m_index_buffer);
-        m_primitive_renderer->push_vertex_uniform(
-            {0, std::span{reinterpret_cast<std::byte*>(camera_mat.data()), std::span(camera_mat).size_bytes()}});
-        m_primitive_renderer->draw_index(36);
-        m_primitive_renderer->end_render_pass();
-        m_primitive_renderer->begin_render_pass({.clear = false, .depth = false});
+        cam_matrices.projection = sopho::perspective(1, static_cast<float>(window_size.width) / window_size.height, 0.1, 50);
+        cam_matrices.location = location;
+
+        // 2. Begin Scene Collection
+        m_scene_renderer.begin_scene(cam_matrices, {.light_pos = {0.0f, 2.f, -6.0f},.view_pos = location.resize<1, 4>()});
+
+        // 3. Submit Renderables
+
+        // Entity 1: Textured Cube
+        // Model Matrix: translate(0.0f, -4.f, -5.0f) * rotation_y(1.6) * scale(10)
+        sopho::Mat<float, 4, 4> model1 = sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(10);
+        m_scene_renderer.submit(m_mesh, m_materials[0], model1);
+
+        // Entity 2: Solid Cube
+        // Model Matrix: translate(0.0f, 2.f, -6.0f)
+        sopho::Mat<float, 4, 4> model2 = sopho::translate(0.0f, 2.f, -6.0f);
+        m_scene_renderer.submit(m_mesh, m_materials[1], model2);
+
+        // 4. End Scene (Executes Draw Calls via PrimitiveRenderer)
+        m_scene_renderer.end_scene();
+
+        // 5. Cleanup
+
+        // m_primitive_renderer->begin_render_pass({.clear = false, .depth = false});
 
         // ImGui_ImplSDLGPU3_RenderDrawData(draw_data, m_primitive_renderer->get_command_buffer().raw(),
         //                                  m_primitive_renderer->get_render_pass().raw());
 
-        m_primitive_renderer->end_render_pass();
-        m_primitive_renderer->end_frame();
+        // m_primitive_renderer->end_render_pass();
         return SDL_APP_CONTINUE;
     }
 
