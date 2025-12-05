@@ -49,6 +49,10 @@ namespace sopho
             std::uint32_t width = 0, height = 0;
             SDL_WaitAndAcquireGPUSwapchainTexture(m_gpu_command_buffer.raw(), m_gpu->window(), &m_swapchain_texture,
                                                   &width, &height);
+            if (width == 0 || height == 0)
+            {
+                return;
+            }
             SDL_GPUTextureCreateInfo ci = {
                 .type = SDL_GPU_TEXTURETYPE_2D,
                 .format = SDL_GPU_TEXTUREFORMAT_D16_UNORM,
