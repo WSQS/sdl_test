@@ -31,6 +31,7 @@ import primitive_renderer;
 import window_factory;
 import window;
 import standard_scene_renderer;
+import assimp_wrapper;
 
 /**
  * @brief Loads image data from the test texture file.
@@ -73,7 +74,7 @@ class UserApp : public sopho::App
     sopho::StandardSceneRenderer m_scene_renderer{};
     sopho::Window* m_window{};
 
-    sopho::Mesh m_mesh{};
+    std::vector<sopho::Mesh> m_mesh{};
     std::vector<sopho::StandardMaterial> m_materials{};
 
     sopho::ImageData m_image_data;
@@ -185,6 +186,7 @@ void main()
 public:
     SDL_AppResult init(int argc, char** argv) override
     {
+        auto mesh_data = sopho::load_model("assets/backpack/backpack.obj");
         auto c_primitive_renderer = sopho::create_primitive_renderer(sopho::RendererBackend::SDL_GPU);
         if (!c_primitive_renderer)
         {
@@ -263,25 +265,29 @@ public:
             indices.push_back(i);
         }
 
-        sopho::BufferDescriptor buffer_descriptor{};
-        buffer_descriptor.buffer_usage = sopho::BufferUsage::VERTEX;
-        buffer_descriptor.data = std::as_bytes(std::span(vertices));
-
-        auto verti = m_primitive_renderer->create_buffer(buffer_descriptor);
-        if (verti)
+        for (const auto mesh_d : mesh_data)
         {
-            m_mesh.vertex_buffer = verti.value();
-        }
+            sopho::BufferDescriptor buffer_descriptor{};
+            buffer_descriptor.buffer_usage = sopho::BufferUsage::VERTEX;
+            buffer_descriptor.data = std::as_bytes(std::span(mesh_d.vertices));
+            sopho::Mesh mesh{};
+            auto verti = m_primitive_renderer->create_buffer(buffer_descriptor);
+            if (verti)
+            {
+                mesh.vertex_buffer = verti.value();
+            }
 
-        buffer_descriptor.buffer_usage = sopho::BufferUsage::INDEX;
-        buffer_descriptor.data = std::as_bytes(std::span(indices));
+            buffer_descriptor.buffer_usage = sopho::BufferUsage::INDEX;
+            buffer_descriptor.data = std::as_bytes(std::span(mesh_d.indices));
 
-        verti = m_primitive_renderer->create_buffer(buffer_descriptor);
-        if (verti)
-        {
-            m_mesh.index_buffer = verti.value();
+            verti = m_primitive_renderer->create_buffer(buffer_descriptor);
+            if (verti)
+            {
+                mesh.index_buffer = verti.value();
+            }
+            mesh.index_count = mesh_d.indices.size();
+            m_mesh.emplace_back(mesh);
         }
-        m_mesh.index_count = 36;
 
         // 7. Setup Dear ImGui context.
         // IMGUI_CHECKVERSION();
@@ -554,21 +560,17 @@ public:
 
         // Entity 1: Textured Cube
         // Model Matrix: translate(0.0f, -4.f, -5.0f) * rotation_y(1.6) * scale(10)
-        sopho::Mat<float, 4, 4> model1 =
-            sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(10);
-        m_scene_renderer.submit(m_mesh, m_materials[0], model1);
+        for (const auto& mesh : m_mesh)
+        {
+            sopho::Mat<float, 4, 4> model1 =
+                sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(10);
+            m_scene_renderer.submit(mesh, m_materials[0], model1);
 
-        model1 = sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(8);
-        m_scene_renderer.submit(m_mesh, m_materials[0], model1);
-        model1 = sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(7);
-        m_scene_renderer.submit(m_mesh, m_materials[0], model1);
-        model1 = sopho::translate(0.0f, -4.f, 5.0f) * sopho::rotation_y(1.6) * sopho::scale(7);
-        m_scene_renderer.submit(m_mesh, m_materials[0], model1);
-
-        // Entity 2: Solid Cube
-        // Model Matrix: translate(0.0f, 2.f, -6.0f)
-        sopho::Mat<float, 4, 4> model2 = sopho::translate(0.0f, 2.f, -6.0f);
-        m_scene_renderer.submit(m_mesh, m_materials[1], model2);
+            // Entity 2: Solid Cube
+            // Model Matrix: translate(0.0f, 2.f, -6.0f)
+            sopho::Mat<float, 4, 4> model2 = sopho::translate(0.0f, 2.f, -6.0f);
+            m_scene_renderer.submit(mesh, m_materials[1], model2);
+        }
 
         // 4. End Scene (Executes Draw Calls via PrimitiveRenderer)
         m_scene_renderer.end_scene();

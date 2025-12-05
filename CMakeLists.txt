@@ -122,9 +122,10 @@ add_subdirectory(glsl_reflector)
 add_subdirectory(logos)
 add_subdirectory(renderer)
 add_subdirectory(renderer_factory)
+add_subdirectory(assimp_wrapper)
 
 add_executable(SDL_TEST main.cpp)
-target_link_libraries(SDL_TEST PRIVATE imgui sdl_wrapper stb logos renderer_factory sdl_lifecycle assimp)
+target_link_libraries(SDL_TEST PRIVATE imgui sdl_wrapper stb logos renderer_factory sdl_lifecycle assimp_wrapper)
 
 include(GNUInstallDirs)
 install(TARGETS SDL_TEST

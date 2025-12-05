@@ -87,10 +87,10 @@ graph TD
     - [ ] Lighting maps
     - [ ] Light casters
     - [ ] Multiple lights
-- [ ] Model Loading
-    - [ ] Assimp
-    - [ ] Mesh
-    - [ ] Model
+- [x] Model Loading
+    - [x] Assimp
+    - [x] Mesh
+    - [x] Model
 - [ ] Advanced OpenGL
 - [ ] Advanced Lighting
 - [ ] PBR
