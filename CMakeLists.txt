@@ -112,6 +112,8 @@ FetchContent_Declare(
         URL https://github.com/assimp/assimp/archive/refs/tags/v6.0.2.zip
 )
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libs" FORCE)
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(assimp)
 
 add_subdirectory(data_type)
