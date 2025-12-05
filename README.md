@@ -22,12 +22,11 @@ graph TD
         glsl_reflector
         sdl_wrapper
         logos
-        render
         render_factory
         sdl_gl_primitive_render
         sdl_lifecycle
-        window
         window_factory
+        renderer
     end
     
     subgraph sdl_wrapper
@@ -35,6 +34,12 @@ graph TD
         sdl_primitive_render
         sdl_window
     end
+
+  subgraph renderer
+    window
+    primitive_render
+    standard_scene_renderer
+  end
 
     glslang --> shaderc
     SPIRVTools --> shaderc
@@ -54,8 +59,8 @@ graph TD
     gl --> sdl_gl_primitive_render
     SDL3 --> sdl_gl_primitive_render
 
-    render --> sdl_primitive_render
-    render --> sdl_gl_primitive_render
+    primitive_render --> sdl_primitive_render
+    primitive_render --> sdl_gl_primitive_render
     sdl_primitive_render --> render_factory
     sdl_gl_primitive_render --> render_factory
     render_factory --> SDL_TEST
@@ -65,9 +70,9 @@ graph TD
     window_factory --> SDL_TEST
     
     SDL3 --> sdl_lifecycle
-    
+
+    renderer --> SDL_TEST
     sdl_lifecycle --> SDL_TEST
-    render --> SDL_TEST
     imgui --> SDL_TEST
     stb --> SDL_TEST
     logos --> SDL_TEST
