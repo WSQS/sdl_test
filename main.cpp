@@ -537,7 +537,7 @@ public:
         // ImGui::Render();
         // ImDrawData* draw_data = ImGui::GetDrawData();
 
-        int w{1}, h{1};
+        auto window_size = m_window->size();
         // SDL_GetWindowSize(m_primitive_renderer->get_gpu().window(), &w, &h);
         m_primitive_renderer->begin_frame();
 
@@ -553,7 +553,7 @@ public:
         camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
             sopho::translate(-location(0), -location(1), -location(2));
         // Projection`
-        camera_mat[2] = sopho::perspective(1, static_cast<float>(w) / h, 0.1, 50);
+        camera_mat[2] = sopho::perspective(1, static_cast<float>(window_size.width) / window_size.height, 0.1, 50);
         m_primitive_renderer->bind_render_procedure(renderable->procedural());
         m_primitive_renderer->bind_vertex_buffer(m_vertex_buffer);
         m_primitive_renderer->bind_index_buffer(m_index_buffer);
@@ -571,7 +571,7 @@ public:
         camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
             sopho::translate(-location(0), -location(1), -location(2));
         // Projection
-        camera_mat[2] = sopho::perspective(1, static_cast<float>(w) / h, 0.1, 50);
+        camera_mat[2] = sopho::perspective(1, static_cast<float>(window_size.width) / window_size.height, 0.1, 50);
         m_primitive_renderer->bind_render_procedure(renderable->procedural());
         m_primitive_renderer->bind_vertex_buffer(m_vertex_buffer);
         m_primitive_renderer->bind_index_buffer(m_index_buffer);
