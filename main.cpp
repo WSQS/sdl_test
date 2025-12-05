@@ -12,19 +12,12 @@
 #include <string>
 #include <variant>
 
-#include "imgui.h"
-#include "imgui_impl_sdl3.h"
-#include "imgui_impl_sdlgpu3.h"
-#include "misc/cpp/imgui_stdlib.h"
-
 #include "SDL3/SDL.h"
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_keycode.h"
 
-#define STB_IMAGE_IMPLEMENTATION
 #include <chrono>
-
-
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 import lifecycle;
@@ -33,13 +26,11 @@ import sdl_raii;
 import glsl_reflector;
 import sdl_wrapper;
 import logos;
-
-struct VertexType
-{
-    float x{}, y{}, z{};
-    float nx{}, ny{}, nz{};
-    float u{}, v{};
-};
+import renderer_factory;
+import primitive_renderer;
+import window_factory;
+import window;
+import standard_scene_renderer;
 
 /**
  * @brief Loads image data from the test texture file.
@@ -78,13 +69,15 @@ class UserApp : public sopho::App
     double m_fps_accumulator = 0.0;
     int m_fps_frames = 0;
     // GPU + resources
-    std::shared_ptr<sopho::GpuWrapper> m_gpu{};
+    sopho::PrimitiveRenderer* m_primitive_renderer{};
+    sopho::StandardSceneRenderer m_scene_renderer{};
+    sopho::Window* m_window{};
 
-    std::vector<std::shared_ptr<sopho::Renderable>> m_renderables{};
+    sopho::Mesh m_mesh{};
+    std::vector<sopho::StandardMaterial> m_materials{};
 
     sopho::ImageData m_image_data;
-    std::shared_ptr<sopho::TextureWrapper> m_texture_wrapper{};
-    SDL_GPUTexture* SceneDepthTexture{};
+    sopho::TextureHandle m_texture_wrapper{};
 
     // camera state
     float yaw = 0.0f;
@@ -102,7 +95,7 @@ class UserApp : public sopho::App
     // see: https://wiki.libsdl.org/SDL3/SDL_CreateGPUShader for uniform layout
     std::string vertex_source =
         R"WSQ(#version 460
-
+#extension GL_KHR_vulkan_glsl : enable
 layout (location = 0) in vec3 a_position;
 layout (location = 1) in vec3 a_normal;
 layout (location = 2) in vec2 a_uv;
@@ -112,9 +105,14 @@ layout (location = 2) out vec2 v_uv;
 
 layout(std140, set = 1, binding = 0) uniform Camera
 {
-    mat4 uModel;
     mat4 uView;
     mat4 uProjection;
+    vec3 uCameraPos; // Matches CameraMatrices::location
+};
+
+layout(std140, set = 1, binding = 1) uniform Object
+{
+    mat4 uModel;
 };
 
 void main()
@@ -127,16 +125,23 @@ void main()
 
     std::string fragment_source =
         R"WSQ(#version 460
-
+#extension GL_KHR_vulkan_glsl : enable
 layout (location = 0) in vec3 v_normal;
 layout (location = 1) in vec3 v_pos;
 layout (location = 2) in vec2 v_uv;
 layout (location = 0) out vec4 FragColor;
 
-layout(std140, set = 3, binding = 0) uniform Params {
+layout(std140, set = 3, binding = 2) uniform SceneContex {
     vec3 lightPos;
     vec3 viewPos;
 };
+
+layout(std140, set = 3, binding = 3) uniform Material {
+    vec4 baseColorFactor;
+    float roughness;
+    float metallic;
+};
+
 layout(set = 2, binding = 0) uniform sampler2D uTexture;
 
 void main()
@@ -156,62 +161,52 @@ void main()
 
     std::string fragment_source2 =
         R"WSQ(#version 460
-
+#extension GL_KHR_vulkan_glsl : enable
 layout (location = 0) in vec3 v_normal;
 layout (location = 1) in vec3 v_pos;
 layout (location = 2) in vec2 v_uv;
 layout (location = 0) out vec4 FragColor;
 
+layout(std140, set = 3, binding = 2) uniform SceneContex {
+    vec3 lightPos;
+    vec3 viewPos;
+};
+
+layout(std140, set = 3, binding = 3) uniform Material {
+    vec4 baseColorFactor;
+    float roughness;
+    float metallic;
+};
 void main()
 {
     FragColor = vec4(1,1,1,1);
 })WSQ";
 
 public:
-    /**
-     * @brief Initialize application GPU resources, shaders, vertex data, camera, and Dear ImGui.
-     *
-     * Performs creation of the GPU wrapper and render procedural, compiles and submits the vertex
-     * and fragment shaders, creates and uploads initial render data, sets the camera uniform to the
-     * identity matrix, and initializes Dear ImGui with SDL3 and SDLGPU backends.
-     *
-     * @return SDL_AppResult `SDL_APP_CONTINUE` on successful initialization, `SDL_APP_FAILURE` on error.
-     */
     SDL_AppResult init(int argc, char** argv) override
     {
-        // 1. Create GPU wrapper (device + window + claim), monadic style.
-        auto gpu_result = sopho::GpuWrapper::create();
-        if (!gpu_result)
+        auto c_primitive_renderer = sopho::create_primitive_renderer(sopho::RendererBackend::SDL_GPU);
+        if (!c_primitive_renderer)
         {
-            SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create GpuWrapper, error = %d",
-                         static_cast<int>(gpu_result.error()));
+            SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create Primitive Renderer, error = %d",
+                         static_cast<int>(c_primitive_renderer.error()));
             return SDL_APP_FAILURE;
         }
-        m_gpu = std::move(gpu_result.value());
-
-        // 2. Create pipeline wrapper.
-        auto pw_result = m_gpu->create_render_procedural();
-        if (!pw_result)
+        m_primitive_renderer = c_primitive_renderer.value();
+        m_scene_renderer.set_primitive_renderer(m_primitive_renderer);
+        auto c_window = sopho::create_window(sopho::WindowBackend::SDL);
+        if (c_window)
         {
-            SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create pipeline wrapper, error = %d",
-                         static_cast<int>(pw_result.error()));
-            return SDL_APP_FAILURE;
+            m_window = c_window.value();
         }
+        m_primitive_renderer->bind_window(m_window->native_handle());
+        auto pipeline_handle = m_primitive_renderer->create_render_procedure(
+            {.vert_shader = vertex_source, .frag_shader = fragment_source});
 
-        // 4. Compile shaders and build initial pipeline.
-        auto pipeline_init =
-            pw_result.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
-                .and_then([&](std::monostate) { return pw_result->set_fragment_shader(fragment_source); })
-                .and_then([&](std::monostate) { return pw_result->submit(); });
+        auto pipeline_handle2 = m_primitive_renderer->create_render_procedure(
+            {.vert_shader = vertex_source, .frag_shader = fragment_source2});
 
-        if (!pipeline_init)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to initialize pipeline, error = %d",
-                         static_cast<int>(pipeline_init.error()));
-            return SDL_APP_FAILURE;
-        }
-
-        std::vector<VertexType> vertices{
+        std::vector<sopho::VertexType> vertices{
             // +Z (front)  2 triangles
             {.x = 0.5f, .y = 0.5f, .z = 0.5f, .nx = 0, .ny = 0, .nz = 1, .u = 0, .v = 0},
             {.x = -0.5f, .y = 0.5f, .z = 0.5f, .nx = 0, .ny = 0, .nz = 1, .u = 1, .v = 0},
@@ -268,100 +263,83 @@ public:
             indices.push_back(i);
         }
 
-        // 3. Create vertex buffer.
-        auto render_data = sopho::RenderData::Builder{}
-                               .set_vertex_layout(pw_result.value().vertex_layout())
-                               .set_vertex_count(36)
-                               .set_index_count(36)
-                               .set_vertices(std::span(vertices))
-                               .set_indices(std::span(indices))
-                               .build(*m_gpu.get());
-        if (!render_data)
+        sopho::BufferDescriptor buffer_descriptor{};
+        buffer_descriptor.buffer_usage = sopho::BufferUsage::VERTEX;
+        auto vertex_span = std::span(vertices);
+        buffer_descriptor.data = std::span<const std::byte>{reinterpret_cast<const std::byte*>(vertex_span.data()),
+                                                            reinterpret_cast<const std::byte*>(vertex_span.data()) +
+                                                                vertex_span.size_bytes()};
+
+        auto verti = m_primitive_renderer->create_buffer(buffer_descriptor);
+        if (verti)
         {
-            SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to create vertex buffer, error = %d",
-                         static_cast<int>(render_data.error()));
-            return SDL_APP_FAILURE;
+            m_mesh.vertex_buffer = verti.value();
         }
 
-        // 5. Upload initial vertex data.
-        auto upload_result = render_data.and_then([&](auto& vertex_buffer) { return vertex_buffer->upload(); });
+        buffer_descriptor.buffer_usage = sopho::BufferUsage::INDEX;
+        auto indices_span = std::span(indices);
+        buffer_descriptor.data = std::span<const std::byte>{reinterpret_cast<const std::byte*>(indices_span.data()),
+                                                            reinterpret_cast<const std::byte*>(indices_span.data()) +
+                                                                indices_span.size_bytes()};
 
-        if (!upload_result)
+        verti = m_primitive_renderer->create_buffer(buffer_descriptor);
+        if (verti)
         {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to upload initial vertex data, error = %d",
-                         static_cast<int>(upload_result.error()));
-            return SDL_APP_FAILURE;
+            m_mesh.index_buffer = verti.value();
         }
-
-        m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
-            .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result.value())),
-            .m_render_data = std::move(render_data.value())}));
-
-        auto pw_result2 = m_gpu->create_render_procedural();
-        pipeline_init = pw_result2.and_then([&](auto& pipeline) { return pipeline.set_vertex_shader(vertex_source); })
-                            .and_then([&](std::monostate) { return pw_result2->set_fragment_shader(fragment_source2); })
-                            .and_then([&](std::monostate) { return pw_result2->submit(); });
-        if (!pipeline_init)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Failed to initialize pipeline, error = %d",
-                         static_cast<int>(pipeline_init.error()));
-            return SDL_APP_FAILURE;
-        }
-        m_renderables.emplace_back(std::make_shared<sopho::Renderable>(sopho::Renderable{
-            .m_render_procedural = std::make_shared<sopho::RenderProcedural>(std::move(pw_result2.value())),
-            .m_render_data = m_renderables[0]->data()}));
+        m_mesh.index_count = 36;
 
         // 7. Setup Dear ImGui context.
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO();
-        (void)io;
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-
-        ImGui::StyleColorsDark();
-
-        float main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
-
-        ImGuiStyle& style = ImGui::GetStyle();
-        style.ScaleAllSizes(main_scale);
-        style.FontScaleDpi = main_scale;
+        // IMGUI_CHECKVERSION();
+        // ImGui::CreateContext();
+        // ImGuiIO& io = ImGui::GetIO();
+        // (void)io;
+        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+        //
+        // ImGui::StyleColorsDark();
+        //
+        // float main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+        //
+        // ImGuiStyle& style = ImGui::GetStyle();
+        // style.ScaleAllSizes(main_scale);
+        // style.FontScaleDpi = main_scale;
 
         // 8. Initialize ImGui SDL3 backend.
-        if (SDL_Window* window = m_gpu->window())
-        {
-            ImGui_ImplSDL3_InitForSDLGPU(window);
-        }
-        else
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_ERROR,
-                         "GpuWrapper::window() returned null; ImGui SDL3 backend not initialized");
-            return SDL_APP_FAILURE;
-        }
+        // if (SDL_Window* window = m_primitive_renderer->get_gpu().window())
+        // {
+        //     ImGui_ImplSDL3_InitForSDLGPU(window);
+        // }
+        // else
+        // {
+        //     SDL_LogError(SDL_LOG_CATEGORY_ERROR,
+        //                  "GpuWrapper::window() returned null; ImGui SDL3 backend not initialized");
+        //     return SDL_APP_FAILURE;
+        // }
 
-        // 9. Initialize ImGui SDLGPU backend.
-        auto format_result = m_gpu->get_texture_format();
-        if (!format_result)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to get swapchain texture format, error = %d",
-                         static_cast<int>(format_result.error()));
-            return SDL_APP_FAILURE;
-        }
+        // // 9. Initialize ImGui SDLGPU backend.
+        // auto format_result = m_primitive_renderer->get_gpu().get_texture_format();
+        // if (!format_result)
+        // {
+        //     SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to get swapchain texture format, error = %d",
+        //                  static_cast<int>(format_result.error()));
+        //     return SDL_APP_FAILURE;
+        // }
 
-        ImGui_ImplSDLGPU3_InitInfo init_info{};
-        init_info.Device = m_gpu->device();
-        init_info.ColorTargetFormat = format_result.value();
-        init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1;
-        init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR;
-        init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
+        // ImGui_ImplSDLGPU3_InitInfo init_info{};
+        // init_info.Device = m_primitive_renderer->get_gpu().device();
+        // init_info.ColorTargetFormat = format_result.value();
+        // init_info.MSAASamples = SDL_GPU_SAMPLECOUNT_1;
+        // init_info.SwapchainComposition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR;
+        // init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
 
-        ImGui_ImplSDLGPU3_Init(&init_info);
+        // ImGui_ImplSDLGPU3_Init(&init_info);
         m_image_data = load_image();
 
-        auto texture = sopho::TextureWrapper::Builder{}.set_image_data(m_image_data).build(*m_gpu.get());
+        auto texture = m_primitive_renderer->create_texture(m_image_data);
         if (texture)
         {
-            m_texture_wrapper = std::make_shared<sopho::TextureWrapper>(std::move(texture.value()));
+            m_texture_wrapper = texture.value();
         }
         else
         {
@@ -369,19 +347,24 @@ public:
                         static_cast<int>(texture.error()));
         }
 
-        SDL_GetWindowSizeInPixels(m_gpu->window(), &win_w, &win_h);
-        SDL_GPUTextureCreateInfo ci = {
-            .type = SDL_GPU_TEXTURETYPE_2D,
-            .format = SDL_GPU_TEXTUREFORMAT_D16_UNORM,
-            .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
-            .width = static_cast<std::uint32_t>(win_w),
-            .height = static_cast<std::uint32_t>(win_h),
-            .layer_count_or_depth = 1,
-            .num_levels = 1,
-            .sample_count = SDL_GPU_SAMPLECOUNT_1,
-        };
+        // Create Materials
+        // Material 1: Textured
+        sopho::StandardMaterial mat1{};
+        mat1.pipeline = pipeline_handle.value();
+        mat1.albedo_map = m_texture_wrapper;
+        mat1.params.base_color_factor = {1.0f, 1.0f, 1.0f, 1.0f};
+        mat1.params.roughness = 0.5f;
+        mat1.params.metallic = 0.0f;
+        m_materials.push_back(mat1);
 
-        SceneDepthTexture = SDL_CreateGPUTexture(m_gpu->device(), &ci);
+        // Material 2: Solid Color (Reddish/Pink from old code {0.0f, 2.f, -6.0f}? No that was position.
+        // Old shader2 output vec4(1,1,1,1). We'll set base color to white.
+        sopho::StandardMaterial mat2{};
+        mat2.pipeline = pipeline_handle2.value();
+        mat2.albedo_map = m_texture_wrapper; // Bind something even if unused, or use dummy
+        mat2.params.base_color_factor = {1.0f, 1.0f, 1.0f, 1.0f};
+        m_materials.push_back(mat2);
+
         return SDL_APP_CONTINUE;
     }
 
@@ -403,32 +386,18 @@ public:
         return SDL_APP_CONTINUE;
     }
 
-    /**
-     * @brief Advance the UI frame and present editors for vertex data and shader sources.
-     *
-     * Displays the ImGui demo and an "Editor" window with three modes:
-     * - Node/Vertex editing: exposes per-vertex attributes for editing and uploads the vertex buffer when modified.
-     * - Vertex shader editing: allows editing the vertex GLSL source and applies it to the procedural pipeline when
-     * changed.
-     * - Fragment shader editing: allows editing the fragment GLSL source and applies it to the procedural pipeline when
-     * changed.
-     *
-     * Any failures to upload vertex data or update shaders are logged.
-     *
-     * @return SDL_AppResult SDL_APP_CONTINUE to indicate the application should continue running.
-     */
     SDL_AppResult tick()
     {
-        ImGui_ImplSDLGPU3_NewFrame();
-        ImGui_ImplSDL3_NewFrame();
-        ImGui::NewFrame();
-
-        ImGui::ShowDemoWindow();
-
-        ImGui::Begin("Editor");
-        static int current = 0;
-        std::array<const char*, 3> items = {"Node", "Vertex", "Fragment"};
-        ImGui::Combo("##Object", &current, items.data(), static_cast<int>(items.size()));
+        // ImGui_ImplSDLGPU3_NewFrame();
+        // ImGui_ImplSDL3_NewFrame();
+        // ImGui::NewFrame();
+        //
+        // ImGui::ShowDemoWindow();
+        //
+        // ImGui::Begin("Editor");
+        // static int current = 0;
+        // std::array<const char*, 3> items = {"Node", "Vertex", "Fragment"};
+        // ImGui::Combo("##Object", &current, items.data(), static_cast<int>(items.size()));
 
         // switch (current)
         // {
@@ -556,141 +525,68 @@ public:
         //     break;
         // }
 
-        ImGui::End();
-        ImGui::EndFrame();
+        // ImGui::End();
+        // ImGui::EndFrame();
         return SDL_APP_CONTINUE;
     }
 
     /**
-     * @brief Render the scene (triangle and ImGui) into the current swapchain image and present it.
-     *
-     * Performs pipeline submission if needed, prepares ImGui draw data, records GPU commands
-     * to clear and render the color target, uploads the camera uniform, binds vertex buffers
-     * and the graphics pipeline, issues the draw call, renders ImGui, and submits the command buffer.
-     *
-     * @return SDL_AppResult `SDL_APP_CONTINUE` to keep the application running.
+     * @brief Render the scene using StandardSceneRenderer
      */
     SDL_AppResult draw()
     {
-        ImGui::Render();
-        ImDrawData* draw_data = ImGui::GetDrawData();
+        // ImGui::Render();
+        // ImDrawData* draw_data = ImGui::GetDrawData();
 
-        SDL_GPUDevice* device = m_gpu->device();
-        if (!device)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "GpuWrapper::device() returned null in draw()");
-            return SDL_APP_CONTINUE;
-        }
-        sopho::GpuCommandBufferRaii command_buffer_raii{};
-        {
+        auto window_size = m_window->size();
 
-            SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(device);
-            if (!command_buffer)
-            {
-                SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to acquire GPU command buffer");
-                return SDL_APP_CONTINUE;
-            }
-            command_buffer_raii.reset(command_buffer);
-        }
+        // ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, m_primitive_renderer->get_command_buffer().raw());
 
-        SDL_GPUTexture* swapchainTexture = nullptr;
-        Uint32 width = 0, height = 0;
-
-        SDL_Window* window = m_gpu->window();
-        if (!window)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "GpuWrapper::window() returned null in draw()");
-            return SDL_APP_CONTINUE;
-        }
-
-        if (!SDL_WaitAndAcquireGPUSwapchainTexture(command_buffer_raii.raw(), window, &swapchainTexture, &width,
-                                                   &height))
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_GPU, "Failed to acquire swapchain texture: %s", SDL_GetError());
-            return SDL_APP_CONTINUE;
-        }
-
-        if ((win_w != width || win_h != height) && width != 0 && height != 0)
-        {
-            SDL_GPUTextureCreateInfo ci = {
-                .type = SDL_GPU_TEXTURETYPE_2D,
-                .format = SDL_GPU_TEXTUREFORMAT_D16_UNORM,
-                .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
-                .width = static_cast<std::uint32_t>(width),
-                .height = static_cast<std::uint32_t>(height),
-                .layer_count_or_depth = 1,
-                .num_levels = 1,
-                .sample_count = SDL_GPU_SAMPLECOUNT_1,
-            };
-            SDL_ReleaseGPUTexture(m_gpu->device(), SceneDepthTexture);
-            SceneDepthTexture = SDL_CreateGPUTexture(m_gpu->device(), &ci);
-            win_w = width;
-            win_h = height;
-        }
-
-        if (swapchainTexture == nullptr)
-        {
-            // You must always submit the command buffer, even if no texture is available.
-            return SDL_APP_CONTINUE;
-        }
-
-        ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, command_buffer_raii.raw());
-
-        // Create the color target.
-        SDL_GPUColorTargetInfo colorTargetInfo{};
-        colorTargetInfo.clear_color = {135 / 255.0F, 135 / 255.0F, 135 / 255.0F, 255 / 255.0F};
-        colorTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
-        colorTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
-        colorTargetInfo.texture = swapchainTexture;
-
-        SDL_GPUDepthStencilTargetInfo depthStencilTargetInfo{};
-        depthStencilTargetInfo.texture = SceneDepthTexture;
-        depthStencilTargetInfo.cycle = true;
-        depthStencilTargetInfo.clear_depth = 1;
-        depthStencilTargetInfo.clear_stencil = 0;
-        depthStencilTargetInfo.load_op = SDL_GPU_LOADOP_CLEAR;
-        depthStencilTargetInfo.store_op = SDL_GPU_STOREOP_STORE;
-        depthStencilTargetInfo.stencil_load_op = SDL_GPU_LOADOP_CLEAR;
-        depthStencilTargetInfo.stencil_store_op = SDL_GPU_STOREOP_STORE;
-
-        SDL_GPURenderPass* renderPass =
-            SDL_BeginGPURenderPass(command_buffer_raii.raw(), &colorTargetInfo, 1, &depthStencilTargetInfo);
-
-        auto renderable = m_renderables[0];
-        std::array<sopho::Mat<float, 4, 4>, 3> camera_mat{};
-        // Model
-        camera_mat[0] = sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(10);
+        // 1. Prepare Camera Matrices
+        sopho::CameraMatrices cam_matrices{};
         // View
-        camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
-            sopho::translate(-location(0), -location(1), -location(2));
-        // Projection`
-        camera_mat[2] = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 50);
-        renderable->draw(
-            sopho::RenderContext{.render_pass = renderPass,
-                                 .command_buffer = command_buffer_raii.raw(),
-                                 .camera_mat = camera_mat,
-                                 .pos = std::array{sopho::Mat<float, 1, 4>{0.0f, 2.f, -6.0f}, location.resize<1, 4>()},
-                                 .texture_wrapper = m_texture_wrapper});
-        renderable = m_renderables[1];
-        // Model
-        camera_mat[0] = sopho::translate(0.0f, 2.f, -6.0f);
-        // View
-        camera_mat[1] = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
+        cam_matrices.view = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
             sopho::translate(-location(0), -location(1), -location(2));
         // Projection
-        camera_mat[2] = sopho::perspective(1, static_cast<float>(width) / height, 0.1, 50);
-        renderable->draw(sopho::RenderContext{
-            .render_pass = renderPass, .command_buffer = command_buffer_raii.raw(), .camera_mat = camera_mat});
+        cam_matrices.projection =
+            sopho::perspective(1, static_cast<float>(window_size.width) / window_size.height, 0.1, 50);
+        cam_matrices.location = location;
 
-        SDL_EndGPURenderPass(renderPass);
+        // 2. Begin Scene Collection
+        m_scene_renderer.begin_scene(cam_matrices,
+                                     {.light_pos = {0.0f, 2.f, -6.0f}, .view_pos = location.resize<1, 4>()});
 
-        colorTargetInfo.load_op = SDL_GPU_LOADOP_LOAD;
+        // 3. Submit Renderables
 
-        renderPass = SDL_BeginGPURenderPass(command_buffer_raii.raw(), &colorTargetInfo, 1, nullptr);
-        ImGui_ImplSDLGPU3_RenderDrawData(draw_data, command_buffer_raii.raw(), renderPass);
+        // Entity 1: Textured Cube
+        // Model Matrix: translate(0.0f, -4.f, -5.0f) * rotation_y(1.6) * scale(10)
+        sopho::Mat<float, 4, 4> model1 =
+            sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(10);
+        m_scene_renderer.submit(m_mesh, m_materials[0], model1);
 
-        SDL_EndGPURenderPass(renderPass);
+        model1 = sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(8);
+        m_scene_renderer.submit(m_mesh, m_materials[0], model1);
+        model1 = sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(7);
+        m_scene_renderer.submit(m_mesh, m_materials[0], model1);
+        model1 = sopho::translate(0.0f, -4.f, 5.0f) * sopho::rotation_y(1.6) * sopho::scale(7);
+        m_scene_renderer.submit(m_mesh, m_materials[0], model1);
 
+        // Entity 2: Solid Cube
+        // Model Matrix: translate(0.0f, 2.f, -6.0f)
+        sopho::Mat<float, 4, 4> model2 = sopho::translate(0.0f, 2.f, -6.0f);
+        m_scene_renderer.submit(m_mesh, m_materials[1], model2);
+
+        // 4. End Scene (Executes Draw Calls via PrimitiveRenderer)
+        m_scene_renderer.end_scene();
+
+        // 5. Cleanup
+
+        // m_primitive_renderer->begin_render_pass({.clear = false, .depth = false});
+
+        // ImGui_ImplSDLGPU3_RenderDrawData(draw_data, m_primitive_renderer->get_command_buffer().raw(),
+        //                                  m_primitive_renderer->get_render_pass().raw());
+
+        // m_primitive_renderer->end_render_pass();
         return SDL_APP_CONTINUE;
     }
 
@@ -713,11 +609,11 @@ public:
 
     SDL_AppResult event(SDL_Event* event) override
     {
-        ImGui_ImplSDL3_ProcessEvent(event);
+        // ImGui_ImplSDL3_ProcessEvent(event);
 
-        ImGuiIO& io = ImGui::GetIO();
+        // ImGuiIO& io = ImGui::GetIO();
 
-        if (!io.WantCaptureKeyboard)
+        if (true)
         {
             switch (event->type)
             {
@@ -802,7 +698,7 @@ public:
             }
         }
 
-        if (!io.WantCaptureMouse)
+        if (true)
         {
             switch (event->type)
             {
@@ -854,10 +750,9 @@ public:
     void quit(SDL_AppResult result) override
     {
         (void)result;
-        SDL_ReleaseGPUTexture(m_gpu->device(), SceneDepthTexture);
-        ImGui_ImplSDL3_Shutdown();
-        ImGui_ImplSDLGPU3_Shutdown();
-        ImGui::DestroyContext();
+        // ImGui_ImplSDL3_Shutdown();
+        // ImGui_ImplSDLGPU3_Shutdown();
+        // ImGui::DestroyContext();
     }
 };
 

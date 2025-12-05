@@ -43,7 +43,6 @@ export namespace sopho
         RenderProcedural& operator=(const RenderProcedural&) = delete;
         RenderProcedural(RenderProcedural&&) noexcept = default;
         RenderProcedural& operator=(RenderProcedural&&) = delete;
-        ~RenderProcedural() noexcept = default;
 
         /// Returns the underlying SDL_GPUGraphicsPipeline*.
         [[nodiscard]] SDL_GPUGraphicsPipeline* raw() const noexcept { return m_graphics_pipeline.raw(); }

@@ -1,4 +1,4 @@
-//
+// sdl_lifecycle.ixx
 // Created by sophomore on 11/9/25.
 //
 module;

@@ -39,6 +39,14 @@ jobs:
               libxkbcommon wayland wayland-protocols \
               libdrm mesa mesa-utils
 
+      - name: Create venv & install jinja2
+        shell: bash
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate || .venv/Scripts/activate
+          pip install --upgrade pip
+          pip install jinja2
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
@@ -53,6 +61,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release
           -S $GITHUB_WORKSPACE
           -G "Ninja Multi-Config"
+          -DPython3_EXECUTABLE="${PWD}/.venv/bin/python"
 
       - name: Build
         run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config Release

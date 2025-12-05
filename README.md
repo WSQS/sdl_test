@@ -14,6 +14,7 @@ graph TD
         SDL3
         stb
         imgui
+        gl
     end
 
     subgraph Modules
@@ -21,12 +22,24 @@ graph TD
         glsl_reflector
         sdl_wrapper
         logos
+        render_factory
+        sdl_gl_primitive_render
+        sdl_lifecycle
+        window_factory
+        renderer
     end
     
     subgraph sdl_wrapper
-        lifecycle
         sdl_raii
+        sdl_primitive_render
+        sdl_window
     end
+
+  subgraph renderer
+    window
+    primitive_render
+    standard_scene_renderer
+  end
 
     glslang --> shaderc
     SPIRVTools --> shaderc
@@ -41,8 +54,26 @@ graph TD
     glsl_reflector --> sdl_wrapper
     data_type --> sdl_wrapper
     
+    sdl_raii --> sdl_primitive_render
+    
+    gl --> sdl_gl_primitive_render
+    SDL3 --> sdl_gl_primitive_render
+
+    primitive_render --> sdl_primitive_render
+    primitive_render --> sdl_gl_primitive_render
+    sdl_primitive_render --> render_factory
+    sdl_gl_primitive_render --> render_factory
+    render_factory --> SDL_TEST
+    
+    window --> sdl_window
+    sdl_window --> window_factory
+    window_factory --> SDL_TEST
+    
+    SDL3 --> sdl_lifecycle
+
+    renderer --> SDL_TEST
+    sdl_lifecycle --> SDL_TEST
     imgui --> SDL_TEST
-    sdl_wrapper --> SDL_TEST
     stb --> SDL_TEST
     logos --> SDL_TEST
 ```
@@ -62,7 +93,7 @@ graph TD
 - [ ] Lighting
     - [x] Colors
     - [x] Basic Lighting
-    - [ ] Materials
+    - [x] Materials
     - [ ] Lighting maps
     - [ ] Light casters
     - [ ] Multiple lights
