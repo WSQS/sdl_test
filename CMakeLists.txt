@@ -107,6 +107,13 @@ glad_add_library(glad_gl_core_46
         API gl:core=4.6
 )
 
+FetchContent_Declare(
+        assimp
+        URL https://github.com/assimp/assimp/archive/refs/tags/v6.0.2.zip
+)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libs" FORCE)
+FetchContent_MakeAvailable(assimp)
+
 add_subdirectory(data_type)
 add_subdirectory(sdl_wrapper)
 add_subdirectory(sdl_gl_primitive_renderer)
@@ -117,7 +124,7 @@ add_subdirectory(renderer)
 add_subdirectory(renderer_factory)
 
 add_executable(SDL_TEST main.cpp)
-target_link_libraries(SDL_TEST PRIVATE imgui sdl_wrapper stb logos renderer_factory sdl_lifecycle)
+target_link_libraries(SDL_TEST PRIVATE imgui sdl_wrapper stb logos renderer_factory sdl_lifecycle assimp)
 
 include(GNUInstallDirs)
 install(TARGETS SDL_TEST
