@@ -3,6 +3,7 @@
 //
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <expected>
 #include <format>
@@ -16,7 +17,6 @@
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_keycode.h"
 
-#include <chrono>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
