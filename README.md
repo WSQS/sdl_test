@@ -93,7 +93,7 @@ graph TD
 - [ ] Lighting
     - [x] Colors
     - [x] Basic Lighting
-    - [ ] Materials
+    - [x] Materials
     - [ ] Lighting maps
     - [ ] Light casters
     - [ ] Multiple lights
