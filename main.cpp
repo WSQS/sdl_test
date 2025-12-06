@@ -231,7 +231,7 @@ public:
         {
             indices.push_back(i);
         }
-
+        mesh_data.emplace_back(sopho::MeshData{.vertices = vertices,.indices = indices});
         for (const auto mesh_d : mesh_data)
         {
             sopho::BufferDescriptor buffer_descriptor{};
