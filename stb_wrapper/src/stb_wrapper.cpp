@@ -15,7 +15,7 @@ namespace sopho
     {
         stbi_set_flip_vertically_on_load(true);
         std::string file_name{"assets/test_texture.png"};
-        sopho::ImageData result;
+        ImageData result;
         auto data = stbi_load(file_name.data(), &result.width, &result.height, &result.channels, 4);
         result.channels = 4;
 
