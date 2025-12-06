@@ -2,7 +2,7 @@
 // Created by wsqsy on 12/4/2025.
 //
 module;
-#include <cstdint>;
+#include <cstdint>
 export module window;
 import data_type;
 export namespace sopho
