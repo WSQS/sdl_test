@@ -154,6 +154,7 @@ public:
     SDL_AppResult init(int argc, char** argv) override
     {
         auto mesh_data = sopho::load_model("assets/backpack/backpack.obj");
+        auto [image, char_data] = sopho::load_ttf();
         auto c_primitive_renderer = sopho::create_primitive_renderer(sopho::RendererBackend::SDL_GPU);
         if (!c_primitive_renderer)
         {
@@ -231,7 +232,7 @@ public:
         {
             indices.push_back(i);
         }
-        mesh_data.emplace_back(sopho::MeshData{.vertices = vertices,.indices = indices});
+        mesh_data.emplace_back(sopho::MeshData{.vertices = vertices, .indices = indices});
         for (const auto mesh_d : mesh_data)
         {
             sopho::BufferDescriptor buffer_descriptor{};
@@ -303,7 +304,7 @@ public:
         // ImGui_ImplSDLGPU3_Init(&init_info);
         m_image_data = sopho::load_image();
 
-        auto texture = m_primitive_renderer->create_texture(m_image_data);
+        auto texture = m_primitive_renderer->create_texture(image);
         if (texture)
         {
             m_texture_wrapper = texture.value();
