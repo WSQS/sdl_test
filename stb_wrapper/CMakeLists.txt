@@ -12,4 +12,4 @@ target_sources(stb_wrapper
         src/stb_wrapper.cpp
 )
 
-target_link_libraries(stb_wrapper PRIVATE stb data_type)
+target_link_libraries(stb_wrapper PRIVATE stb data_type SDL3::SDL3)
