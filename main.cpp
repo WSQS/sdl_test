@@ -17,9 +17,6 @@
 #include "SDL3/SDL_gpu.h"
 #include "SDL3/SDL_keycode.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 import lifecycle;
 import data_type;
 import sdl_raii;
@@ -32,37 +29,7 @@ import window_factory;
 import window;
 import standard_scene_renderer;
 import assimp_wrapper;
-
-/**
- * @brief Loads image data from the test texture file.
- *
- * Uses stb_image library to load a PNG file (assets/test_texture.png) into an ImageData structure.
- * The image is flipped vertically on load and the pixel data is stored as a vector of bytes.
- *
- * @return sopho::ImageData Structure containing the loaded image dimensions, channels, and pixel data.
- * Returns an empty structure if loading fails.
- */
-sopho::ImageData load_image()
-{
-    stbi_set_flip_vertically_on_load(true);
-    std::string file_name{"assets/test_texture.png"};
-    sopho::ImageData result;
-    auto data = stbi_load(file_name.data(), &result.width, &result.height, &result.channels, 4);
-    result.channels = 4;
-
-    if (!data)
-    {
-        SDL_Log("stbi_load failed for %s: %s", file_name.data(), stbi_failure_reason());
-    }
-    else
-    {
-        result.pixels.assign(reinterpret_cast<std::byte*>(data),
-                             reinterpret_cast<std::byte*>(data) + result.width * result.height * result.channels);
-        stbi_image_free(data);
-        SDL_Log("stbi_load succeeded, w: %d h:%d ch:%d", result.width, result.height, result.channels);
-    }
-    return result;
-}
+import stb_wrapper;
 
 class UserApp : public sopho::App
 {
@@ -334,7 +301,7 @@ public:
         // init_info.PresentMode = SDL_GPU_PRESENTMODE_VSYNC;
 
         // ImGui_ImplSDLGPU3_Init(&init_info);
-        m_image_data = load_image();
+        m_image_data = sopho::load_image();
 
         auto texture = m_primitive_renderer->create_texture(m_image_data);
         if (texture)
