@@ -36,14 +36,7 @@ namespace sopho
         return result;
     }
 
-    struct CharData
-    {
-        std::array<stbtt_bakedchar, 96> cdata{};
-        std::int32_t pw{};
-        std::int32_t ph{};
-    };
-
-    std::tuple<ImageData, CharData*> load_ttf()
+    std::tuple<ImageData, CharData> load_ttf()
     {
         std::ifstream ifs("assets/test.ttf", std::ios::binary);
         if (!ifs)
@@ -56,10 +49,10 @@ namespace sopho
         std::vector<std::byte> data(size);
         ifs.read((char*)data.data(), size);
         unsigned char bitmap[512 * 512];
-        CharData* char_data = new CharData{.pw = 512, .ph = 512};
+        CharData char_data{.pw = 512, .ph = 512};
 
         stbtt_BakeFontBitmap(reinterpret_cast<const unsigned char*>(data.data()), 0, 32.0f, bitmap, 512, 512, 32, 96,
-                             char_data->cdata.data());
+                             char_data.cdata.data());
         ImageData img{};
         img.width = 512;
         img.height = 512;
