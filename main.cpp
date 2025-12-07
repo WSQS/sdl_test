@@ -82,7 +82,7 @@ class UserApp : public sopho::App
     sopho::ImageData m_image_data;
     sopho::TextureHandle m_texture_wrapper{};
     sopho::RenderProcedureHandle m_procedure{};
-    sopho::Mesh mesh{};
+    std::vector<sopho::Mesh> text_mesh{};
 
     // camera state
     float yaw = 0.0f;
@@ -129,51 +129,58 @@ public:
         {
             m_procedure = pipeline_handle3.value();
         }
-
-        auto data = char_data.cdata[17];
         float x_base = -1;
-        float y_base = 1;
-        float x0 = data.x0 / 512.f;
-        float x1 = data.x1 / 512.f;
-        float dx = x1 - x0;
-        float y0 = data.y0 / 512.f;
-        float y1 = data.y1 / 512.f;
-        float dy = y1 - y0;
-
-        std::vector<TextVertex> text_vertices = {
-            {.position = {x_base + dx, y_base}, .uv = {x1, y0}},
-            {.position = {x_base + 0, y_base}, .uv = {x0, y0}},
-            {.position = {x_base + dx, y_base - dy}, .uv = {x1, y1}},
-            {.position = {x_base + 0, y_base}, .uv = {x0, y0}},
-            {.position = {x_base + 0, y_base - dy}, .uv = {x0, y1}},
-            {.position = {x_base + dx, y_base - dy}, .uv = {x1, y1}},
-        };
-
-        std::vector<std::uint32_t> text_indices{};
-
-        for (int i = 0; i < 6; ++i)
+        float y_base = 0.95;
+        for (const auto& c : std::string("hello, world"))
         {
-            text_indices.push_back(i);
-        }
+            sopho::Mesh mesh;
+            auto data = char_data.cdata[c - 32];
+            float x0 = data.x0 / 512.f;
+            float x1 = data.x1 / 512.f;
+            float x_off = data.xoff / 512.f;
+            float dx = x1 - x0;
+            float y0 = data.y0 / 512.f;
+            float y1 = data.y1 / 512.f;
+            float y_off = data.yoff / 512.f;
+            float dy = y1 - y0;
 
-        sopho::BufferDescriptor buffer_descriptor{};
-        buffer_descriptor.buffer_usage = sopho::BufferUsage::VERTEX;
-        buffer_descriptor.data = std::as_bytes(std::span(text_vertices));
-        auto verti = m_primitive_renderer->create_buffer(buffer_descriptor);
-        if (verti)
-        {
-            mesh.vertex_buffer = verti.value();
-        }
+            std::vector<TextVertex> text_vertices = {
+                {.position = {x_base + x_off + dx, y_base - y_off}, .uv = {x1, y0}},
+                {.position = {x_base + x_off + 0, y_base - y_off}, .uv = {x0, y0}},
+                {.position = {x_base + x_off + dx, y_base - y_off - dy}, .uv = {x1, y1}},
+                {.position = {x_base + x_off + 0, y_base - y_off}, .uv = {x0, y0}},
+                {.position = {x_base + x_off + 0, y_base - y_off - dy}, .uv = {x0, y1}},
+                {.position = {x_base + x_off + dx, y_base - y_off - dy}, .uv = {x1, y1}},
+            };
+            x_base += data.xadvance / 512.f;
 
-        buffer_descriptor.buffer_usage = sopho::BufferUsage::INDEX;
-        buffer_descriptor.data = std::as_bytes(std::span(text_indices));
+            std::vector<std::uint32_t> text_indices{};
 
-        verti = m_primitive_renderer->create_buffer(buffer_descriptor);
-        if (verti)
-        {
-            mesh.index_buffer = verti.value();
+            for (int i = 0; i < 6; ++i)
+            {
+                text_indices.push_back(i);
+            }
+
+            sopho::BufferDescriptor buffer_descriptor{};
+            buffer_descriptor.buffer_usage = sopho::BufferUsage::VERTEX;
+            buffer_descriptor.data = std::as_bytes(std::span(text_vertices));
+            auto verti = m_primitive_renderer->create_buffer(buffer_descriptor);
+            if (verti)
+            {
+                mesh.vertex_buffer = verti.value();
+            }
+
+            buffer_descriptor.buffer_usage = sopho::BufferUsage::INDEX;
+            buffer_descriptor.data = std::as_bytes(std::span(text_indices));
+
+            verti = m_primitive_renderer->create_buffer(buffer_descriptor);
+            if (verti)
+            {
+                mesh.index_buffer = verti.value();
+            }
+            mesh.index_count = text_indices.size();
+            text_mesh.emplace_back(mesh);
         }
-        mesh.index_count = text_indices.size();
 
         std::vector<sopho::VertexType> vertices{
             // +Z (front)  2 triangles
@@ -546,9 +553,12 @@ public:
         m_primitive_renderer->begin_render_pass({.clear = true, .depth = true});
         m_primitive_renderer->bind_render_procedure(m_procedure);
         m_primitive_renderer->bind_texture(m_texture_wrapper);
-        m_primitive_renderer->bind_vertex_buffer(mesh.vertex_buffer);
-        m_primitive_renderer->bind_index_buffer(mesh.index_buffer);
-        m_primitive_renderer->draw_index(static_cast<std::int32_t>(mesh.index_count));
+        for (const auto& mesh : text_mesh)
+        {
+            m_primitive_renderer->bind_vertex_buffer(mesh.vertex_buffer);
+            m_primitive_renderer->bind_index_buffer(mesh.index_buffer);
+            m_primitive_renderer->draw_index(static_cast<std::int32_t>(mesh.index_count));
+        }
         m_primitive_renderer->end_render_pass();
         m_primitive_renderer->end_frame();
 
