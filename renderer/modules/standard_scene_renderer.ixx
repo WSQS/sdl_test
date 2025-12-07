@@ -4,12 +4,104 @@
 module;
 #include <cstdint>
 #include <span>
+#include <string>
 #include <vector>
 export module standard_scene_renderer;
 import logos;
 import primitive_renderer;
 export namespace sopho
 {
+    // see: https://wiki.libsdl.org/SDL3/SDL_CreateGPUShader for uniform layout
+    std::string scene_vertex =
+        R"WSQ(#version 460
+#extension GL_KHR_vulkan_glsl : enable
+layout (location = 0) in vec3 a_position;
+layout (location = 1) in vec3 a_normal;
+layout (location = 2) in vec2 a_uv;
+layout (location = 0) out vec3 v_normal;
+layout (location = 1) out vec3 v_pos;
+layout (location = 2) out vec2 v_uv;
+
+layout(std140, set = 1, binding = 0) uniform Camera
+{
+    mat4 uView;
+    mat4 uProjection;
+    vec3 uCameraPos; // Matches CameraMatrices::location
+};
+
+layout(std140, set = 1, binding = 1) uniform Object
+{
+    mat4 uModel;
+};
+
+void main()
+{
+    gl_Position = uProjection * uView * uModel * vec4(a_position, 1.0f);
+    v_normal = normalize(mat3(transpose(inverse(uModel))) * a_normal);
+    v_pos = vec3(uModel * vec4(a_position, 1.0));
+    v_uv = a_uv;
+})WSQ";
+
+    std::string scene_fragment =
+    R"WSQ(#version 460
+#extension GL_KHR_vulkan_glsl : enable
+layout (location = 0) in vec3 v_normal;
+layout (location = 1) in vec3 v_pos;
+layout (location = 2) in vec2 v_uv;
+layout (location = 0) out vec4 FragColor;
+
+layout(std140, set = 3, binding = 2) uniform SceneContex {
+    vec3 lightPos;
+    vec3 viewPos;
+};
+
+layout(std140, set = 3, binding = 3) uniform Material {
+    vec4 baseColorFactor;
+    float roughness;
+    float metallic;
+};
+
+layout(set = 2, binding = 0) uniform sampler2D uTexture;
+
+void main()
+{
+    FragColor = texture(uTexture, v_uv);
+    if (FragColor.a <= 0.001)
+        discard;
+    vec3 lightDir = normalize(lightPos - v_pos);
+    float diff = max(dot(v_normal, lightDir), 0.0);
+    float specularStrength = 0.5;
+    vec3 viewDir = normalize(viewPos - v_pos);
+    vec3 reflectDir = reflect(-lightDir, v_normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+    float specular = specularStrength * spec;
+    FragColor.rgb *= 0.1 + diff + specular;
+})WSQ";
+
+
+    std::string scene_light_fragment =
+        R"WSQ(#version 460
+#extension GL_KHR_vulkan_glsl : enable
+layout (location = 0) in vec3 v_normal;
+layout (location = 1) in vec3 v_pos;
+layout (location = 2) in vec2 v_uv;
+layout (location = 0) out vec4 FragColor;
+
+layout(std140, set = 3, binding = 2) uniform SceneContex {
+    vec3 lightPos;
+    vec3 viewPos;
+};
+
+layout(std140, set = 3, binding = 3) uniform Material {
+    vec4 baseColorFactor;
+    float roughness;
+    float metallic;
+};
+void main()
+{
+    FragColor = vec4(1,1,1,1);
+})WSQ";
+
     struct VertexType
     {
         float x{}, y{}, z{};
