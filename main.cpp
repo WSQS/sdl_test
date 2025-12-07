@@ -31,6 +31,41 @@ import standard_scene_renderer;
 import assimp_wrapper;
 import stb_wrapper;
 
+struct TextVertex
+{
+    sopho::Mat<float, 1, 2> position;
+    sopho::Mat<float, 1, 2> uv;
+};
+
+std::string text_vertex = R"(
+#version 460
+layout (location = 0) in vec2 a_position;
+layout (location = 1) in vec2 a_uv;
+layout (location = 0) out vec2 v_uv;
+
+void main()
+{
+    gl_Position = vec4(a_position, 0.0, 1.0);
+    v_uv = a_uv;
+}
+)";
+
+std::string text_fragment = R"(
+#version 460
+#extension GL_KHR_vulkan_glsl : enable
+layout (location = 0) in vec2 v_uv;
+layout (location = 0) out vec4 FragColor;
+
+layout(set = 2, binding = 0) uniform sampler2D uTexture;
+
+void main()
+{
+    FragColor = texture(uTexture, v_uv);
+    if (FragColor.a <= 0.1)
+        discard;
+}
+)";
+
 class UserApp : public sopho::App
 {
     std::chrono::steady_clock::time_point m_last_time{std::chrono::steady_clock::now()};
@@ -46,6 +81,8 @@ class UserApp : public sopho::App
 
     sopho::ImageData m_image_data;
     sopho::TextureHandle m_texture_wrapper{};
+    sopho::RenderProcedureHandle m_procedure{};
+    sopho::Mesh mesh{};
 
     // camera state
     float yaw = 0.0f;
@@ -85,6 +122,58 @@ public:
 
         auto pipeline_handle2 = m_primitive_renderer->create_render_procedure(
             {.vert_shader = sopho::scene_vertex, .frag_shader = sopho::scene_light_fragment});
+
+        auto pipeline_handle3 =
+            m_primitive_renderer->create_render_procedure({.vert_shader = text_vertex, .frag_shader = text_fragment});
+        if (pipeline_handle3)
+        {
+            m_procedure = pipeline_handle3.value();
+        }
+
+        auto data = char_data.cdata[17];
+        float x_base = -1;
+        float y_base = 1;
+        float x0 = data.x0 / 512.f;
+        float x1 = data.x1 / 512.f;
+        float dx = x1 - x0;
+        float y0 = data.y0 / 512.f;
+        float y1 = data.y1 / 512.f;
+        float dy = y1 - y0;
+
+        std::vector<TextVertex> text_vertices = {
+            {.position = {x_base + dx, y_base}, .uv = {x1, y0}},
+            {.position = {x_base + 0, y_base}, .uv = {x0, y0}},
+            {.position = {x_base + dx, y_base - dy}, .uv = {x1, y1}},
+            {.position = {x_base + 0, y_base}, .uv = {x0, y0}},
+            {.position = {x_base + 0, y_base - dy}, .uv = {x0, y1}},
+            {.position = {x_base + dx, y_base - dy}, .uv = {x1, y1}},
+        };
+
+        std::vector<std::uint32_t> text_indices{};
+
+        for (int i = 0; i < 6; ++i)
+        {
+            text_indices.push_back(i);
+        }
+
+        sopho::BufferDescriptor buffer_descriptor{};
+        buffer_descriptor.buffer_usage = sopho::BufferUsage::VERTEX;
+        buffer_descriptor.data = std::as_bytes(std::span(text_vertices));
+        auto verti = m_primitive_renderer->create_buffer(buffer_descriptor);
+        if (verti)
+        {
+            mesh.vertex_buffer = verti.value();
+        }
+
+        buffer_descriptor.buffer_usage = sopho::BufferUsage::INDEX;
+        buffer_descriptor.data = std::as_bytes(std::span(text_indices));
+
+        verti = m_primitive_renderer->create_buffer(buffer_descriptor);
+        if (verti)
+        {
+            mesh.index_buffer = verti.value();
+        }
+        mesh.index_count = text_indices.size();
 
         std::vector<sopho::VertexType> vertices{
             // +Z (front)  2 triangles
@@ -416,42 +505,52 @@ public:
         // ImGui::Render();
         // ImDrawData* draw_data = ImGui::GetDrawData();
 
-        auto window_size = m_window->size();
+        // auto window_size = m_window->size();
+        //
+        // // ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, m_primitive_renderer->get_command_buffer().raw());
+        //
+        // // 1. Prepare Camera Matrices
+        // sopho::CameraMatrices cam_matrices{};
+        // // View
+        // cam_matrices.view = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
+        //     sopho::translate(-location(0), -location(1), -location(2));
+        // // Projection
+        // cam_matrices.projection =
+        //     sopho::perspective(1, static_cast<float>(window_size.width) / window_size.height, 0.1, 50);
+        // cam_matrices.location = location;
+        //
+        // // 2. Begin Scene Collection
+        // m_scene_renderer.begin_scene(cam_matrices,
+        //                              {.light_pos = {0.0f, 2.f, -6.0f}, .view_pos = location.resize<1, 4>()});
+        //
+        // // 3. Submit Renderables
+        //
+        // // Entity 1: Textured Cube
+        // // Model Matrix: translate(0.0f, -4.f, -5.0f) * rotation_y(1.6) * scale(10)
+        // for (const auto& mesh : m_mesh)
+        // {
+        //     sopho::Mat<float, 4, 4> model1 =
+        //         sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(10);
+        //     m_scene_renderer.submit(mesh, m_materials[0], model1);
+        //
+        //     // Entity 2: Solid Cube
+        //     // Model Matrix: translate(0.0f, 2.f, -6.0f)
+        //     sopho::Mat<float, 4, 4> model2 = sopho::translate(0.0f, 2.f, -6.0f);
+        //     m_scene_renderer.submit(mesh, m_materials[1], model2);
+        // }
+        //
+        // // 4. End Scene (Executes Draw Calls via PrimitiveRenderer)
+        // m_scene_renderer.end_scene();
 
-        // ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, m_primitive_renderer->get_command_buffer().raw());
-
-        // 1. Prepare Camera Matrices
-        sopho::CameraMatrices cam_matrices{};
-        // View
-        cam_matrices.view = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
-            sopho::translate(-location(0), -location(1), -location(2));
-        // Projection
-        cam_matrices.projection =
-            sopho::perspective(1, static_cast<float>(window_size.width) / window_size.height, 0.1, 50);
-        cam_matrices.location = location;
-
-        // 2. Begin Scene Collection
-        m_scene_renderer.begin_scene(cam_matrices,
-                                     {.light_pos = {0.0f, 2.f, -6.0f}, .view_pos = location.resize<1, 4>()});
-
-        // 3. Submit Renderables
-
-        // Entity 1: Textured Cube
-        // Model Matrix: translate(0.0f, -4.f, -5.0f) * rotation_y(1.6) * scale(10)
-        for (const auto& mesh : m_mesh)
-        {
-            sopho::Mat<float, 4, 4> model1 =
-                sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(10);
-            m_scene_renderer.submit(mesh, m_materials[0], model1);
-
-            // Entity 2: Solid Cube
-            // Model Matrix: translate(0.0f, 2.f, -6.0f)
-            sopho::Mat<float, 4, 4> model2 = sopho::translate(0.0f, 2.f, -6.0f);
-            m_scene_renderer.submit(mesh, m_materials[1], model2);
-        }
-
-        // 4. End Scene (Executes Draw Calls via PrimitiveRenderer)
-        m_scene_renderer.end_scene();
+        m_primitive_renderer->begin_frame();
+        m_primitive_renderer->begin_render_pass({.clear = true, .depth = true});
+        m_primitive_renderer->bind_render_procedure(m_procedure);
+        m_primitive_renderer->bind_texture(m_texture_wrapper);
+        m_primitive_renderer->bind_vertex_buffer(mesh.vertex_buffer);
+        m_primitive_renderer->bind_index_buffer(mesh.index_buffer);
+        m_primitive_renderer->draw_index(static_cast<std::int32_t>(mesh.index_count));
+        m_primitive_renderer->end_render_pass();
+        m_primitive_renderer->end_frame();
 
         // 5. Cleanup
 
