@@ -512,45 +512,45 @@ public:
         // ImGui::Render();
         // ImDrawData* draw_data = ImGui::GetDrawData();
 
-        // auto window_size = m_window->size();
-        //
-        // // ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, m_primitive_renderer->get_command_buffer().raw());
-        //
-        // // 1. Prepare Camera Matrices
-        // sopho::CameraMatrices cam_matrices{};
-        // // View
-        // cam_matrices.view = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
-        //     sopho::translate(-location(0), -location(1), -location(2));
-        // // Projection
-        // cam_matrices.projection =
-        //     sopho::perspective(1, static_cast<float>(window_size.width) / window_size.height, 0.1, 50);
-        // cam_matrices.location = location;
-        //
-        // // 2. Begin Scene Collection
-        // m_scene_renderer.begin_scene(cam_matrices,
-        //                              {.light_pos = {0.0f, 2.f, -6.0f}, .view_pos = location.resize<1, 4>()});
-        //
-        // // 3. Submit Renderables
-        //
-        // // Entity 1: Textured Cube
-        // // Model Matrix: translate(0.0f, -4.f, -5.0f) * rotation_y(1.6) * scale(10)
-        // for (const auto& mesh : m_mesh)
-        // {
-        //     sopho::Mat<float, 4, 4> model1 =
-        //         sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(10);
-        //     m_scene_renderer.submit(mesh, m_materials[0], model1);
-        //
-        //     // Entity 2: Solid Cube
-        //     // Model Matrix: translate(0.0f, 2.f, -6.0f)
-        //     sopho::Mat<float, 4, 4> model2 = sopho::translate(0.0f, 2.f, -6.0f);
-        //     m_scene_renderer.submit(mesh, m_materials[1], model2);
-        // }
-        //
-        // // 4. End Scene (Executes Draw Calls via PrimitiveRenderer)
-        // m_scene_renderer.end_scene();
+        auto window_size = m_window->size();
 
-        m_primitive_renderer->begin_frame();
-        m_primitive_renderer->begin_render_pass({.clear = true, .depth = true});
+        // ImGui_ImplSDLGPU3_PrepareDrawData(draw_data, m_primitive_renderer->get_command_buffer().raw());
+
+        // 1. Prepare Camera Matrices
+        sopho::CameraMatrices cam_matrices{};
+        // View
+        cam_matrices.view = sopho::rotation_x(-pitch) * sopho::rotation_y(yaw) *
+            sopho::translate(-location(0), -location(1), -location(2));
+        // Projection
+        cam_matrices.projection =
+            sopho::perspective(1, static_cast<float>(window_size.width) / window_size.height, 0.1, 50);
+        cam_matrices.location = location;
+
+        // 2. Begin Scene Collection
+        m_scene_renderer.begin_scene(cam_matrices,
+                                     {.light_pos = {0.0f, 2.f, -6.0f}, .view_pos = location.resize<1, 4>()});
+
+        // 3. Submit Renderables
+
+        // Entity 1: Textured Cube
+        // Model Matrix: translate(0.0f, -4.f, -5.0f) * rotation_y(1.6) * scale(10)
+        for (const auto& mesh : m_mesh)
+        {
+            sopho::Mat<float, 4, 4> model1 =
+                sopho::translate(0.0f, -4.f, -5.0f) * sopho::rotation_y(1.6) * sopho::scale(10);
+            m_scene_renderer.submit(mesh, m_materials[0], model1);
+
+            // Entity 2: Solid Cube
+            // Model Matrix: translate(0.0f, 2.f, -6.0f)
+            sopho::Mat<float, 4, 4> model2 = sopho::translate(0.0f, 2.f, -6.0f);
+            m_scene_renderer.submit(mesh, m_materials[1], model2);
+        }
+
+        // 4. End Scene (Executes Draw Calls via PrimitiveRenderer)
+        m_scene_renderer.end_scene();
+
+        // m_primitive_renderer->begin_frame();
+        // m_primitive_renderer->begin_render_pass({.clear = true, .depth = true});
         m_primitive_renderer->bind_render_procedure(m_procedure);
         m_primitive_renderer->bind_texture(m_texture_wrapper);
         for (const auto& mesh : text_mesh)

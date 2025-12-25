@@ -205,8 +205,8 @@ void main()
                 m_primitive_renderer->draw_index(static_cast<std::int32_t>(render_command.mesh.index_count));
             }
             m_render_queue.clear();
-            m_primitive_renderer->end_render_pass();
-            m_primitive_renderer->end_frame();
+            // m_primitive_renderer->end_render_pass();
+            // m_primitive_renderer->end_frame();
             return *this;
         }
         StandardSceneRenderer& submit(const Mesh& mesh, const StandardMaterial& material,
