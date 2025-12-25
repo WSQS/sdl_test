@@ -310,7 +310,7 @@ public:
         // ImGui_ImplSDLGPU3_Init(&init_info);
         m_image_data = sopho::load_image();
 
-        auto texture = m_primitive_renderer->create_texture(image);
+        auto texture = m_primitive_renderer->create_texture(m_image_data);
         if (texture)
         {
             m_texture_wrapper = texture.value();
@@ -338,6 +338,17 @@ public:
         mat2.albedo_map = m_texture_wrapper; // Bind something even if unused, or use dummy
         mat2.params.base_color_factor = {1.0f, 1.0f, 1.0f, 1.0f};
         m_materials.push_back(mat2);
+
+        texture = m_primitive_renderer->create_texture(image);
+        if (texture)
+        {
+            m_texture_wrapper = texture.value();
+        }
+        else
+        {
+            SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to create texture: error = %d",
+                        static_cast<int>(texture.error()));
+        }
 
         return SDL_APP_CONTINUE;
     }
